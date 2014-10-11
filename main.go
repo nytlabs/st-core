@@ -47,5 +47,6 @@ func main() {
 	b.inChan <- true
 	go func(b *Count) { b.pollChan <- true }(b)
 	log.Println(<-b.outChan)
+	log.Println(supervisor.Services())
 	supervisor.Stop()
 }

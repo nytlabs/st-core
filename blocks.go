@@ -5,6 +5,7 @@ import "github.com/thejerf/suture"
 // Msg defines the individual messages that flow through streamtools
 type Msg interface{}
 
+// Route controls inbound or outbound messages from a block
 type Route struct {
 	C    chan Msg
 	Kind string
@@ -33,21 +34,25 @@ func NewBlock(name, desc string) *Block {
 	}
 }
 
+// A Connection connects two Routes
 type Connection struct {
 	from Route     // block Route to listen to
 	to   Route     // block Route to send to
 	quit chan bool // send a bool to this channel to remove the connection
 }
 
+// LastMessage returns the last message that flowed through connection
 func (c *Connection) LastMessage() Msg {
 	var out Msg
 	return out
 }
 
+// Rate returns an estimate of the message flow rate in messages per second
 func (c *Connection) Rate() float64 {
 	return 1
 }
 
+// Serve handles passing messages between routes
 func (c *Connection) Serve() {
 	for {
 		select {
@@ -59,11 +64,13 @@ func (c *Connection) Serve() {
 	}
 }
 
+// Stop closes the connection's outbound channel and causes the sends on the inbound Route to block
 func (c *Connection) Stop() {
 	close(c.to.C)
 	c.quit <- true
 }
 
+// Connect builds a new connection and sets it running
 func Connect(supervisor suture.Supervisor, from, to Route) {
 	connection := &Connection{
 		from: from,

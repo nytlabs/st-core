@@ -1,19 +1,71 @@
 package main
 
-import "github.com/thejerf/suture"
+import (
+	"log"
+
+	"github.com/thejerf/suture"
+)
+
+// Messages can be JSON, XML, GOJEE
+type MsgType int
+
+const (
+	JSON MsgType = iota
+	XML
+	GOJEE
+)
 
 // Msg defines the individual messages that flow through streamtools
-type Msg interface{}
+type Msg struct {
+	Payload interface{}
+	Type    MsgType
+}
 
 // Route controls inbound or outbound messages from a block
 type Route struct {
-	C    chan Msg
-	Kind string
+	FromBlock      chan Msg
+	ToBlock        chan Msg
+	FromConnection chan Msg
+	ToConnection   chan Msg
+	Quit           chan bool // remove the Route from the block
 }
 
-// BlockInterface defines the basic capabilities of a streamtools block.
-type BlockInterface interface {
-	suture.Service
+func NewRoute() *Route {
+	return &Route{
+		FromBlock:      make(chan Msg),
+		ToBlock:        make(chan Msg),
+		FromConnection: make(chan Msg),
+		ToConnection:   make(chan Msg),
+		Quit:           make(chan bool),
+	}
+}
+
+// starts accepting messages
+func (r *Route) Start() {
+	for {
+		select {
+		case m := <-r.FromBlock:
+			r.ToConnection <- m
+		case m := <-r.FromConnection:
+			switch m.Type {
+			case JSON:
+				r.ToBlock <- m
+			case GOJEE:
+				log.Fatal("execute GOJEE before sending to block")
+			case XML:
+				log.Fatal("need parser")
+			}
+		case <-r.Quit:
+			close(r.ToBlock)
+			close(r.ToConnection)
+		}
+	}
+}
+
+// removes the route from its containg block
+func (r *Route) Stop() {
+	log.Println("removing Route")
+	r.Quit <- true
 }
 
 // Block defines the basic properties of a streamtools block
@@ -22,6 +74,18 @@ type Block struct {
 	Desc   string           // short description of the block for the UI
 	Routes map[string]Route // container for this block's routes
 	Quit   chan bool        // channel to indicate this block should quit
+}
+
+func (b *Block) Serve() {
+
+}
+
+func (b *Block) Stop() {
+	for _, route := range b.Routes {
+		close(route.FromBlock)
+		route.Quit <- true
+	}
+	b.Quit <- true
 }
 
 // NewBlock is the basic constructor for a Block.
@@ -56,8 +120,8 @@ func (c *Connection) Rate() float64 {
 func (c *Connection) Serve() {
 	for {
 		select {
-		case m := <-c.from.C:
-			c.to.C <- m
+		case m := <-c.from.ToConnection:
+			c.to.FromConnection <- m
 		case <-c.quit:
 			return
 		}
@@ -66,7 +130,7 @@ func (c *Connection) Serve() {
 
 // Stop closes the connection's outbound channel and causes the sends on the inbound Route to block
 func (c *Connection) Stop() {
-	close(c.to.C)
+	close(c.to.FromConnection)
 	c.quit <- true
 }
 

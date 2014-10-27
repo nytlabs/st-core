@@ -1,3 +1,4 @@
+// this is all very bad, as it has data races everywhere
 package main
 
 import (

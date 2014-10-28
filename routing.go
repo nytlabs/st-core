@@ -17,6 +17,7 @@ package main
 import(
     "fmt"
     "sync"
+    "time"
 )
 
 type Route chan interface{}
@@ -28,13 +29,13 @@ func NewRouter() *Router{
 }
 
 type Router struct {
-    sync.RWMutex
+    sync.Mutex
     Routes map[Route]bool
 }
 
 func (rh *Router) Add(r Route) bool {
-    rh.Lock()
-    defer rh.Unlock()
+    //rh.Lock()
+    //defer rh.Unlock()
     _, ok := rh.Routes[r]
     if ok {
         return false
@@ -44,8 +45,8 @@ func (rh *Router) Add(r Route) bool {
 }
 
 func (rh *Router) Remove(r Route) bool {
-    rh.Lock()
-    defer rh.Unlock()
+    //rh.Lock()
+    //defer rh.Unlock()
     _, ok := rh.Routes[r]
     if !ok {
         return false
@@ -55,25 +56,67 @@ func (rh *Router) Remove(r Route) bool {
 }
 
 func (rh *Router) Broadcast(m interface{}) {
-    rh.RLock()
-    for r, _ := range rh.Routes {
+    rh.Lock()
+    routes := rh.Routes
+    rh.Unlock()
+    for r, _ := range routes {
         r <- m
     }
-    rh.RUnlock()
 }
 
 func NewBlock() *Block{
     return &Block{
+        Inputs:make(map[string]Route),
         Outputs:make(map[string]*Router),
     }
 }
 
 type Block struct {
+    Inputs map[string]Route
     Outputs map[string]*Router
-    sync.RWMutex
+    sync.Mutex
 }
 
-func (b *Block) Add(id string) bool {
+func (b *Block) AddInput(id string) bool {
+    b.Lock()
+    defer b.Unlock()
+    _, ok := b.Inputs[id]
+    if ok {
+        return false
+    }
+    b.Inputs[id] = make(Route)
+    return true
+}
+
+func (b *Block) RemoveInput(id string) bool {
+    b.Lock()
+    defer b.Unlock()
+    _, ok := b.Inputs[id]
+    if !ok {
+        return false
+    }
+    delete(b.Inputs, id)
+    return true
+}
+
+func (b *Block) Input(id string) Route {
+    b.Lock()
+    defer b.Unlock()
+    input, ok := b.Inputs[id]
+    if !ok {
+        return nil
+    }
+    return input
+}
+
+func (b *Block) Recieve(id string) Route {
+    b.Lock()
+    m := b.Inputs[id]
+    b.Unlock()
+    return m
+}
+
+func (b *Block) AddOutput(id string) bool {
     b.Lock()
     defer b.Unlock()
     _, ok := b.Outputs[id]
@@ -84,7 +127,7 @@ func (b *Block) Add(id string) bool {
     return true
 }
 
-func (b *Block) Remove(id string) bool {
+func (b *Block) RemoveOutput(id string) bool {
     b.Lock()
     defer b.Unlock()
     _, ok := b.Outputs[id]
@@ -96,27 +139,114 @@ func (b *Block) Remove(id string) bool {
 }
 
 func(b *Block) Connect(id string, r Route) bool {
-    b.RLock()
-    defer b.RUnlock()
+    b.Lock()
     ok := b.Outputs[id].Add(r)
+    b.Unlock()
     return ok
 }
 
 func(b *Block) Disconnect(id string, r Route) bool {
-    b.RLock()
-    defer b.RUnlock()
+    b.Lock()
     ok := b.Outputs[id].Remove(r)
+    b.Unlock()
     return ok
 }
 
 func(b *Block) Broadcast(id string, m interface{}) {
-    b.RLock()
-    defer b.RUnlock()
-    b.Outputs[id].Broadcast(m)
+    b.Lock()
+    r := b.Outputs[id]
+    b.Unlock()
+    r.Broadcast(m)
 }
 
+
+func Pusher() *Block{
+    b := NewBlock()
+    b.AddOutput("out")
+    go func(){
+        i := 0
+        for{
+            i++
+            b.Broadcast("out",i)
+        }
+    }()
+    return b
+}
+
+func Delay() *Block{
+    b := NewBlock()
+    b.AddInput("in")
+    b.AddOutput("out")
+    go func(){
+        for{
+            m := <- b.Recieve("in")
+            time.Sleep(10 * time.Millisecond)
+            b.Broadcast("out", m)
+        }
+    }()
+    return b
+}
+
+func Log(name string) *Block{
+    b := NewBlock()
+    b.AddInput("in")
+    go func(){
+        for{
+            m := <- b.Recieve("in")
+            fmt.Println(name, ": ", m)
+        }
+    }()
+    return b
+}
+
+func Plus() *Block{
+    b := NewBlock()
+    b.AddInput("addend 1")
+    b.AddInput("addend 2")
+    b.AddOutput("out")
+    go func(){
+        for{
+            bdd := <- b.Recieve("addend 2")
+            add := <- b.Recieve("addend 1")
+            c := add.(int) + bdd.(int)
+            fmt.Println(add, bdd)
+            b.Broadcast("out", c)
+        }
+    }()
+
+    return b
+}
+
+
 func main(){
-    connections := [10]Route{}
+
+    go func(){
+        t := time.NewTicker(1 * time.Second)
+        for{
+            select{
+            case <-t.C:
+            }
+        }
+    }()
+
+    p := Pusher()
+    d := Delay()
+    plus := Plus()
+    l := Log("logger")
+
+    time.Sleep(1 * time.Second)
+
+    delayIn := d.Input("in")
+    p.Connect("out", delayIn)
+    plus_1 := plus.Input("addend 1")
+    plus_2 := plus.Input("addend 2")
+    d.Connect("out", plus_1)
+    p.Connect("out", plus_2)
+    login :=  l.Input("in")
+    plus.Connect("out",login)
+
+    <- make(chan bool)
+    /*connections := [10]Route{}
 
     for i, _ := range connections {
         connections[i] = make(Route, 1)
@@ -136,5 +266,5 @@ func main(){
     for _, c := range connections {
         m := <- c
         fmt.Println(m)
-    }
+    }*/
 }

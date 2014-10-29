@@ -28,7 +28,7 @@ func (r *Route) Add(c Connection) bool {
 	return true
 }
 
-// Remove a route from a Route
+// Remove a Connection from a Route
 func (r *Route) Remove(c Connection) bool {
 	_, ok := r.Connections[c]
 	if !ok {
@@ -38,7 +38,7 @@ func (r *Route) Remove(c Connection) bool {
 	return true
 }
 
-// Send message `m` to all routes controlled by this Route
+// Send message `m` to all Connections controlled by this Route
 func (r *Route) Broadcast(m interface{}) {
 	r.Lock()
 	routes := r.Connections

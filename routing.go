@@ -1,270 +1,147 @@
-//
-// this is a test to try to create a thread-safe set of outputs
-//
-// a router is a collection of inchans from downstream blocks
-// a single output is a router
-// a block has a collection of outputs
-//
-// this lets you add and remove outputs dynamically in a thread-safe
-// manner as well as connections to each of those outputs
-//
-// when you call broadcast on a single output, it sends a message to every connection
-// attached to that output
-//
-
 package main
 
-import(
-    "fmt"
-    "sync"
-    "time"
-)
+import "sync"
 
-type Route chan interface{}
+// A Connection passes messages from block to block
+type Connection chan interface{}
 
-func NewRouter() *Router{
-    return &Router{
-        Routes: make(map[Route]bool),
-    }
+// A Route is a collection of Connections
+type Route struct {
+	sync.Mutex
+	Connections map[Connection]bool
 }
 
-type Router struct {
-    sync.Mutex
-    Routes map[Route]bool
+// Constructs a new Route with no connections
+func NewRoute() *Route {
+	return &Route{
+		Connections: make(map[Connection]bool),
+	}
 }
 
-func (rh *Router) Add(r Route) bool {
-    //rh.Lock()
-    //defer rh.Unlock()
-    _, ok := rh.Routes[r]
-    if ok {
-        return false
-    }
-    rh.Routes[r] = true
-    return true
+// Add a Connection to a Route
+func (r *Route) Add(c Connection) bool {
+	_, ok := r.Connections[c]
+	if ok {
+		return false
+	}
+	r.Connections[c] = true
+	return true
 }
 
-func (rh *Router) Remove(r Route) bool {
-    //rh.Lock()
-    //defer rh.Unlock()
-    _, ok := rh.Routes[r]
-    if !ok {
-        return false
-    }
-    delete(rh.Routes, r)
-    return true
+// Remove a route from a Route
+func (r *Route) Remove(c Connection) bool {
+	_, ok := r.Connections[c]
+	if !ok {
+		return false
+	}
+	delete(r.Connections, c)
+	return true
 }
 
-func (rh *Router) Broadcast(m interface{}) {
-    rh.Lock()
-    routes := rh.Routes
-    rh.Unlock()
-    for r, _ := range routes {
-        r <- m
-    }
+// Send message `m` to all routes controlled by this Route
+func (r *Route) Broadcast(m interface{}) {
+	r.Lock()
+	routes := r.Connections
+	r.Unlock()
+	for r, _ := range routes {
+		r <- m
+	}
 }
 
-func NewBlock() *Block{
-    return &Block{
-        Inputs:make(map[string]Route),
-        Outputs:make(map[string]*Router),
-    }
-}
-
+// A Block is the basic processing unit in streamtools. It has inbound and outbound routes.
 type Block struct {
-    Inputs map[string]Route
-    Outputs map[string]*Router
-    sync.Mutex
+	Inputs  map[string]Connection
+	Outputs map[string]*Route
+	sync.Mutex
 }
 
+// NewBlock returns a block with no inputs and no outputs.
+func NewBlock() *Block {
+	return &Block{
+		Inputs:  make(map[string]Connection),
+		Outputs: make(map[string]*Route),
+	}
+}
+
+// Add a named input to the block
 func (b *Block) AddInput(id string) bool {
-    b.Lock()
-    defer b.Unlock()
-    _, ok := b.Inputs[id]
-    if ok {
-        return false
-    }
-    b.Inputs[id] = make(Route)
-    return true
+	b.Lock()
+	defer b.Unlock()
+	_, ok := b.Inputs[id]
+	if ok {
+		return false
+	}
+	b.Inputs[id] = make(Connection)
+	return true
 }
 
+// Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {
-    b.Lock()
-    defer b.Unlock()
-    _, ok := b.Inputs[id]
-    if !ok {
-        return false
-    }
-    delete(b.Inputs, id)
-    return true
+	b.Lock()
+	defer b.Unlock()
+	_, ok := b.Inputs[id]
+	if !ok {
+		return false
+	}
+	delete(b.Inputs, id)
+	return true
 }
 
-func (b *Block) Input(id string) Route {
-    b.Lock()
-    defer b.Unlock()
-    input, ok := b.Inputs[id]
-    if !ok {
-        return nil
-    }
-    return input
+// GetInput returns the input Route
+func (b *Block) GetInput(id string) Connection {
+	b.Lock()
+	input, ok := b.Inputs[id]
+	b.Unlock()
+	if !ok {
+		return nil
+	}
+	return input
 }
 
-func (b *Block) Recieve(id string) Route {
-    b.Lock()
-    m := b.Inputs[id]
-    b.Unlock()
-    return m
-}
-
+// AddOutput registers a new output Route for the block
 func (b *Block) AddOutput(id string) bool {
-    b.Lock()
-    defer b.Unlock()
-    _, ok := b.Outputs[id]
-    if ok {
-        return false
-    }
-    b.Outputs[id] = NewRouter()
-    return true
+	b.Lock()
+	defer b.Unlock()
+	_, ok := b.Outputs[id]
+	if ok {
+		return false
+	}
+	b.Outputs[id] = NewRoute()
+	return true
 }
 
+// RemoveOutput deletes the output route from the block
 func (b *Block) RemoveOutput(id string) bool {
-    b.Lock()
-    defer b.Unlock()
-    _, ok := b.Outputs[id]
-    if !ok {
-        return false
-    }
-    delete(b.Outputs, id)
-    return true
+	b.Lock()
+	defer b.Unlock()
+	_, ok := b.Outputs[id]
+	if !ok {
+		return false
+	}
+	delete(b.Outputs, id)
+	return true
 }
 
-func(b *Block) Connect(id string, r Route) bool {
-    b.Lock()
-    ok := b.Outputs[id].Add(r)
-    b.Unlock()
-    return ok
+// Connect an output Route from this block to a Route elsewhere in streamtools
+func (b *Block) Connect(id string, r Connection) bool {
+	b.Lock()
+	ok := b.Outputs[id].Add(r)
+	b.Unlock()
+	return ok
 }
 
-func(b *Block) Disconnect(id string, r Route) bool {
-    b.Lock()
-    ok := b.Outputs[id].Remove(r)
-    b.Unlock()
-    return ok
+// Discconnect an output Route of this block from a previously connected Route
+func (b *Block) Disconnect(id string, r Connection) bool {
+	b.Lock()
+	ok := b.Outputs[id].Remove(r)
+	b.Unlock()
+	return ok
 }
 
-func(b *Block) Broadcast(id string, m interface{}) {
-    b.Lock()
-    r := b.Outputs[id]
-    b.Unlock()
-    r.Broadcast(m)
-}
-
-
-func Pusher() *Block{
-    b := NewBlock()
-    b.AddOutput("out")
-    go func(){
-        i := 0
-        for{
-            i++
-            b.Broadcast("out",i)
-        }
-    }()
-    return b
-}
-
-func Delay() *Block{
-    b := NewBlock()
-    b.AddInput("in")
-    b.AddOutput("out")
-    go func(){
-        for{
-            m := <- b.Recieve("in")
-            time.Sleep(10 * time.Millisecond)
-            b.Broadcast("out", m)
-        }
-    }()
-    return b
-}
-
-func Log(name string) *Block{
-    b := NewBlock()
-    b.AddInput("in")
-    go func(){
-        for{
-            m := <- b.Recieve("in")
-            fmt.Println(name, ": ", m)
-        }
-    }()
-    return b
-}
-
-func Plus() *Block{
-    b := NewBlock()
-    b.AddInput("addend 1")
-    b.AddInput("addend 2")
-    b.AddOutput("out")
-    go func(){
-        for{
-            bdd := <- b.Recieve("addend 2")
-            add := <- b.Recieve("addend 1")
-            c := add.(int) + bdd.(int)
-            fmt.Println(add, bdd)
-            b.Broadcast("out", c)
-        }
-    }()
-
-    return b
-}
-
-
-func main(){
-
-    go func(){
-        t := time.NewTicker(1 * time.Second)
-        for{
-            select{
-            case <-t.C:
-            }
-        }
-    }()
-
-    p := Pusher()
-    d := Delay()
-    plus := Plus()
-    l := Log("logger")
-
-    time.Sleep(1 * time.Second)
-
-    delayIn := d.Input("in")
-    p.Connect("out", delayIn)
-    plus_1 := plus.Input("addend 1")
-    plus_2 := plus.Input("addend 2")
-    d.Connect("out", plus_1)
-    p.Connect("out", plus_2)
-    login :=  l.Input("in")
-    plus.Connect("out",login)
-
-    <- make(chan bool)
-    /*connections := [10]Route{}
-
-    for i, _ := range connections {
-        connections[i] = make(Route, 1)
-    }
-
-    r := NewBlock()
-
-    r.Add("test") // add output "test" to the block
-
-    for _, c := range connections {
-        r.Connect("test", c) // add 10 dummy connections to that output
-    }
-
-    r.Broadcast("test", "hello") // broadcast "hello" to all connections on output "test"
-
-    // 10 hellos
-    for _, c := range connections {
-        m := <- c
-        fmt.Println(m)
-    }*/
+// Broadcast a message from this block to its output Routes
+func (b *Block) Broadcast(id string, m interface{}) {
+	b.Lock()
+	route := b.Outputs[id]
+	b.Unlock()
+	route.Broadcast(m)
 }

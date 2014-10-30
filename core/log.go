@@ -3,7 +3,7 @@ package core
 import "fmt"
 
 type Log struct {
-	Block
+	*Block
 	name string
 }
 

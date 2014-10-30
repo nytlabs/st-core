@@ -3,16 +3,16 @@ package main
 import (
 	"time"
 
-	"github.com/nytlabs/st-core/blocks"
+	"github.com/nytlabs/st-core/core"
 	"github.com/thejerf/suture"
 )
 
 func main() {
 	supervisor := suture.NewSimple("st-core")
 
-	p := blocks.NewPusher()
-	d := blocks.NewDelay()
-	l := blocks.NewLog("logger")
+	p := core.NewPusher()
+	d := core.NewDelay()
+	l := core.NewLog("logger")
 
 	supervisor.Add(p)
 	supervisor.Add(d)

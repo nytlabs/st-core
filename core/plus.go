@@ -3,7 +3,7 @@ package core
 import "fmt"
 
 type Plus struct {
-	Block
+	*Block
 }
 
 func NewPlus() Plus {

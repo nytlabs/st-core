@@ -3,7 +3,7 @@ package core
 import "time"
 
 type Delay struct {
-	Block
+	*Block
 }
 
 func NewDelay() Delay {
@@ -16,7 +16,7 @@ func NewDelay() Delay {
 func (b Delay) Serve() {
 	for {
 		m := <-b.GetInput("in")
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		b.Broadcast("out", m)
 	}
 }

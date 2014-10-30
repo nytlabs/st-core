@@ -1,7 +1,7 @@
 package core
 
 type Pusher struct {
-	Block
+	*Block
 }
 
 func NewPusher() Pusher {

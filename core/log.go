@@ -1,18 +1,14 @@
-package blocks
+package core
 
-import (
-	"fmt"
-
-	"github.com/nytlabs/st-core/core"
-)
+import "fmt"
 
 type Log struct {
-	*core.Block
+	Block
 	name string
 }
 
 func NewLog(name string) Log {
-	b := core.NewBlock()
+	b := NewBlock()
 	b.AddInput("in")
 	return Log{
 		Block: b,

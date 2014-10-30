@@ -1,13 +1,11 @@
-package blocks
-
-import "github.com/nytlabs/st-core/core"
+package core
 
 type Pusher struct {
-	*core.Block
+	Block
 }
 
 func NewPusher() Pusher {
-	b := core.NewBlock()
+	b := NewBlock()
 	b.AddOutput("out")
 	return Pusher{
 		b,

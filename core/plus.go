@@ -1,17 +1,13 @@
-package blocks
+package core
 
-import (
-	"fmt"
-
-	"github.com/nytlabs/st-core/core"
-)
+import "fmt"
 
 type Plus struct {
-	*core.Block
+	Block
 }
 
 func NewPlus() Plus {
-	b := core.NewBlock()
+	b := NewBlock()
 	b.AddInput("addend 1")
 	b.AddInput("addend 2")
 	b.AddOutput("out")

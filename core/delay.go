@@ -1,17 +1,13 @@
-package blocks
+package core
 
-import (
-	"time"
-
-	"github.com/nytlabs/st-core/core"
-)
+import "time"
 
 type Delay struct {
-	*core.Block
+	Block
 }
 
 func NewDelay() Delay {
-	b := core.NewBlock()
+	b := NewBlock()
 	b.AddInput("in")
 	b.AddOutput("out")
 	return Delay{b}

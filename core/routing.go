@@ -1,4 +1,4 @@
-package main
+package core
 
 import "sync"
 
@@ -87,7 +87,7 @@ func (b *Block) RemoveInput(id string) bool {
 	return true
 }
 
-// GetInput returns the input Route
+// GetInput returns the input Connection
 func (b *Block) GetInput(id string) Connection {
 	b.Lock()
 	input, ok := b.Inputs[id]

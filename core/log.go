@@ -8,22 +8,24 @@ type Log struct {
 }
 
 func NewLog(name string) Log {
-	b := NewBlock()
+	b := NewBlock(name)
 	b.AddInput("in")
 	return Log{
 		Block: b,
-		name:  name,
 	}
 }
 
 func (b Log) Serve() {
 	for {
-		m := <-b.GetInput("in")
-		fmt.Println(b.name, ": ", m)
+		select {
+		case m := <-b.GetInput("in"):
+			fmt.Println(b.Name, ": ", m)
+		case <-b.QuitChan:
+			return
+		}
 	}
 }
-func (b Log) Stop() {
-	for c, _ := range b.Outputs["out"].Connections {
-		close(c)
-	}
+
+func (b Log) String() string {
+	return "Log"
 }

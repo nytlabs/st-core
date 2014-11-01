@@ -7,7 +7,7 @@ type Delay struct {
 }
 
 func NewDelay() Delay {
-	b := NewBlock()
+	b := NewBlock("delay")
 	b.AddInput("in")
 	b.AddOutput("out")
 	return Delay{b}
@@ -16,13 +16,18 @@ func NewDelay() Delay {
 func (b Delay) Serve() {
 	for {
 		m := <-b.GetInput("in")
-		time.Sleep(100 * time.Millisecond)
-		b.Broadcast("out", m)
+		time.Sleep(1 * time.Second)
+
+		for c, _ := range b.Connections("out") {
+			select {
+			case c <- m:
+			case <-b.QuitChan:
+				return
+			}
+		}
 	}
 }
 
-func (b Delay) Stop() {
-	for c, _ := range b.Outputs["out"].Connections {
-		close(c)
-	}
+func (b Delay) String() string {
+	return "Delay"
 }

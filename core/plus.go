@@ -7,7 +7,7 @@ type Plus struct {
 }
 
 func NewPlus() Plus {
-	b := NewBlock()
+	b := NewBlock("plus")
 	b.AddInput("addend 1")
 	b.AddInput("addend 2")
 	b.AddOutput("out")
@@ -20,14 +20,8 @@ func (b Plus) Serve() {
 	for {
 		bdd := <-in2
 		add := <-in1
-		c := add.(int) + bdd.(int)
+		result := add.(int) + bdd.(int)
 		fmt.Println(add, "+", bdd)
-		b.Broadcast("out", c)
-	}
-}
-
-func (b Plus) Stop() {
-	for c, _ := range b.Outputs["out"].Connections {
-		close(c)
+		b.Broadcast("out", result)
 	}
 }

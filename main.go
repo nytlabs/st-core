@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/nytlabs/st-core/core"
@@ -21,12 +22,13 @@ func main() {
 	p.Connect("out", d.GetInput("in"))
 	d.Connect("out", l.GetInput("in"))
 
-	timer1 := time.NewTimer(500 * time.Millisecond)
-	timer2 := time.NewTimer(2 * time.Second)
+	timer1 := time.NewTimer(2 * time.Second)
+	timer2 := time.NewTimer(120 * time.Second)
 
 	go supervisor.ServeBackground()
 
 	<-timer1.C
+	log.Println("stopping pusher")
 	supervisor.Remove(ptoken)
 
 	<-timer2.C

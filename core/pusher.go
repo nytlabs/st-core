@@ -5,7 +5,7 @@ type Pusher struct {
 }
 
 func NewPusher() Pusher {
-	b := NewBlock()
+	b := NewBlock("pusher")
 	b.AddOutput("out")
 	return Pusher{
 		b,
@@ -16,12 +16,11 @@ func (b Pusher) Serve() {
 	i := 0
 	for {
 		i++
+		// broadcast
 		b.Broadcast("out", i)
 	}
 }
 
-func (b Pusher) Stop() {
-	for c, _ := range b.Outputs["out"].Connections {
-		close(c)
-	}
+func (b Pusher) String() string {
+	return "Pusher"
 }

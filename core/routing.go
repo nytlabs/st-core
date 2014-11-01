@@ -38,28 +38,22 @@ func (r *Route) Remove(c Connection) bool {
 	return true
 }
 
-// Send message `m` to all Connections controlled by this Route
-func (r *Route) Broadcast(m interface{}) {
-	r.Lock()
-	routes := r.Connections
-	r.Unlock()
-	for r, _ := range routes {
-		r <- m
-	}
-}
-
 // A Block is the basic processing unit in streamtools. It has inbound and outbound routes.
 type Block struct {
-	Inputs  map[string]Connection
-	Outputs map[string]*Route
+	Name     string // for logging
+	Inputs   map[string]Connection
+	Outputs  map[string]*Route
+	QuitChan chan bool
 	sync.Mutex
 }
 
 // NewBlock returns a block with no inputs and no outputs.
-func NewBlock() *Block {
+func NewBlock(name string) *Block {
 	return &Block{
-		Inputs:  make(map[string]Connection),
-		Outputs: make(map[string]*Route),
+		Name:     name,
+		Inputs:   make(map[string]Connection),
+		Outputs:  make(map[string]*Route),
+		QuitChan: make(chan bool),
 	}
 }
 
@@ -122,6 +116,19 @@ func (b *Block) RemoveOutput(id string) bool {
 	return true
 }
 
+// GetConnections returns all the connections associated with the specified output route
+func (b *Block) Connections(id string) map[Connection]bool {
+	// get route
+	b.Lock()
+	route := b.Outputs["out"]
+	b.Unlock()
+	// get connections
+	route.Lock()
+	connections := route.Connections
+	route.Unlock()
+	return connections
+}
+
 // Connect an output Route from this block to a Route elsewhere in streamtools
 func (b *Block) Connect(id string, r Connection) bool {
 	b.Lock()
@@ -138,10 +145,17 @@ func (b *Block) Disconnect(id string, r Connection) bool {
 	return ok
 }
 
-// Broadcast a message from this block to its output Routes
-func (b *Block) Broadcast(id string, m interface{}) {
-	b.Lock()
-	route := b.Outputs[id]
-	b.Unlock()
-	route.Broadcast(m)
+func (b *Block) Broadcast(id string, m interface{}) error {
+	for c, _ := range b.Connections(id) {
+		select {
+		case c <- m:
+		case <-b.QuitChan:
+			return nil
+		}
+	}
+	return nil
+}
+
+func (b *Block) Stop() {
+	b.QuitChan <- true
 }

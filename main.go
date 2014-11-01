@@ -23,7 +23,7 @@ func main() {
 	d.Connect("out", l.GetInput("in"))
 
 	timer1 := time.NewTimer(2 * time.Second)
-	timer2 := time.NewTimer(120 * time.Second)
+	timer2 := time.NewTimer(4 * time.Second)
 
 	go supervisor.ServeBackground()
 

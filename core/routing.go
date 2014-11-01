@@ -145,17 +145,7 @@ func (b *Block) Disconnect(id string, r Connection) bool {
 	return ok
 }
 
-func (b *Block) Broadcast(id string, m interface{}) error {
-	for c, _ := range b.Connections(id) {
-		select {
-		case c <- m:
-		case <-b.QuitChan:
-			return nil
-		}
-	}
-	return nil
-}
-
+// Stop is called when removing a block from the streamtools pattern.
 func (b *Block) Stop() {
 	b.QuitChan <- true
 }

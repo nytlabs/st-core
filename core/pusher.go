@@ -17,7 +17,13 @@ func (b Pusher) Serve() {
 	for {
 		i++
 		// broadcast
-		b.Broadcast("out", i)
+		for c, _ := range b.Connections("out") {
+			select {
+			case c <- i:
+			case <-b.QuitChan:
+				return
+			}
+		}
 	}
 }
 

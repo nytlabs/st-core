@@ -22,6 +22,12 @@ func (b Plus) Serve() {
 		add := <-in1
 		result := add.(int) + bdd.(int)
 		fmt.Println(add, "+", bdd)
-		b.Broadcast("out", result)
+		for c, _ := range b.Connections("out") {
+			select {
+			case c <- result:
+			case <-b.QuitChan:
+				return
+			}
+		}
 	}
 }

@@ -120,7 +120,7 @@ func (b *Block) RemoveOutput(id string) bool {
 func (b *Block) Connections(id string) map[Connection]bool {
 	// get route
 	b.Lock()
-	route := b.Outputs["out"]
+	route := b.Outputs[id]
 	b.Unlock()
 	// get connections
 	route.Lock()

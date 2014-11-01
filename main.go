@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/nytlabs/st-core/core"
@@ -11,7 +10,7 @@ import (
 func main() {
 	supervisor := suture.NewSimple("st-core")
 
-	p := core.NewPusher()
+	p := core.NewPusher("testPusher")
 	d := core.NewDelay()
 	l := core.NewLog("logger")
 
@@ -23,12 +22,11 @@ func main() {
 	d.Connect("out", l.GetInput("in"))
 
 	timer1 := time.NewTimer(2 * time.Second)
-	timer2 := time.NewTimer(4 * time.Second)
+	timer2 := time.NewTimer(120 * time.Second)
 
 	go supervisor.ServeBackground()
 
 	<-timer1.C
-	log.Println("stopping pusher")
 	supervisor.Remove(ptoken)
 
 	<-timer2.C

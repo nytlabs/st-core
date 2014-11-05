@@ -1,14 +1,21 @@
 package core
 
+// A Message flows through a connection
+
 import "sync"
 
+// A Message flows through a connection
+type Message interface{}
+
 // A Connection passes messages from block to block
-type Connection chan interface{}
+type Connection chan Message
 
 // A Route is a collection of Connections
 type Route struct {
 	sync.Mutex
 	Connections map[Connection]bool
+	Path        string
+	Value       string
 }
 
 // Constructs a new Route with no connections
@@ -68,6 +75,22 @@ func (b *Block) AddInput(id string) bool {
 	b.Inputs[id] = make(Connection)
 	return true
 }
+
+/*
+// Set an input route's Path
+func (b *Block) SetPath(id, path string) error {
+	query, err := fetch.Parse(path)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set an input route's Value
+func (b *Block) SetValue(id, value string) error {
+	return nil
+}
+*/
 
 // Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {

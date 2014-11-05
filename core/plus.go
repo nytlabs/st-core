@@ -15,8 +15,8 @@ func NewPlus() Plus {
 }
 
 func (b Plus) Serve() {
-	in1 := b.GetInput("addend 1")
-	in2 := b.GetInput("addend 2")
+	in1 := b.GetInput("addend 1").Connection
+	in2 := b.GetInput("addend 2").Connection
 	for {
 		bdd := <-in2
 		add := <-in1

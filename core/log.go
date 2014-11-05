@@ -18,7 +18,7 @@ func NewLog(name string) Log {
 func (b Log) Serve() {
 	for {
 		select {
-		case m := <-b.GetInput("in"):
+		case m := <-b.GetInput("in").Connection:
 			fmt.Println(b.Name, ": ", m)
 		case <-b.QuitChan:
 			return

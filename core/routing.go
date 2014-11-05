@@ -1,8 +1,10 @@
 package core
 
-// A Message flows through a connection
+import (
+	"sync"
 
-import "sync"
+	"github.com/nikhan/go-fetch"
+)
 
 // A Message flows through a connection
 type Message interface{}
@@ -10,23 +12,34 @@ type Message interface{}
 // A Connection passes messages from block to block
 type Connection chan Message
 
-// A Route is a collection of Connections
-type Route struct {
+// An Output is a collection of Connections
+type Output struct {
 	sync.Mutex
 	Connections map[Connection]bool
-	Path        string
-	Value       string
+}
+
+// An Input owns a single connection that can be shared by multiple Outputs
+type Input struct {
+	Path       *fetch.Query
+	Value      string
+	Connection Connection
+}
+
+func NewInput() *Input {
+	return &Input{
+		Connection: make(Connection),
+	}
 }
 
 // Constructs a new Route with no connections
-func NewRoute() *Route {
-	return &Route{
+func NewOutput() *Output {
+	return &Output{
 		Connections: make(map[Connection]bool),
 	}
 }
 
-// Add a Connection to a Route
-func (r *Route) Add(c Connection) bool {
+// Add a Connection to an Output
+func (r *Output) Add(c Connection) bool {
 	_, ok := r.Connections[c]
 	if ok {
 		return false
@@ -36,7 +49,7 @@ func (r *Route) Add(c Connection) bool {
 }
 
 // Remove a Connection from a Route
-func (r *Route) Remove(c Connection) bool {
+func (r *Output) Remove(c Connection) bool {
 	_, ok := r.Connections[c]
 	if !ok {
 		return false
@@ -48,8 +61,8 @@ func (r *Route) Remove(c Connection) bool {
 // A Block is the basic processing unit in streamtools. It has inbound and outbound routes.
 type Block struct {
 	Name     string // for logging
-	Inputs   map[string]Connection
-	Outputs  map[string]*Route
+	Inputs   map[string]*Input
+	Outputs  map[string]*Output
 	QuitChan chan bool
 	sync.Mutex
 }
@@ -58,8 +71,8 @@ type Block struct {
 func NewBlock(name string) *Block {
 	return &Block{
 		Name:     name,
-		Inputs:   make(map[string]Connection),
-		Outputs:  make(map[string]*Route),
+		Inputs:   make(map[string]*Input),
+		Outputs:  make(map[string]*Output),
 		QuitChan: make(chan bool),
 	}
 }
@@ -72,25 +85,29 @@ func (b *Block) AddInput(id string) bool {
 	if ok {
 		return false
 	}
-	b.Inputs[id] = make(Connection)
+	b.Inputs[id] = NewInput()
 	return true
 }
 
-/*
 // Set an input route's Path
 func (b *Block) SetPath(id, path string) error {
 	query, err := fetch.Parse(path)
 	if err != nil {
 		return err
 	}
+	b.Lock()
+	b.Inputs[id].Path = query
+	b.Unlock()
 	return nil
 }
 
 // Set an input route's Value
 func (b *Block) SetValue(id, value string) error {
+	b.Lock()
+	b.Inputs[id].Value = value
+	b.Unlock()
 	return nil
 }
-*/
 
 // Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {
@@ -105,7 +122,7 @@ func (b *Block) RemoveInput(id string) bool {
 }
 
 // GetInput returns the input Connection
-func (b *Block) GetInput(id string) Connection {
+func (b *Block) GetInput(id string) *Input {
 	b.Lock()
 	input, ok := b.Inputs[id]
 	b.Unlock()
@@ -123,7 +140,7 @@ func (b *Block) AddOutput(id string) bool {
 	if ok {
 		return false
 	}
-	b.Outputs[id] = NewRoute()
+	b.Outputs[id] = NewOutput()
 	return true
 }
 
@@ -153,9 +170,9 @@ func (b *Block) Connections(id string) map[Connection]bool {
 }
 
 // Connect an output Route from this block to a Route elsewhere in streamtools
-func (b *Block) Connect(id string, r Connection) bool {
+func (b *Block) Connect(id string, in *Input) bool {
 	b.Lock()
-	ok := b.Outputs[id].Add(r)
+	ok := b.Outputs[id].Add(in.Connection)
 	b.Unlock()
 	return ok
 }

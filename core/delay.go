@@ -15,7 +15,7 @@ func NewDelay() Delay {
 
 func (b Delay) Serve() {
 	for {
-		m := <-b.GetInput("in")
+		m := <-b.GetInput("in").Connection
 		time.Sleep(1 * time.Second)
 
 		for c, _ := range b.Connections("out") {

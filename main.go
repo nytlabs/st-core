@@ -22,9 +22,9 @@ func main() {
 	d.Connect("out", l.GetInput("in"))
 
 	timer1 := time.NewTimer(2 * time.Second)
-	timer2 := time.NewTimer(120 * time.Second)
+	timer2 := time.NewTimer(5 * time.Second)
 
-	go supervisor.ServeBackground()
+	supervisor.ServeBackground()
 
 	<-timer1.C
 	supervisor.Remove(ptoken)

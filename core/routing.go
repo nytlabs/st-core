@@ -25,13 +25,14 @@ type Input struct {
 	Connection Connection
 }
 
+// NewInput creates an input with its single Connection
 func NewInput() *Input {
 	return &Input{
 		Connection: make(Connection),
 	}
 }
 
-// Constructs a new Route with no connections
+// Constructs a new Output ready to be connected
 func NewOutput() *Output {
 	return &Output{
 		Connections: make(map[Connection]bool),
@@ -48,7 +49,7 @@ func (r *Output) Add(c Connection) bool {
 	return true
 }
 
-// Remove a Connection from a Route
+// Remove a Connection from an Output
 func (r *Output) Remove(c Connection) bool {
 	_, ok := r.Connections[c]
 	if !ok {
@@ -89,7 +90,7 @@ func (b *Block) AddInput(id string) bool {
 	return true
 }
 
-// Set an input route's Path
+// Set an input's Path
 func (b *Block) SetPath(id, path string) error {
 	query, err := fetch.Parse(path)
 	if err != nil {
@@ -101,7 +102,7 @@ func (b *Block) SetPath(id, path string) error {
 	return nil
 }
 
-// Set an input route's Value
+// Set an input's Value
 func (b *Block) SetValue(id, value string) error {
 	b.Lock()
 	b.Inputs[id].Value = value
@@ -132,7 +133,7 @@ func (b *Block) GetInput(id string) *Input {
 	return input
 }
 
-// AddOutput registers a new output Route for the block
+// AddOutput registers a new output for the block
 func (b *Block) AddOutput(id string) bool {
 	b.Lock()
 	defer b.Unlock()
@@ -144,7 +145,7 @@ func (b *Block) AddOutput(id string) bool {
 	return true
 }
 
-// RemoveOutput deletes the output route from the block
+// RemoveOutput deletes the output from the block
 func (b *Block) RemoveOutput(id string) bool {
 	b.Lock()
 	defer b.Unlock()
@@ -156,7 +157,7 @@ func (b *Block) RemoveOutput(id string) bool {
 	return true
 }
 
-// GetConnections returns all the connections associated with the specified output route
+// GetConnections returns all the connections associated with the specified output
 func (b *Block) Connections(id string) map[Connection]bool {
 	// get route
 	b.Lock()
@@ -169,7 +170,7 @@ func (b *Block) Connections(id string) map[Connection]bool {
 	return connections
 }
 
-// Connect an output Route from this block to a Route elsewhere in streamtools
+// Connect an Output from this block to an Input elsewhere in streamtools
 func (b *Block) Connect(id string, in *Input) bool {
 	b.Lock()
 	ok := b.Outputs[id].Add(in.Connection)
@@ -177,7 +178,7 @@ func (b *Block) Connect(id string, in *Input) bool {
 	return ok
 }
 
-// Discconnect an output Route of this block from a previously connected Route
+// Discconnect an Output of this block from a previously connected Input
 func (b *Block) Disconnect(id string, r Connection) bool {
 	b.Lock()
 	ok := b.Outputs[id].Remove(r)
@@ -185,7 +186,7 @@ func (b *Block) Disconnect(id string, r Connection) bool {
 	return ok
 }
 
-// Stop is called when removing a block from the streamtools pattern.
+// Stop is called when removing a block from the streamtools pattern. This is the default, and can be overwritten.
 func (b *Block) Stop() {
 	b.QuitChan <- true
 }

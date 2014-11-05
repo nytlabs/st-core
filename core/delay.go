@@ -1,6 +1,11 @@
 package core
 
-import "time"
+import (
+	"log"
+	"time"
+
+	"github.com/nikhan/go-fetch"
+)
 
 type Delay struct {
 	*Block
@@ -14,13 +19,31 @@ func NewDelay() Delay {
 }
 
 func (b Delay) Serve() {
+	in := b.GetInput("in")
+	var msg interface{}
+	var err error
+
 	for {
-		m := <-b.GetInput("in").Connection
-		time.Sleep(1 * time.Second)
+		t := time.NewTimer(1 * time.Second)
+		select {
+		case <-t.C:
+		case <-b.QuitChan:
+			return
+		}
+
+		select {
+		case m := <-in.Connection:
+			msg, err = fetch.Run(in.Path, m)
+			if err != nil {
+				log.Fatal(err)
+			}
+		case <-b.QuitChan:
+			return
+		}
 
 		for c, _ := range b.Connections("out") {
 			select {
-			case c <- m:
+			case c <- msg:
 			case <-b.QuitChan:
 				return
 			}

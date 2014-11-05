@@ -27,7 +27,9 @@ type Input struct {
 
 // NewInput creates an input with its single Connection
 func NewInput() *Input {
+	q, _ := fetch.Parse(".")
 	return &Input{
+		Path:       q,
 		Connection: make(Connection),
 	}
 }

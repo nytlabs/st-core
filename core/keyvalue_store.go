@@ -4,7 +4,7 @@ type KeyValue struct {
 	*Store
 	data    map[interface{}]interface{}
 	setChan chan setRequest
-	getChan chan Connection
+	getChan chan getRequest
 }
 
 type setRequest struct {
@@ -22,8 +22,8 @@ func NewKeyValue(name string) KeyValue {
 	return KeyValue{
 		Store:   s,
 		data:    make(map[interface{}]interface{}),
-		setChan: make(Connection),
-		getChan: make(chan Connection),
+		setChan: make(chan setRequest),
+		getChan: make(chan getRequest),
 	}
 }
 
@@ -31,10 +31,9 @@ func (s KeyValue) Serve() {
 	for {
 		select {
 		case keyvalue := <-s.setChan:
-			kv, _ := keyvalue.([]interface{})
-			s.data[kv[0]] = kv[1]
-		case key := <-s.getChan:
-		v:
+			s.data[keyvalue.key] = keyvalue.value
+		case req := <-s.getChan:
+			req.respChan <- s.data[req.key]
 		}
 	}
 }

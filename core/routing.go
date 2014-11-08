@@ -192,3 +192,16 @@ func (b *Block) Disconnect(id string, r Connection) bool {
 func (b *Block) Stop() {
 	b.QuitChan <- true
 }
+
+// Broadcast is called when sending a message to an Output. If Broadcast returns false your block must immediately return.
+func (b Block) Broadcast(m Message, id string) bool {
+	for c, _ := range b.Connections(id) {
+		select {
+		case c <- m:
+		case <-b.QuitChan:
+			return false
+		}
+	}
+	return true
+
+}

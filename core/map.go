@@ -44,7 +44,26 @@ func parseKeys(m map[string]interface{}) (interface{}, error) {
 }
 
 func evalMap(msg interface{}, m map[string]interface{}) (interface{}, error) {
-	return nil, nil
+
+	t := make(map[string]interface{})
+	for k, e := range m {
+		switch r := e.(type) {
+		case map[string]interface{}:
+			j, err := evalMap(msg, r)
+			if err != nil {
+				return nil, err
+			}
+			t[k] = j
+		case *fetch.Query:
+			value, err := fetch.Run(r, msg)
+			if err != nil {
+				return nil, err
+			}
+			t[k] = value
+		}
+	}
+	return t, nil
+
 }
 
 func (b Map) Serve() {
@@ -70,7 +89,6 @@ func (b Map) Serve() {
 			if !ok {
 				log.Fatal("could not assert mapping to map")
 			}
-			// iteratively parse and lex each key
 			p, err := parseKeys(m)
 			if err != nil {
 				log.Fatal("could not parse keys")

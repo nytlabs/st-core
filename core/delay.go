@@ -20,7 +20,7 @@ func NewDelay() Delay {
 
 func (b Delay) Serve() {
 	in := b.GetInput("in")
-	var msg interface{}
+	var msg Message
 	var err error
 
 	for {

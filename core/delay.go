@@ -11,8 +11,8 @@ type Delay struct {
 	*Block
 }
 
-func NewDelay() Delay {
-	b := NewBlock("delay")
+func NewDelay(name string) Delay {
+	b := NewBlock(name)
 	b.AddInput("in")
 	b.AddOutput("out")
 	return Delay{b}

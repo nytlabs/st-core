@@ -4,22 +4,35 @@ import (
 	"time"
 
 	"github.com/nytlabs/st-core/core"
+	"github.com/nytlabs/st-core/stores"
 	"github.com/thejerf/suture"
 )
 
 func main() {
 	supervisor := suture.NewSimple("st-core")
 
-	p := core.NewPusher("testPusher")
-	d := core.NewDelay()
-	l := core.NewLog("logger")
+	blocks := make(map[string]suture.ServiceToken)
 
-	ptoken := supervisor.Add(p)
+	p := core.NewPusher("testPusher")
+	d := core.NewDelay("delay")
+	l := core.NewLog("logger")
+	s := stores.NewKeyValue("store")
+	sSet := stores.NewKeyValueSet("setter")
+	sGet := stores.NewKeyValueGet("getter")
+
+	blocks[p.Name] = supervisor.Add(p)
+
 	_ = supervisor.Add(d)
 	_ = supervisor.Add(l)
+	_ = supervisor.Add(s)
+	_ = supervisor.Add(sSet)
+	_ = supervisor.Add(sGet)
 
 	p.Connect("out", d.GetInput("in"))
 	d.Connect("out", l.GetInput("in"))
+
+	sSet.ConnectStore(s)
+	sGet.ConnectStore(s)
 
 	timer1 := time.NewTimer(2 * time.Second)
 	timer2 := time.NewTimer(5 * time.Second)
@@ -27,7 +40,7 @@ func main() {
 	supervisor.ServeBackground()
 
 	<-timer1.C
-	supervisor.Remove(ptoken)
+	supervisor.Remove(blocks["testPusher"])
 
 	<-timer2.C
 	supervisor.Stop()

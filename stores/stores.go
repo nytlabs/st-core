@@ -5,11 +5,17 @@ package stores
 type Store struct {
 	Name      string
 	BackingDB string
+	QuitChan  chan bool
 }
 
 // create a new Store with a specified name
 func NewStore(name string) *Store {
 	return &Store{
-		Name: name,
+		Name:     name,
+		QuitChan: make(chan bool),
 	}
+}
+
+func (s *Store) Stop() {
+	s.QuitChan <- true
 }

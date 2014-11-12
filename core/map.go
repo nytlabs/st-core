@@ -76,11 +76,23 @@ func (b Map) Serve() {
 	var p map[string]interface{}
 	var err error
 
-	log.Println("started Map", b.Name)
-
 	for {
 		select {
 		case msg := <-in.Connection:
+			// now wait for the mapping rule
+			select {
+			case mI = <-mapping.Connection:
+				m, ok := mI.(map[string]interface{})
+				if !ok {
+					log.Fatal("could not assert mapping to map")
+				}
+				p, err = parseKeys(m) // TODO could parseKeys have caching
+				if err != nil {
+					log.Fatal("could not parse keys")
+				}
+			case <-b.QuitChan:
+				return
+			}
 			out, err := evalMap(msg, p)
 			if err != nil {
 				log.Fatal(err)
@@ -88,19 +100,8 @@ func (b Map) Serve() {
 			if ok := b.Broadcast(out, "out"); !ok {
 				return
 			}
-
-		case mI = <-mapping.Connection:
-			m, ok := mI.(map[string]interface{})
-			if !ok {
-				log.Fatal("could not assert mapping to map")
-			}
-			p, err = parseKeys(m)
-			if err != nil {
-				log.Fatal("could not parse keys")
-			}
 		case <-b.QuitChan:
 			return
 		}
-
 	}
 }

@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"log"
 	"sync"
 
 	"github.com/nikhan/go-fetch"
@@ -140,13 +139,10 @@ func (i *Input) SetValue(value Message) error {
 		for {
 			select {
 			case i.Connection <- value:
-				log.Println("value pusher sent", value)
 			case <-i.quitChan:
-				log.Println("input received quitChan signal")
 				return
 			}
 		}
-		log.Println("value pusher quitting unexpectedly")
 	}()
 	return nil
 }

@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/nikhan/go-fetch"
@@ -20,9 +22,11 @@ type Output struct {
 
 // An Input owns a single connection that can be shared by multiple Outputs
 type Input struct {
-	Path       *fetch.Query
-	Value      string
-	Connection Connection
+	sync.Mutex
+	Path       *fetch.Query // used to extract information from the inbound message
+	Value      []byte       // string representation of this input's constant value
+	Connection Connection   // inbound messages arrive on this Connection
+	quitChan   chan bool    // used to interrupt the input's value pusher
 }
 
 // NewInput creates an input with its single Connection
@@ -31,6 +35,7 @@ func NewInput() *Input {
 	return &Input{
 		Path:       q,
 		Connection: make(Connection),
+		quitChan:   make(chan bool),
 	}
 }
 
@@ -104,11 +109,45 @@ func (b *Block) SetPath(id, path string) error {
 	return nil
 }
 
+// call this whenever you want to set a value, or make a new connection
+func stopValuePusher(in *Input) {
+	select {
+	case in.quitChan <- true:
+	default:
+		// wasn't running (is there a race here?)
+	}
+}
+
 // Set an input's Value
-func (b *Block) SetValue(id, value string) error {
-	b.Lock()
-	b.Inputs[id].Value = value
-	b.Unlock()
+func (i *Input) SetValue(value Message) error {
+	// we store the marshalled value in the Input so we can access it later
+	i.Lock()
+	v, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	i.Value = v
+	i.Unlock()
+
+	// then, to set an input to a particular value, we just push
+	// that value to that input, as though we had a little pusher block.
+
+	// first kill any existing value pusher
+	stopValuePusher(i)
+
+	// then set the pusher going
+	go func() {
+		for {
+			select {
+			case i.Connection <- value:
+				log.Println("value pusher sent", value)
+			case <-i.quitChan:
+				log.Println("input received quitChan signal")
+				return
+			}
+		}
+		log.Println("value pusher quitting unexpectedly")
+	}()
 	return nil
 }
 
@@ -174,6 +213,7 @@ func (b *Block) Connections(id string) map[Connection]bool {
 
 // Connect an Output from this block to an Input elsewhere in streamtools
 func (b *Block) Connect(id string, in *Input) bool {
+	stopValuePusher(in)
 	b.Lock()
 	ok := b.Outputs[id].Add(in.Connection)
 	b.Unlock()

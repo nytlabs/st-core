@@ -6,6 +6,8 @@ import (
 	"github.com/nikhan/go-fetch"
 )
 
+// The Map block maps an inbound message onto an outbound message using the supplied rule.
+// Them Map block has two inputs: "in" and "mapping", and one outupt: "out".
 type Map struct {
 	*Block
 }
@@ -18,7 +20,7 @@ func NewMap(name string) Map {
 	return Map{b}
 }
 
-func parseKeys(m map[string]interface{}) (interface{}, error) {
+func parseKeys(m map[string]interface{}) (map[string]interface{}, error) {
 	t := make(map[string]interface{})
 
 	for k, e := range m {
@@ -70,8 +72,11 @@ func (b Map) Serve() {
 
 	in := b.GetInput("in")
 	mapping := b.GetInput("mapping")
-	var mI interface{}
+	var mI Message
 	var p map[string]interface{}
+	var err error
+
+	log.Println("started Map", b.Name)
 
 	for {
 		select {
@@ -89,7 +94,7 @@ func (b Map) Serve() {
 			if !ok {
 				log.Fatal("could not assert mapping to map")
 			}
-			p, err := parseKeys(m)
+			p, err = parseKeys(m)
 			if err != nil {
 				log.Fatal("could not parse keys")
 			}

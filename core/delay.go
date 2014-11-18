@@ -11,8 +11,8 @@ type Delay struct {
 	*Block
 }
 
-func NewDelay() Delay {
-	b := NewBlock("delay")
+func NewDelay(name string) Delay {
+	b := NewBlock(name)
 	b.AddInput("in")
 	b.AddOutput("out")
 	return Delay{b}
@@ -20,7 +20,7 @@ func NewDelay() Delay {
 
 func (b Delay) Serve() {
 	in := b.GetInput("in")
-	var msg interface{}
+	var msg Message
 	var err error
 
 	for {

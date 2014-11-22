@@ -10,69 +10,40 @@ import (
 
 func main() {
 	supervisor := suture.NewSimple("st-core")
-
-	blocks := make(map[string]suture.ServiceToken)
-
-	/*
-		p := core.NewPusher("testPusher")
-		d := core.NewDelay("delay")
-		l := core.NewLog("logger")
-		s := stores.NewKeyValue("store")
-		sSet := stores.NewKeyValueSet("setter")
-		sGet := stores.NewKeyValueGet("getter")
-
-		blocks[p.Name] = supervisor.Add(p)
-
-		_ = supervisor.Add(d)
-		_ = supervisor.Add(l)
-		_ = supervisor.Add(s)
-		_ = supervisor.Add(sSet)
-		_ = supervisor.Add(sGet)
-
-		p.Connect("out", d.GetInput("in"))
-		d.Connect("out", l.GetInput("in"))
-
-		sSet.ConnectStore(s)
-		sGet.ConnectStore(s)
-	*/
-
-	m := core.NewMap("test1")
-
-	testValue := map[string]interface{}{
-		"hello": "world",
-	}
-
-	err := m.Inputs["in"].SetValue(testValue)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	testMapping := map[string]interface{}{
-		"foo": ".hello",
-	}
-
-	err = m.Inputs["mapping"].SetValue(testMapping)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	l := core.NewLog("logger")
-	d := core.NewDelay("delay")
-
-	supervisor.Add(m)
-	supervisor.Add(l)
-	supervisor.Add(d)
-
-	m.Connect("out", d.GetInput("in"))
-	d.Connect("out", l.GetInput("in"))
-
-	timer1 := time.NewTimer(2 * time.Second)
-	timer2 := time.NewTimer(5 * time.Second)
-
 	supervisor.ServeBackground()
 
+	p := core.NewPusher("testPusher")
+	err := p.Inputs["value"].SetValue(2.1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ptoken := supervisor.Add(p)
+
+	f := core.NewF("f")
+	g := core.NewG("g")
+
+	supervisor.Add(f)
+	supervisor.Add(g)
+
+	p.Connect("out", f.GetInput("in"))
+	f.Connect("out", g.GetInput("in"))
+
+	d := core.NewDelay("delay")
+	l := core.NewLog("logger")
+
+	supervisor.Add(d)
+	supervisor.Add(l)
+
+	g.Connect("out", d.GetInput("in"))
+	d.Connect("out", l.GetInput("in"))
+
+	timer1 := time.NewTimer(3 * time.Second)
+	timer2 := time.NewTimer(9 * time.Second)
+
 	<-timer1.C
-	supervisor.Remove(blocks["testPusher"])
+	log.Println("merging f and g")
+
+	h := f.Merge(g)
 
 	<-timer2.C
 	supervisor.Stop()

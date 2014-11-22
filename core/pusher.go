@@ -36,6 +36,8 @@ func (b Pusher) Serve() {
 			if err != nil {
 				log.Fatal(err)
 			}
+		case <-b.QuitChan:
+			return
 		default:
 			// default is the nil Message
 		}

@@ -74,6 +74,13 @@ type Block struct {
 	sync.Mutex
 }
 
+type Blocker interface {
+	Serve()
+	Stop()
+	Merge()
+	getName()
+}
+
 // NewBlock returns a block with no inputs and no outputs.
 func NewBlock(name string) *Block {
 	return &Block{
@@ -239,5 +246,16 @@ func (b Block) Broadcast(m Message, id string) bool {
 		}
 	}
 	return true
+}
 
+func (b Block) getName() string {
+	return b.Name
+}
+
+func (b Block) Merge(β Blocker) *Block {
+	out := NewBlock(b.getName() + "_" + β.getName())
+	for id, input := range b.Inputs {
+		out.Inputs[id] = input
+	}
+	return out
 }

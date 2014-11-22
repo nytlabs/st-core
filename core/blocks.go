@@ -1,9 +1,8 @@
 package core
 
 import (
-	"encoding/json"
 	"sync"
-
+	"log"
 	"github.com/nikhan/go-fetch"
 )
 
@@ -23,7 +22,7 @@ type Output struct {
 type Input struct {
 	sync.Mutex
 	Path       *fetch.Query // used to extract information from the inbound message
-	Value      []byte       // string representation of this input's constant value
+	Value      Message
 	Connection Connection   // inbound messages arrive on this Connection
 	quitChan   chan bool    // used to interrupt the input's value pusher
 }
@@ -121,11 +120,7 @@ func stopValuePusher(in *Input) {
 func (i *Input) SetValue(value Message) error {
 	// we store the marshalled value in the Input so we can access it later
 	i.Lock()
-	v, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	i.Value = v
+	i.Value = value
 	i.Unlock()
 
 	// then, to set an input to a particular value, we just push
@@ -240,4 +235,20 @@ func (b Block) Broadcast(m Message, id string) bool {
 	}
 	return true
 
+}
+
+func (b Block) Recieve() bool {
+	var err error
+	for _, in := range b.Inputs {
+		select {
+            case m := <-in.Connection:
+                in.Value, err = fetch.Run(in.Path, m)
+                if err != nil {
+                    log.Fatal(err)
+                }
+            case <-b.QuitChan:
+                return false
+        }
+	}
+	return true
 }

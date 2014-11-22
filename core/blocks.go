@@ -78,7 +78,7 @@ type Blocker interface {
 	Serve()
 	Stop()
 	Merge()
-	getName()
+	getName() string
 }
 
 // NewBlock returns a block with no inputs and no outputs.

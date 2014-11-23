@@ -14,11 +14,12 @@ func NewF(name string) F {
 	b := NewBlock(name)
 	b.AddInput("in")
 	b.AddOutput("out")
-	return F{b}
-}
 
-func (b F) Kernel() {
-	log.Println("F")
+	b.Kernel = func(msgs ...Message) bool {
+		log.Println(msgs)
+		return b.Broadcast(msgs[0], "out")
+	}
+	return F{b}
 }
 
 func (b F) Serve() {
@@ -38,11 +39,7 @@ func (b F) Serve() {
 			return
 		}
 
-		b.Kernel()
-
-		if ok := b.Broadcast(msg, "out"); !ok {
-			return
-		}
+		b.Kernel(msg)
 
 	}
 }

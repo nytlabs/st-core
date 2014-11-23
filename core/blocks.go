@@ -72,13 +72,7 @@ type Block struct {
 	Outputs  map[string]*Output
 	QuitChan chan bool
 	sync.Mutex
-}
-
-type Blocker interface {
-	Serve()
-	Stop()
-	Merge()
-	getName() string
+	Kernel func(...Message) map[string]Message // route -> message to be sent
 }
 
 // NewBlock returns a block with no inputs and no outputs.
@@ -252,10 +246,17 @@ func (b Block) getName() string {
 	return b.Name
 }
 
-func (b Block) Merge(β Blocker) *Block {
+func (b Block) Merge(β Block) *Block {
 	out := NewBlock(b.getName() + "_" + β.getName())
 	for id, input := range b.Inputs {
 		out.Inputs[id] = input
 	}
+	k_b := b.Kernel
+	k_β := β.Kernel
+
+	out.Kernel = func(msgs ...Message) bool {
+
+	}
+
 	return out
 }

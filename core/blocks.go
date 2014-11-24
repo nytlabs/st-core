@@ -72,7 +72,7 @@ type Block struct {
 	Outputs  map[string]*Output
 	QuitChan chan bool
 	sync.Mutex
-	Kernel func(...Message) map[string]Message // route -> message to be sent
+	Kernel func(...Message) (map[string]Message, error) // route -> message to be sent
 }
 
 // NewBlock returns a block with no inputs and no outputs.
@@ -251,12 +251,18 @@ func (b Block) Merge(β Block) *Block {
 	for id, input := range b.Inputs {
 		out.Inputs[id] = input
 	}
-	k_b := b.Kernel
-	k_β := β.Kernel
-
-	out.Kernel = func(msgs ...Message) bool {
-
+	for id, output := range β.Outputs {
+		out.Outputs[id] = output
 	}
-
+	out.Kernel = func(msgs ...Message) (map[string]Message, error) {
+		outMsg, err := b.Kernel(msgs)
+		if err != nil {
+			return nil, err
+		}
+		inMsg := map[string]Message{
+			"in": outMsg["out"],
+		}
+		return β.Kernel(inMsg)
+	}
 	return out
 }

@@ -14,6 +14,12 @@ func NewG(name string) G {
 	b := NewBlock(name)
 	b.AddInput("in")
 	b.AddOutput("out")
+	b.Kernel = func(msgs ...Message) (map[string]Message, error) {
+		log.Println(msgs)
+		return map[string]Message{
+			"out": msgs[0],
+		}, nil
+	}
 	return G{b}
 }
 

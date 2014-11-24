@@ -15,9 +15,11 @@ func NewF(name string) F {
 	b.AddInput("in")
 	b.AddOutput("out")
 
-	b.Kernel = func(msgs ...Message) bool {
+	b.Kernel = func(msgs ...Message) (map[string]Message, error) {
 		log.Println(msgs)
-		return b.Broadcast(msgs[0], "out")
+		return map[string]Message{
+			"out": msgs[0],
+		}, nil
 	}
 	return F{b}
 }

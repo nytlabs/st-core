@@ -64,24 +64,64 @@ func (r *Output) Remove(c Connection) bool {
 	return true
 }
 
+type KernelFunc func(map[string]interface{}) map[string]interface{}
+
+type Spec struct {
+	Name string
+	Inputs []string
+	Outputs []string
+	Kernel KernelFunc
+}
+
 // A Block is the basic processing unit in streamtools. It has inbound and outbound routes.
 type Block struct {
 	Name     string // for logging
 	Inputs   map[string]*Input
 	Outputs  map[string]*Output
 	QuitChan chan bool
+	Kernel   KernelFunc
 	sync.Mutex
 }
 
 // NewBlock returns a block with no inputs and no outputs.
-func NewBlock(name string) *Block {
-	return &Block{
-		Name:     name,
+func NewBlock(s Spec) *Block {
+
+	nb := &Block{
+		Name:     s.Name,
 		Inputs:   make(map[string]*Input),
 		Outputs:  make(map[string]*Output),
 		QuitChan: make(chan bool),
 	}
+
+	for _, v := range s.Inputs {
+		nb.AddInput(v)
+	}
+
+	for _, v := range s.Outputs {
+		nb.AddOutput(v)
+	}
+
+	b.Kernel = s.Kernel
+
+	return nb
 }
+
+func (b *Block) Serve() {
+	for {
+		if values, ok := b.Receive(); !ok {
+			return
+		}
+
+		if output, ok := b.Kernel(values); !ok {
+			return
+		}
+
+		if ok := b.Broadcast(o); !ok {
+			return
+		}
+	}
+}
+
 
 // Add a named input to the block
 func (b *Block) AddInput(id string) bool {
@@ -119,9 +159,9 @@ func stopValuePusher(in *Input) {
 // Set an input's Value
 func (i *Input) SetValue(value Message) error {
 	// we store the marshalled value in the Input so we can access it later
-	i.Lock()
-	i.Value = value
-	i.Unlock()
+	//i.Lock()
+	//i.Value = value
+	//i.Unlock()
 
 	// then, to set an input to a particular value, we just push
 	// that value to that input, as though we had a little pusher block.
@@ -225,30 +265,33 @@ func (b *Block) Stop() {
 }
 
 // Broadcast is called when sending a message to an Output. If Broadcast returns false your block must immediately return.
-func (b Block) Broadcast(m Message, id string) bool {
-	for c, _ := range b.Connections(id) {
-		select {
-		case c <- m:
-		case <-b.QuitChan:
-			return false
+func (b Block) Broadcast(outputs map[string]interface{}) bool {
+	for k, v := range outputs{
+		for c, _ := range b.Connections(k) {
+			select {
+			case c <- v:
+			case <-b.QuitChan:
+				return false
+			}
 		}
 	}
 	return true
 
 }
 
-func (b Block) Recieve() bool {
+func (b Block) Receive() (map[string]interface{}, bool) {
 	var err error
-	for _, in := range b.Inputs {
+	values := make(map[string]interface{})
+	for name, in := range b.Inputs {
 		select {
             case m := <-in.Connection:
-                in.Value, err = fetch.Run(in.Path, m)
+                values[name], err = fetch.Run(in.Path, m)
                 if err != nil {
                     log.Fatal(err)
                 }
             case <-b.QuitChan:
-                return false
+                return nil, false
         }
 	}
-	return true
+	return values, true
 }

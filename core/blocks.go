@@ -128,7 +128,7 @@ func (b Block) Merge(β Block) *Block {
 	return out
 }
 
-func (b Block) Recieve() bool {
+func (b Block) Receive() bool {
 	var err error
 	for _, in := range b.Inputs {
 		select {

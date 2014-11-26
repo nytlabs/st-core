@@ -64,7 +64,7 @@ func (r *Output) Remove(c Connection) bool {
 	return true
 }
 
-type KernelFunc func(map[string]interface{}) map[string]interface{}
+type KernelFunc func(chan bool, map[string]interface{}) (map[string]interface{}, bool)
 
 type Spec struct {
 	Name string
@@ -112,7 +112,7 @@ func (b *Block) Serve() {
 			return
 		}
 
-		if output, ok := b.Kernel(values); !ok {
+		if output, ok := b.Kernel(b.QuitChan, values); !ok {
 			return
 		}
 

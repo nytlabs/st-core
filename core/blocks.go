@@ -197,7 +197,6 @@ func (b Block) Merge(β Block) *Block {
 		return β.Kernel(inMsg)
 	}
 	return out
-}
 */
 
 func (b Block) Receive() (map[string]Message, bool) {

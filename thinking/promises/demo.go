@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
-type Signal chan chan Message
-
 type Message struct {
 	id int
 }
+
+type Promise chan Message
+
+type Signal chan Promise
 
 type Block struct {
 	c      int
@@ -31,7 +33,7 @@ func (b *Block) Pipe(in Signal) Signal {
 				return
 			}
 
-			outPromise := make(chan Message)
+			outPromise := make(Promise)
 			out <- outPromise
 
 			go func() {
@@ -57,7 +59,7 @@ func main() {
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			startPromise := make(chan Message)
+			startPromise := make(Promise)
 			startSignal <- startPromise
 			startPromise <- Message{id: i}
 		}
@@ -66,7 +68,7 @@ func main() {
 
 	fmt.Println(latentBlock)
 
-	endPromises := make([]chan Message, 0)
+	endPromises := make([]Promise, 0)
 	for {
 		endPromise, ok := <-endSignal
 		if !ok {

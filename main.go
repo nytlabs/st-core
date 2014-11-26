@@ -10,23 +10,20 @@ import (
 func main() {
 	supervisor := suture.NewSimple("st-core")
 
-	p1 := core.NewPusher("testPusher_a")
-	p2 := core.NewPusher("testPusher_b")
+	log := core.NewBlock(core.Library["log"])
+	delay := core.NewBlock(core.Library["delay"])
+	pusher := core.NewBlock(core.Library["pusher"])
 
-	a := core.NewPlus("plus")
-	d := core.NewDelay("delay")
-	l := core.NewLog("log")
+	supervisor.Add(log)
+	supervisor.Add(delay)
+	supervisor.Add(pusher)
 
-	supervisor.Add(a)
-	supervisor.Add(d)
-	supervisor.Add(l)
-	supervisor.Add(p1)
-	supervisor.Add(p2)
+	pusher.GetOutput("out").Connect(delay.GetInput("in"))
+	delay.GetOutput("out").Connect(log.GetInput("in"))
 
-	p1.Connect("out", a.GetInput("addend 1"))
-	p2.Connect("out", a.GetInput("addend 2"))
-	a.Connect("out", d.GetInput("in"))
-	d.Connect("out", l.GetInput("in"))
+	supervisor.Add(log)
+	supervisor.Add(delay)
+	supervisor.Add(pusher)
 
 	timer1 := time.NewTimer(5 * time.Second)
 

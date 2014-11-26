@@ -1,76 +1,19 @@
 package core
 
 import (
-	"sync"
 	"log"
+	"sync"
+
 	"github.com/nikhan/go-fetch"
 )
 
-// A Message flows through a connection
-type Message interface{}
-
-// A Connection passes messages from block to block
-type Connection chan Message
-
-// An Output is a collection of Connections
-type Output struct {
-	sync.Mutex
-	Connections map[Connection]bool
-}
-
-// An Input owns a single connection that can be shared by multiple Outputs
-type Input struct {
-	sync.Mutex
-	Path       *fetch.Query // used to extract information from the inbound message
-	Value      Message
-	Connection Connection   // inbound messages arrive on this Connection
-	quitChan   chan bool    // used to interrupt the input's value pusher
-}
-
-// NewInput creates an input with its single Connection
-func NewInput() *Input {
-	q, _ := fetch.Parse(".")
-	return &Input{
-		Path:       q,
-		Connection: make(Connection),
-		quitChan:   make(chan bool),
-	}
-}
-
-// Constructs a new Output ready to be connected
-func NewOutput() *Output {
-	return &Output{
-		Connections: make(map[Connection]bool),
-	}
-}
-
-// Add a Connection to an Output
-func (r *Output) Add(c Connection) bool {
-	_, ok := r.Connections[c]
-	if ok {
-		return false
-	}
-	r.Connections[c] = true
-	return true
-}
-
-// Remove a Connection from an Output
-func (r *Output) Remove(c Connection) bool {
-	_, ok := r.Connections[c]
-	if !ok {
-		return false
-	}
-	delete(r.Connections, c)
-	return true
-}
-
-type KernelFunc func(chan bool, map[string]interface{}) (map[string]interface{}, bool)
+type KernelFunc func(chan bool, map[string]Message) (map[string]Message, bool)
 
 type Spec struct {
-	Name string
-	Inputs []string
+	Name    string
+	Inputs  []string
 	Outputs []string
-	Kernel KernelFunc
+	Kernel  KernelFunc
 }
 
 // A Block is the basic processing unit in streamtools. It has inbound and outbound routes.
@@ -101,27 +44,29 @@ func NewBlock(s Spec) *Block {
 		nb.AddOutput(v)
 	}
 
-	b.Kernel = s.Kernel
+	nb.Kernel = s.Kernel
 
 	return nb
 }
 
 func (b *Block) Serve() {
+	var values map[string]Message
+	var output map[string]Message
+	var ok bool
 	for {
-		if values, ok := b.Receive(); !ok {
+		if values, ok = b.Receive(); !ok {
 			return
 		}
 
-		if output, ok := b.Kernel(b.QuitChan, values); !ok {
+		if output, ok = b.Kernel(b.QuitChan, values); !ok {
 			return
 		}
 
-		if ok := b.Broadcast(o); !ok {
+		if ok = b.Broadcast(output); !ok {
 			return
 		}
 	}
 }
-
 
 // Add a named input to the block
 func (b *Block) AddInput(id string) bool {
@@ -144,41 +89,6 @@ func (b *Block) SetPath(id, path string) error {
 	b.Lock()
 	b.Inputs[id].Path = query
 	b.Unlock()
-	return nil
-}
-
-// call this whenever you want to set a value, or make a new connection
-func stopValuePusher(in *Input) {
-	select {
-	case in.quitChan <- true:
-	default:
-		// wasn't running (is there a race here?)
-	}
-}
-
-// Set an input's Value
-func (i *Input) SetValue(value Message) error {
-	// we store the marshalled value in the Input so we can access it later
-	//i.Lock()
-	//i.Value = value
-	//i.Unlock()
-
-	// then, to set an input to a particular value, we just push
-	// that value to that input, as though we had a little pusher block.
-
-	// first kill any existing value pusher
-	stopValuePusher(i)
-
-	// then set the pusher going
-	go func() {
-		for {
-			select {
-			case i.Connection <- value:
-			case <-i.quitChan:
-				return
-			}
-		}
-	}()
 	return nil
 }
 
@@ -205,6 +115,17 @@ func (b *Block) GetInput(id string) *Input {
 	return input
 }
 
+// GetOutput returns the specified output
+func (b *Block) GetOutput(id string) *Output {
+	b.Lock()
+	output, ok := b.Outputs[id]
+	b.Unlock()
+	if !ok {
+		return nil
+	}
+	return output
+}
+
 // AddOutput registers a new output for the block
 func (b *Block) AddOutput(id string) bool {
 	b.Lock()
@@ -229,45 +150,16 @@ func (b *Block) RemoveOutput(id string) bool {
 	return true
 }
 
-// GetConnections returns all the connections associated with the specified output
-func (b *Block) Connections(id string) map[Connection]bool {
-	// get route
-	b.Lock()
-	route := b.Outputs[id]
-	b.Unlock()
-	// get connections
-	route.Lock()
-	connections := route.Connections
-	route.Unlock()
-	return connections
-}
-
-// Connect an Output from this block to an Input elsewhere in streamtools
-func (b *Block) Connect(id string, in *Input) bool {
-	stopValuePusher(in)
-	b.Lock()
-	ok := b.Outputs[id].Add(in.Connection)
-	b.Unlock()
-	return ok
-}
-
-// Discconnect an Output of this block from a previously connected Input
-func (b *Block) Disconnect(id string, r Connection) bool {
-	b.Lock()
-	ok := b.Outputs[id].Remove(r)
-	b.Unlock()
-	return ok
-}
-
 // Stop is called when removing a block from the streamtools pattern. This is the default, and can be overwritten.
 func (b *Block) Stop() {
 	b.QuitChan <- true
 }
 
 // Broadcast is called when sending a message to an Output. If Broadcast returns false your block must immediately return.
-func (b Block) Broadcast(outputs map[string]interface{}) bool {
-	for k, v := range outputs{
-		for c, _ := range b.Connections(k) {
+func (b Block) Broadcast(outputs map[string]Message) bool {
+	for k, v := range outputs {
+		o := b.GetOutput(k)
+		for c, _ := range o.GetConnections() {
 			select {
 			case c <- v:
 			case <-b.QuitChan:
@@ -276,22 +168,48 @@ func (b Block) Broadcast(outputs map[string]interface{}) bool {
 		}
 	}
 	return true
-
 }
 
-func (b Block) Receive() (map[string]interface{}, bool) {
+func (b Block) getName() string {
+	return b.Name
+}
+
+/*
+func (b Block) Merge(β Block) *Block {
+	out := NewBlock(b.getName() + "_" + β.getName())
+	for id, input := range b.Inputs {
+		out.Inputs[id] = input
+	}
+	for id, output := range β.Outputs {
+		out.Outputs[id] = output
+	}
+	out.Kernel = func(msgs ...Message) (map[string]Message, error) {
+		outMsg, err := b.Kernel(msgs)
+		if err != nil {
+			return nil, err
+		}
+		inMsg := map[string]Message{
+			"in": outMsg["out"],
+		}
+		return β.Kernel(inMsg)
+	}
+	return out
+}
+*/
+
+func (b Block) Receive() (map[string]Message, bool) {
 	var err error
-	values := make(map[string]interface{})
-	for name, in := range b.Inputs {
+	values := make(map[string]Message)
+	for _, in := range b.Inputs {
 		select {
-            case m := <-in.Connection:
-                values[name], err = fetch.Run(in.Path, m)
-                if err != nil {
-                    log.Fatal(err)
-                }
-            case <-b.QuitChan:
-                return nil, false
-        }
+		case m := <-in.Connection:
+			in.Value, err = fetch.Run(in.Path, m)
+			if err != nil {
+				log.Fatal(err)
+			}
+		case <-b.QuitChan:
+			return nil, false
+		}
 	}
 	return values, true
 }

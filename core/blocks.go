@@ -176,6 +176,9 @@ func (b Block) getName() string {
 
 /*
 func (b Block) Merge(β Block) *Block {
+
+	s
+
 	out := NewBlock(b.getName() + "_" + β.getName())
 	for id, input := range b.Inputs {
 		out.Inputs[id] = input

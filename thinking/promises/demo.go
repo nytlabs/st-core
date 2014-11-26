@@ -25,6 +25,12 @@ func NewBlock(c int, kernel func(Message) Message) *Block {
 
 func (b *Block) Pipe(in Signal) Signal {
 	out := make(Signal)
+
+	sem := make(chan bool, b.c)
+	for i := 0; i < b.c; i++ {
+		sem <- true
+	}
+
 	go func() {
 		for {
 			inPromise, ok := <-in
@@ -36,9 +42,11 @@ func (b *Block) Pipe(in Signal) Signal {
 			outPromise := make(Promise)
 			out <- outPromise
 
+			<-sem
 			go func() {
 				m := <-inPromise
 				outPromise <- b.kernel(m)
+				sem <- true
 			}()
 		}
 	}()

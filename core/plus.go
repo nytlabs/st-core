@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -31,11 +30,7 @@ var Library = map[string]Spec{
 		Inputs:  []string{"in"},
 		Outputs: []string{"out"},
 		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			log.Println("DELAY", inputs)
 			output := make(map[string]Message)
-
-			fmt.Println("delay", inputs["in"])
-
 			output["out"] = inputs["in"]
 			t := time.NewTimer(1 * time.Second)
 			select {
@@ -49,11 +44,11 @@ var Library = map[string]Spec{
 	},
 	"pusher": Spec{
 		Name:    "pusher",
-		Inputs:  []string{},
+		Inputs:  []string{"value"},
 		Outputs: []string{"out"},
 		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
 			output := make(map[string]Message)
-			output["out"] = "ello!"
+			output["out"] = inputs["value"]
 			return output, true
 		},
 	},

@@ -15,6 +15,8 @@ func main() {
 	delay := core.NewBlock(core.Library["delay"])
 	pusher := core.NewBlock(core.Library["pusher"])
 
+	pusher.GetInput("value").SetValue("bob")
+
 	supervisor.Add(log)
 	supervisor.Add(delay)
 	supervisor.Add(pusher)

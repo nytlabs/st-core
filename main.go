@@ -21,10 +21,6 @@ func main() {
 	pusher.GetOutput("out").Connect(delay.GetInput("in"))
 	delay.GetOutput("out").Connect(log.GetInput("in"))
 
-	supervisor.Add(log)
-	supervisor.Add(delay)
-	supervisor.Add(pusher)
-
 	timer1 := time.NewTimer(5 * time.Second)
 
 	supervisor.ServeBackground()

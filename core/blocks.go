@@ -92,41 +92,6 @@ func (b *Block) SetPath(id, path string) error {
 	return nil
 }
 
-// call this whenever you want to set a value, or make a new connection
-func stopValuePusher(in *Input) {
-	select {
-	case in.quitChan <- true:
-	default:
-		// wasn't running (is there a race here?)
-	}
-}
-
-// Set an input's Value
-func (i *Input) SetValue(value Message) error {
-	// we store the marshalled value in the Input so we can access it later
-	//i.Lock()
-	//i.Value = value
-	//i.Unlock()
-
-	// then, to set an input to a particular value, we just push
-	// that value to that input, as though we had a little pusher block.
-
-	// first kill any existing value pusher
-	stopValuePusher(i)
-
-	// then set the pusher going
-	go func() {
-		for {
-			select {
-			case i.Connection <- value:
-			case <-i.quitChan:
-				return
-			}
-		}
-	}()
-	return nil
-}
-
 // Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {
 	b.Lock()

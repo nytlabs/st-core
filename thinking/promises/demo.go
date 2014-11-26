@@ -15,55 +15,55 @@ type Promise chan Message
 type Signal chan Promise
 
 type Block struct {
-	c      int
-	kernel func(Message) Message
+	concurrency int
+	kernel      func(Message) Message
 }
 
-func NewBlock(c int, kernel func(Message) Message) *Block {
-	return &Block{c: c, kernel: kernel}
+func NewBlock(concurrency int, kernel func(Message) Message) *Block {
+	return &Block{concurrency: concurrency, kernel: kernel}
 }
 
 func (b *Block) Pipe(in Signal) Signal {
-	out := make(Signal)
-
-	sem := make(chan bool, b.c)
-	for i := 0; i < b.c; i++ {
-		sem <- true
-	}
+	out := make(Signal, b.concurrency)
 
 	go func() {
-		for {
-			inPromise, ok := <-in
-			if !ok {
-				close(out)
-				return
-			}
+		defer close(out)
+		for inPromise := range in {
 
 			outPromise := make(Promise)
 			out <- outPromise
 
-			<-sem
 			go func() {
 				m := <-inPromise
 				outPromise <- b.kernel(m)
-				sem <- true
 			}()
 		}
 	}()
 	return out
 }
 
+func Boundary(in Signal) chan Message {
+	messages := make(chan Message)
+	go func() {
+		defer close(messages)
+		for promise := range in {
+			messages <- <-promise
+		}
+	}()
+	return messages
+}
+
 func main() {
 
-	latentBlock := NewBlock(500, func(m Message) Message {
+	latentBlock1 := NewBlock(10, func(m Message) Message {
 		sleep := rand.Intn(10) + 1
 		time.Sleep(time.Millisecond * time.Duration(sleep))
-		fmt.Printf("kernel: %d\n", m.id)
+		fmt.Printf("kernel1: %d\n", m.id)
 		return m
 	})
 
 	startSignal := make(Signal)
-	endSignal := latentBlock.Pipe(startSignal)
+	endSignal := latentBlock1.Pipe(startSignal)
 
 	go func() {
 		for i := 0; i < 100; i++ {
@@ -74,19 +74,9 @@ func main() {
 		close(startSignal)
 	}()
 
-	fmt.Println(latentBlock)
+	synchronizedMessages := Boundary(endSignal)
 
-	endPromises := make([]Promise, 0)
-	for {
-		endPromise, ok := <-endSignal
-		if !ok {
-			break
-		}
-		endPromises = append(endPromises, endPromise)
-	}
-
-	for i, endPromise := range endPromises {
-		m := <-endPromise
-		fmt.Printf("sync: %d, expecting %d\n", m.id, i)
+	for m := range synchronizedMessages {
+		fmt.Printf("sync: %d\n", m.id)
 	}
 }

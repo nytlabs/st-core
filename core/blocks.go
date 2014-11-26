@@ -7,65 +7,7 @@ import (
 	"github.com/nikhan/go-fetch"
 )
 
-// A Message flows through a connection
-type Message interface{}
-
-// A Connection passes messages from block to block
-type Connection chan Message
-
-// An Output is a collection of Connections
-type Output struct {
-	sync.Mutex
-	Connections map[Connection]bool
-}
-
-// An Input owns a single connection that can be shared by multiple Outputs
-type Input struct {
-	sync.Mutex
-	Path       *fetch.Query // used to extract information from the inbound message
-	Value      Message
-	Connection Connection // inbound messages arrive on this Connection
-	quitChan   chan bool  // used to interrupt the input's value pusher
-}
-
-// NewInput creates an input with its single Connection
-func NewInput() *Input {
-	q, _ := fetch.Parse(".")
-	return &Input{
-		Path:       q,
-		Connection: make(Connection),
-		quitChan:   make(chan bool),
-	}
-}
-
-// Constructs a new Output ready to be connected
-func NewOutput() *Output {
-	return &Output{
-		Connections: make(map[Connection]bool),
-	}
-}
-
-// Add a Connection to an Output
-func (r *Output) Add(c Connection) bool {
-	_, ok := r.Connections[c]
-	if ok {
-		return false
-	}
-	r.Connections[c] = true
-	return true
-}
-
-// Remove a Connection from an Output
-func (r *Output) Remove(c Connection) bool {
-	_, ok := r.Connections[c]
-	if !ok {
-		return false
-	}
-	delete(r.Connections, c)
-	return true
-}
-
-type KernelFunc func(chan bool, map[string]interface{}) (map[string]interface{}, bool)
+type KernelFunc func(chan bool, map[string]Message) (map[string]Message, bool)
 
 type Spec struct {
 	Name    string
@@ -82,7 +24,6 @@ type Block struct {
 	QuitChan chan bool
 	Kernel   KernelFunc
 	sync.Mutex
-	Kernel func(...Message) (map[string]Message, error) // route -> message to be sent
 }
 
 // NewBlock returns a block with no inputs and no outputs.
@@ -103,22 +44,25 @@ func NewBlock(s Spec) *Block {
 		nb.AddOutput(v)
 	}
 
-	b.Kernel = s.Kernel
+	nb.Kernel = s.Kernel
 
 	return nb
 }
 
 func (b *Block) Serve() {
+	var values map[string]Message
+	var output map[string]Message
+	var ok bool
 	for {
-		if values, ok := b.Receive(); !ok {
+		if values, ok = b.Receive(); !ok {
 			return
 		}
 
-		if output, ok := b.Kernel(b.QuitChan, values); !ok {
+		if output, ok = b.Kernel(b.QuitChan, values); !ok {
 			return
 		}
 
-		if ok := b.Broadcast(o); !ok {
+		if ok = b.Broadcast(output); !ok {
 			return
 		}
 	}
@@ -206,6 +150,17 @@ func (b *Block) GetInput(id string) *Input {
 	return input
 }
 
+// GetOutput returns the specified output
+func (b *Block) GetOutput(id string) *Output {
+	b.Lock()
+	output, ok := b.Outputs[id]
+	b.Unlock()
+	if !ok {
+		return nil
+	}
+	return output
+}
+
 // AddOutput registers a new output for the block
 func (b *Block) AddOutput(id string) bool {
 	b.Lock()
@@ -236,9 +191,10 @@ func (b *Block) Stop() {
 }
 
 // Broadcast is called when sending a message to an Output. If Broadcast returns false your block must immediately return.
-func (b Block) Broadcast(outputs map[string]interface{}) bool {
+func (b Block) Broadcast(outputs map[string]Message) bool {
 	for k, v := range outputs {
-		for c, _ := range b.Connections(k) {
+		o := b.GetOutput(k)
+		for c, _ := range o.GetConnections() {
 			select {
 			case c <- v:
 			case <-b.QuitChan:
@@ -253,6 +209,7 @@ func (b Block) getName() string {
 	return b.Name
 }
 
+/*
 func (b Block) Merge(β Block) *Block {
 	out := NewBlock(b.getName() + "_" + β.getName())
 	for id, input := range b.Inputs {
@@ -273,10 +230,11 @@ func (b Block) Merge(β Block) *Block {
 	}
 	return out
 }
+*/
 
-func (b Block) Receive() (map[string]interface{}, bool) {
+func (b Block) Receive() (map[string]Message, bool) {
 	var err error
-	values := make(map[string]interface{})
+	values := make(map[string]Message)
 	for name, in := range b.Inputs {
 		select {
 		case m := <-in.Connection:
@@ -285,7 +243,7 @@ func (b Block) Receive() (map[string]interface{}, bool) {
 				log.Fatal(err)
 			}
 		case <-b.QuitChan:
-			return false
+			return nil, false
 		}
 	}
 	return values, true

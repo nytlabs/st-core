@@ -33,6 +33,9 @@ var Library = map[string]Spec{
 		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
 			log.Println("DELAY", inputs)
 			output := make(map[string]Message)
+
+			fmt.Println("delay", inputs["in"])
+
 			output["out"] = inputs["in"]
 			t := time.NewTimer(1 * time.Second)
 			select {

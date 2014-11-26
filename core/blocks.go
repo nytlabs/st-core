@@ -200,7 +200,7 @@ func (b Block) Merge(β Block) *Block {
 func (b Block) Receive() (map[string]Message, bool) {
 	var err error
 	values := make(map[string]Message)
-	for name, in := range b.Inputs {
+	for _, in := range b.Inputs {
 		select {
 		case m := <-in.Connection:
 			in.Value, err = fetch.Run(in.Path, m)

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -160,6 +161,7 @@ func (b Block) Broadcast(outputs map[string]Message) bool {
 	for k, v := range outputs {
 		o := b.GetOutput(k)
 		for c, _ := range o.GetConnections() {
+			fmt.Println("broadcast ", v)
 			select {
 			case c <- v:
 			case <-b.QuitChan:
@@ -202,10 +204,10 @@ func (b Block) Merge(β Block) *Block {
 func (b Block) Receive() (map[string]Message, bool) {
 	var err error
 	values := make(map[string]Message)
-	for _, in := range b.Inputs {
+	for name, in := range b.Inputs {
 		select {
 		case m := <-in.Connection:
-			in.Value, err = fetch.Run(in.Path, m)
+			values[name], err = fetch.Run(in.Path, m)
 			if err != nil {
 				log.Fatal(err)
 			}

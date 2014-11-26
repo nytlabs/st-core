@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -30,6 +31,7 @@ var Library = map[string]Spec{
 		Inputs:  []string{"in"},
 		Outputs: []string{"out"},
 		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
+			log.Println("DELAY", inputs)
 			output := make(map[string]Message)
 			output["out"] = inputs["in"]
 			t := time.NewTimer(1 * time.Second)

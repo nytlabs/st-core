@@ -15,14 +15,22 @@ type Promise chan Message
 type Signal chan Promise
 
 type Block struct {
+
+	// concurrency controls the total number of promises that can be
+	// outstanding at any one time.
 	concurrency int
-	kernel      func(Message) Message
+
+	// kernel simplifies message processing to be one-to-one mesage in message
+	// out.
+	kernel func(Message) Message
 }
 
 func NewBlock(concurrency int, kernel func(Message) Message) *Block {
 	return &Block{concurrency: concurrency, kernel: kernel}
 }
 
+// Pipe directs a new stream of input to this block and returns the output
+// Signal.
 func (b *Block) Pipe(in Signal) Signal {
 	out := make(Signal, b.concurrency)
 
@@ -42,6 +50,7 @@ func (b *Block) Pipe(in Signal) Signal {
 	return out
 }
 
+// Bundary converts a Signal to a channel of ordered Messages.
 func Boundary(in Signal) chan Message {
 	messages := make(chan Message)
 	go func() {
@@ -55,16 +64,24 @@ func Boundary(in Signal) chan Message {
 
 func main() {
 
-	latentBlock1 := NewBlock(10, func(m Message) Message {
-		sleep := rand.Intn(10) + 1
-		time.Sleep(time.Millisecond * time.Duration(sleep))
-		fmt.Printf("kernel1: %d\n", m.id)
+	latencyBlock := NewBlock(10, func(m Message) Message {
+
+		// Sleep to simulate a latency-heavy task, such as a web request or DB
+		// request.
+		time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)+1))
+
+		// Anounce that the task is complete for a given message and pass it
+		// on to the next block.
+		fmt.Printf("kernel: %d\n", m.id)
 		return m
 	})
 
+	// Create a new signal and pipe it to the latency-simulating block.
 	startSignal := make(Signal)
-	endSignal := latentBlock1.Pipe(startSignal)
+	endSignal := latencyBlock.Pipe(startSignal)
 
+	// Push some in-order dummy messages into the system. The only purpose of
+	// the ID is to later identify if the sequence is still in order.
 	go func() {
 		for i := 0; i < 100; i++ {
 			startPromise := make(Promise)

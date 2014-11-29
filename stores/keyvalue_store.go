@@ -1,4 +1,4 @@
-package stores
+package core
 
 // KeyValue implements a simple key value store. Access is maintained via KeyValueGet and KeyValueSet blocks.
 type KeyValue struct {

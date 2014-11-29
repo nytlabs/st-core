@@ -83,5 +83,5 @@ var Library = map[string]Spec{
 			return nil, true
 		},
 	},
-	"set": SetSpec(),
+	"set": Set(),
 }

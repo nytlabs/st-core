@@ -1,7 +1,9 @@
 package core
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -27,12 +29,20 @@ var Library = map[string]Spec{
 	},
 	"delay": Spec{
 		Name:    "log",
-		Inputs:  []string{"in"},
+		Inputs:  []string{"in", "duration"},
 		Outputs: []string{"out"},
 		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
 			output := make(map[string]Message)
 			output["out"] = inputs["in"]
-			t := time.NewTimer(1 * time.Second)
+			durationString, ok := inputs["duration"].(string)
+			if !ok {
+				log.Fatal("could not assert duration to string")
+			}
+			d, err := time.ParseDuration(durationString)
+			if err != nil {
+				log.Fatal("could not parse duration string")
+			}
+			t := time.NewTimer(d)
 			select {
 			case <-quit:
 				return nil, false
@@ -52,4 +62,26 @@ var Library = map[string]Spec{
 			return output, true
 		},
 	},
+	"latch": Spec{
+		Name:    "latch",
+		Inputs:  []string{"in", "ctrl"},
+		Outputs: []string{"out"},
+		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
+			ctrlSignal := inputs["ctrl"]
+			output := make(map[string]Message)
+			switch ctrlSignal := ctrlSignal.(type) {
+			case bool:
+				if ctrlSignal {
+					output["out"] = inputs["in"]
+					return output, true
+				}
+			case error:
+				log.Fatal(ctrlSignal)
+			default:
+				log.Fatal(errors.New("unrecognised control signal in latch"))
+			}
+			return nil, true
+		},
+	},
+	"set": SetSpec(),
 }

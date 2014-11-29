@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -161,7 +160,6 @@ func (b Block) Broadcast(outputs map[string]Message) bool {
 	for k, v := range outputs {
 		o := b.GetOutput(k)
 		for c, _ := range o.GetConnections() {
-			fmt.Println("broadcast ", v)
 			select {
 			case c <- v:
 			case <-b.QuitChan:

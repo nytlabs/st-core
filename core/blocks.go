@@ -80,18 +80,6 @@ func (b *Block) AddInput(id string) bool {
 	return true
 }
 
-// Set an input's Path
-func (b *Block) SetPath(id, path string) error {
-	query, err := fetch.Parse(path)
-	if err != nil {
-		return err
-	}
-	b.Lock()
-	b.Inputs[id].Path = query
-	b.Unlock()
-	return nil
-}
-
 // Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {
 	b.Lock()

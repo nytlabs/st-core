@@ -208,33 +208,24 @@ func (b *Block) Exec() {
 	// horribly unoptimized exec
 	// each iteration is a "tier" of kernels to be executed
 	// for each loop
-	//	execute each kernel on the tier
-	//	use the edges to figure out where to assign the results of each kernel
-	//	into out messages array
-	//	this messages array is fed into the next
-
-	// some horrible bugs just realized:
-	//	1. the edges should be a map for faster lookup (duh)
-	//	2. this will incorectly feed the same messages array to all kernels on a
-	//	   given tier. the code that figures outbound connections needs to be added
-	//	   to the beginning of the loop.
-	// 	3. the messages(16) slice is a horrible apology that limits to 16 pins
-
-	m := make([]Message, 16)
+	//	if the kernel has an input connection
+	//		setup the message array for the input kernel
+	//	execute the kernel
+	//	set the outputs as the inputs for the next iteration
 	q := make(chan bool)
+	inputs := make(map[int64][]Message)
 	for _, t := range b.KernelOrder {
 		outputs := make(map[int64][]Message)
 		for _, kID := range t {
-			outputs[kID], _, _ = b.Kernels[kID].Function(m, q)
-		}
-		m = make([]Message, 16)
-		for k, v := range outputs {
+			m := make([]Message, 16)
 			for _, c := range b.KernelConnections {
-				if c.From.KernelID == k {
-					m[c.To.KernelPinID] = v[c.From.KernelPinID]
+				if c.To.KernelID == kID {
+					m[c.To.KernelPinID] = inputs[c.From.KernelID][c.From.KernelPinID]
 				}
 			}
+			outputs[kID], _, _ = b.Kernels[kID].Function(m, q)
 		}
+		inputs = outputs
 	}
 }
 

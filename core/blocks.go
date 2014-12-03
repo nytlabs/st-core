@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -81,18 +80,6 @@ func (b *Block) AddInput(id string) bool {
 	return true
 }
 
-// Set an input's Path
-func (b *Block) SetPath(id, path string) error {
-	query, err := fetch.Parse(path)
-	if err != nil {
-		return err
-	}
-	b.Lock()
-	b.Inputs[id].Path = query
-	b.Unlock()
-	return nil
-}
-
 // Remove a named input to the block
 func (b *Block) RemoveInput(id string) bool {
 	b.Lock()
@@ -161,7 +148,6 @@ func (b Block) Broadcast(outputs map[string]Message) bool {
 	for k, v := range outputs {
 		o := b.GetOutput(k)
 		for c, _ := range o.GetConnections() {
-			fmt.Println("broadcast ", v)
 			select {
 			case c <- v:
 			case <-b.QuitChan:
@@ -176,30 +162,31 @@ func (b Block) getName() string {
 	return b.Name
 }
 
-/*
 func (b Block) Merge(β Block) *Block {
 
-	s
+	out := &Block{
+		Name: b.getName() + "_" + β.getName(),
+	}
 
-	out := NewBlock(b.getName() + "_" + β.getName())
 	for id, input := range b.Inputs {
 		out.Inputs[id] = input
 	}
 	for id, output := range β.Outputs {
 		out.Outputs[id] = output
 	}
-	out.Kernel = func(msgs ...Message) (map[string]Message, error) {
-		outMsg, err := b.Kernel(msgs)
-		if err != nil {
-			return nil, err
+
+	out.Kernel = func(quitChan chan bool, msgs map[string]Message) (map[string]Message, bool) {
+		outMsg, ok := b.Kernel(quitChan, msgs)
+		if !ok {
+			return nil, false
 		}
 		inMsg := map[string]Message{
 			"in": outMsg["out"],
 		}
-		return β.Kernel(inMsg)
+		return β.Kernel(quitChan, inMsg)
 	}
 	return out
-*/
+}
 
 func (b Block) Receive() (map[string]Message, bool) {
 	var err error

@@ -1,5 +1,4 @@
-// Package stores provides a set of stores for streamtools
-package stores
+package core
 
 // a Store handles access to data that persists
 type Store struct {

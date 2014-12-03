@@ -36,8 +36,7 @@ var Library = map[string]Kernel{
 			},
 		},
 		Function: func(m []Message, quit chan bool) ([]Message, error, bool) {
-			out := make([]Message, 1, 1)
-			out[0] = m[0].(float64) + m[1].(float64)
+			out := []Message{m[0].(float64) + m[1].(float64)}
 			return out, nil, true
 		},
 	},
@@ -100,11 +99,14 @@ type Block struct {
 	Kernels           map[int64]Kernel
 	KernelConnections []KernelConnection
 	KernelOrder       [][]int64
+	Primary           KernelFunc
+	Quit              chan bool
 }
 
 func NewBlock() *Block {
 	return &Block{
 		Kernels: make(map[int64]Kernel),
+		Quit:    make(chan bool),
 	}
 }
 
@@ -202,30 +204,41 @@ func (b *Block) Build() {
 	}
 
 	b.KernelOrder = reverse
-}
 
-func (b *Block) Exec() {
-	// horribly unoptimized exec
-	// each iteration is a "tier" of kernels to be executed
-	// for each loop
-	//	if the kernel has an input connection
-	//		setup the message array for the input kernel
-	//	execute the kernel
-	//	set the outputs as the inputs for the next iteration
-	q := make(chan bool)
-	inputs := make(map[int64][]Message)
-	for _, t := range b.KernelOrder {
-		outputs := make(map[int64][]Message)
-		for _, kID := range t {
-			m := make([]Message, 16)
-			for _, c := range b.KernelConnections {
-				if c.To.KernelID == kID {
-					m[c.To.KernelPinID] = inputs[c.From.KernelID][c.From.KernelPinID]
-				}
-			}
-			outputs[kID], _, _ = b.Kernels[kID].Function(m, q)
+	maxPins := 0
+	for _, k := range b.Kernels {
+		if len(k.Inputs) > maxPins {
+			maxPins = len(k.Inputs)
 		}
-		inputs = outputs
+		if len(k.Outputs) > maxPins {
+			maxPins = len(k.Outputs)
+		}
+	}
+
+	conn := make(map[int64][]KernelConnection)
+
+	for _, v := range b.KernelConnections {
+		if _, ok := conn[v.To.KernelID]; !ok {
+			conn[v.To.KernelID] = []KernelConnection{}
+		}
+		conn[v.To.KernelID] = append(conn[v.To.KernelID], v)
+	}
+
+	inputs := make(map[int64][]Message)
+	kmsg := make([]Message, maxPins)
+
+	b.Primary = func(m []Message, quit chan bool) ([]Message, error, bool) {
+		for _, t := range b.KernelOrder {
+			for _, kID := range t {
+				if conns, ok := conn[kID]; ok {
+					for _, c := range conns {
+						kmsg[c.To.KernelPinID] = inputs[c.From.KernelID][c.From.KernelPinID]
+					}
+				}
+				inputs[kID], _, _ = b.Kernels[kID].Function(kmsg, b.Quit)
+			}
+		}
+		return []Message{}, nil, true
 	}
 }
 
@@ -242,7 +255,9 @@ func main() {
 	nb.ConnectKernels(r2Id, 0, aId, 1)
 	nb.ConnectKernels(aId, 0, lId, 0)
 	nb.Build()
+
+	q := make(chan bool)
 	for {
-		nb.Exec()
+		nb.Primary([]Message{}, q)
 	}
 }

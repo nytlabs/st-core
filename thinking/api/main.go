@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -41,18 +42,39 @@ func NewBlock(id int) *Block {
 }
 
 type Server struct {
+	sessions []Session
+}
+
+type Session struct {
 	blocks     map[int]*Block
 	supervisor *suture.Supervisor
 	sync.Mutex
 }
 
-func NewServer() *Server {
+func NewSession() Session {
 	supervisor := suture.NewSimple("st-core")
 	supervisor.ServeBackground()
 	blocks := make(map[int]*Block)
-	return &Server{
-		supervisor: supervisor,
+	return Session{
 		blocks:     blocks,
+		supervisor: supervisor,
+	}
+
+}
+
+func (s *Server) GetSession(r *http.Request) Session {
+	vars := mux.Vars(r)
+	sessionIndex, err := strconv.Atoi(vars["session"])
+	if err != nil {
+		log.Fatal(err)
+	}
+	return s.sessions[sessionIndex]
+}
+
+func NewServer() *Server {
+	initialSession := NewSession()
+	return &Server{
+		sessions: []Session{initialSession},
 	}
 }
 
@@ -65,11 +87,11 @@ func (s *Server) createBlockHandler(w http.ResponseWriter, r *http.Request) {
 	nextID := IDGen()
 	b := NewBlock(nextID())
 
-	b.token = s.supervisor.Add(b)
+	b.token = session.supervisor.Add(b)
 
-	s.Lock()
-	s.blocks[b.id] = b
-	s.Unlock()
+	session.Lock()
+	session.blocks[b.id] = b
+	session.Unlock()
 
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))

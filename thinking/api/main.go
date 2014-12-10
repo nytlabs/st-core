@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -219,10 +220,14 @@ func printGroups(g *Group, out string, tabs string) (string, string) {
 	return out, tabs
 }
 
-func (s *Server) rootHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) String() string {
 	out, _ := printGroups(s.groups[0], "0 -\n", "")
+	return out
+}
+
+func (s *Server) rootHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
-	w.Write([]byte(out))
+	w.Write([]byte(fmt.Sprint(s)))
 }
 
 func main() {

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/nikhan/go-fetch"
-	"github.com/thejerf/suture"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/nikhan/go-fetch"
+	"github.com/thejerf/suture"
 )
 
 type RouteID int
@@ -58,7 +60,6 @@ var Library = map[string]Spec{
 		},
 		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
 			out[0] = in[0].(float64) + in[1].(float64)
-			fmt.Println("Sending")
 			return nil
 		},
 	},
@@ -93,20 +94,40 @@ var Library = map[string]Spec{
 			return nil
 		},
 	},
-	"log": Spec{
+	"set": Spec{
 		Inputs: []Pin{
 			Pin{
-				"passthrough",
+				"key",
+			},
+			Pin{
+				"value",
 			},
 		},
 		Outputs: []Pin{
 			Pin{
-				"passthrough",
+				"object",
 			},
 		},
 		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
-			fmt.Println(out[0])
-			out[0] = in[0]
+			out[0] = map[string]interface{}{
+				in[0].(string): in[1],
+			}
+			return nil
+		},
+	},
+	"log": Spec{
+		Inputs: []Pin{
+			Pin{
+				"log",
+			},
+		},
+		Outputs: []Pin{},
+		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+			o, err := json.Marshal(in[0])
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(string(o))
 			return nil
 		},
 	},
@@ -159,25 +180,25 @@ func (b *Block) Serve() {
 		for {
 			interrupt = b.Receive()
 			if interrupt != nil {
+				//				fmt.Println("recieve interrupt")
 				break
 			}
 			interrupt = b.Kernel(b.inputValues, b.outputValues, b.InterruptChan)
 			if interrupt != nil {
+				//				fmt.Println("kernel interrupt")
 				break
 			}
-
 			interrupt = b.Broadcast()
 			if interrupt != nil {
+				//				fmt.Println("broadcast interupt")
 				break
 			}
-
 			// we've successfully completed one full loop
 			// empty input buffer
 			for k, _ := range b.inputValues {
 				delete(b.inputValues, k)
 			}
 		}
-		fmt.Println("interrupt")
 		if ok := interrupt(); !ok {
 			return
 		}
@@ -249,6 +270,14 @@ func (b *Block) Receive() InterruptFunc {
 
 func (b *Block) Broadcast() InterruptFunc {
 	for id, out := range b.Outputs {
+		// if there no connection for this output then wait until there is one
+		// that means we have to wait for an interrupt.
+		if len(out.Connections) == 0 {
+			select {
+			case f := <-b.InterruptChan:
+				return f
+			}
+		}
 		for c, _ := range out.Connections {
 			select {
 			case c <- b.outputValues[RouteID(id)]:
@@ -268,34 +297,53 @@ func main() {
 	b := NewBlock(Library["plus"])
 	d := NewBlock(Library["delay"])
 	l := NewBlock(Library["log"])
+	o := NewBlock(Library["set"])
+	l2 := NewBlock(Library["log"])
 
 	a := supervisor.Add(b)
 	_ = supervisor.Add(d)
 	_ = supervisor.Add(l)
+	_ = supervisor.Add(o)
+	_ = supervisor.Add(l2)
 
 	b.Connect(0, d.Inputs[0].C)
-	d.Connect(0, l.Inputs[0].C)
+	d.Connect(0, o.Inputs[1].C)
+	o.Connect(0, l.Inputs[0].C)
+
+	path, _ := fetch.Parse(".test")
+	fmt.Println(path)
 
 	b.RouteValue(RouteID(0), 1.1)
-	d.RouteValue(RouteID(1), "100ms")
+	d.RouteValue(RouteID(1), "10ms")
+	o.RouteValue(RouteID(0), "test")
 
 	go func() {
 		for {
 			b.RouteValue(RouteID(1), rand.Float64()*10.0)
-			time.Sleep(time.Duration(rand.Intn(200)+1) * time.Millisecond)
+			time.Sleep(time.Duration(rand.Intn(2)+1) * time.Millisecond)
 		}
 
 	}()
 
-	time.Sleep(1 * time.Second)
+	go func() {
+		for {
+			_ = b.Inputs[0].Path
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+
+	time.Sleep(500 * time.Millisecond)
 
 	fmt.Println("Disconnected!")
 
-	d.Disconnect(0, l.Inputs[0].C)
+	d.Disconnect(0, o.Inputs[1].C)
 
-	time.Sleep(100 * time.Millisecond)
+	l2.RoutePath(RouteID(0), path)
+	o.Connect(RouteID(0), l2.Inputs[0].C)
 
-	d.Connect(0, l.Inputs[0].C)
+	time.Sleep(300 * time.Millisecond)
+
+	d.Connect(0, o.Inputs[1].C)
 	fmt.Println("Connected")
 
 	time.Sleep(100 * time.Millisecond)

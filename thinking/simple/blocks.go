@@ -30,6 +30,7 @@ func NewBlock(s Spec) *Block {
 		state: BlockState{
 			make(MessageMap),
 			make(MessageMap),
+			make(Manifest),
 		},
 		routing: BlockRouting{
 			Inputs:        in,
@@ -40,6 +41,7 @@ func NewBlock(s Spec) *Block {
 	}
 }
 
+// suture: the main routine the block runs
 func (b *Block) Serve() {
 	for {
 		var interrupt InterruptFunc
@@ -58,11 +60,7 @@ func (b *Block) Serve() {
 			if interrupt != nil {
 				break
 			}
-			// we've successfully completed one full loop
-			// empty input buffer
-			for k, _ := range b.state.inputValues {
-				delete(b.state.inputValues, k)
-			}
+			b.crank()
 		}
 		b.routing.RUnlock()
 		b.routing.Lock()
@@ -73,12 +71,15 @@ func (b *Block) Serve() {
 	}
 }
 
+// todo: proper getter/setters of route properties
+// 	GetRouteValue, GetRoutePath, GetRouteChan
 func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
 	defer b.routing.RUnlock()
 	return b.routing.Inputs[id]
 }
 
+// sets route value
 func (b *Block) RouteValue(id RouteID, v Message) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Inputs[id].Value = &v
@@ -86,6 +87,7 @@ func (b *Block) RouteValue(id RouteID, v Message) {
 	}
 }
 
+// sets route path.
 func (b *Block) RoutePath(id RouteID, p *fetch.Query) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Inputs[id].Path = p
@@ -94,6 +96,7 @@ func (b *Block) RoutePath(id RouteID, p *fetch.Query) {
 	}
 }
 
+// connect blocks
 func (b *Block) Connect(id RouteID, c Connection) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Outputs[id].Connections[c] = struct{}{}
@@ -101,6 +104,7 @@ func (b *Block) Connect(id RouteID, c Connection) {
 	}
 }
 
+// disconnect blocks
 func (b *Block) Disconnect(id RouteID, c Connection) {
 	b.routing.InterruptChan <- func() bool {
 		delete(b.routing.Outputs[id].Connections, c)
@@ -108,12 +112,14 @@ func (b *Block) Disconnect(id RouteID, c Connection) {
 	}
 }
 
+// suture: stop the block
 func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false
 	}
 }
 
+// wait and listen for all kernel inputs to be filled.
 func (b *Block) receive() InterruptFunc {
 	var err error
 	for id, input := range b.routing.Inputs {
@@ -142,10 +148,11 @@ func (b *Block) receive() InterruptFunc {
 	return nil
 }
 
+// broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() InterruptFunc {
 	for id, out := range b.routing.Outputs {
-		// if there no connection for this output then wait until there is one
-		// that means we have to wait for an interrupt.
+		// if there no connection for this output then wait until there
+		// is one. that means we have to wait for an interrupt.
 		if len(out.Connections) == 0 {
 			select {
 			case f := <-b.routing.InterruptChan:
@@ -153,8 +160,18 @@ func (b *Block) broadcast() InterruptFunc {
 			}
 		}
 		for c, _ := range out.Connections {
+			// check to see if we have delivered a message to this
+			// connection for this block crank. if we have, then
+			// skip this delivery.
+			m := ManifestPair{out.Name, c}
+			if _, ok := b.state.manifest[m]; ok {
+				continue
+			}
+
 			select {
 			case c <- b.state.outputValues[RouteID(id)]:
+				// set that we have delivered the message.
+				b.state.manifest[m] = struct{}{}
 			case f := <-b.routing.InterruptChan:
 				return f
 			}
@@ -162,4 +179,17 @@ func (b *Block) broadcast() InterruptFunc {
 
 	}
 	return nil
+}
+
+// cleanup all block state for this crank of the block
+func (b *Block) crank() {
+	for k, _ := range b.state.inputValues {
+		delete(b.state.inputValues, k)
+	}
+	for k, _ := range b.state.outputValues {
+		delete(b.state.outputValues, k)
+	}
+	for k, _ := range b.state.manifest {
+		delete(b.state.manifest, k)
+	}
 }

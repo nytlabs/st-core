@@ -34,9 +34,17 @@ type Output struct {
 	Connections map[Connection]struct{}
 }
 
+type ManifestPair struct {
+	string
+	Connection
+}
+
+type Manifest map[ManifestPair]struct{}
+
 type BlockState struct {
 	inputValues  MessageMap
 	outputValues MessageMap
+	manifest     Manifest
 }
 
 type BlockRouting struct {

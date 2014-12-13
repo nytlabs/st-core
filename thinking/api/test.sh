@@ -8,7 +8,7 @@ printf "\n"
 printf "\n"
 curl localhost:7071
 printf "\n"
-curl localhost:7071/group -d'{"ParentID":0, "ChildIDs":[1,2]}'
+curl localhost:7071/group -d'{"ParentID":0, "ChildIDs":[1,2], "Name":"MyGroup"}'
 printf "\n"
 printf "\n"
 curl localhost:7071

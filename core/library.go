@@ -1,87 +1,97 @@
 package core
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 )
 
 var Library = map[string]Spec{
 	"plus": Spec{
-		Name:    "plus",
-		Inputs:  []string{"addend 1", "addend 2"},
-		Outputs: []string{"out"},
-		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			output := make(map[string]Message)
-			output["out"] = inputs["addend 1"].(int) + inputs["addend 2"].(int)
-			return output, true
+		Inputs: []Pin{
+			Pin{
+				"addend",
+			},
+			Pin{
+				"addend",
+			},
 		},
-	},
-	"log": Spec{
-		Name:    "log",
-		Inputs:  []string{"in"},
-		Outputs: []string{},
-		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			fmt.Println(inputs["in"])
-			return nil, true
+		Outputs: []Pin{
+			Pin{
+				"sum",
+			},
+		},
+		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+			out[0] = in[0].(float64) + in[1].(float64)
+			return nil
 		},
 	},
 	"delay": Spec{
-		Name:    "log",
-		Inputs:  []string{"in", "duration"},
-		Outputs: []string{"out"},
-		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			output := make(map[string]Message)
-			output["out"] = inputs["in"]
-			durationString, ok := inputs["duration"].(string)
-			if !ok {
-				log.Fatal("could not assert duration to string")
-			}
-			d, err := time.ParseDuration(durationString)
+		Inputs: []Pin{
+			Pin{
+				"passthrough",
+			},
+			Pin{
+				"duration",
+			},
+		},
+		Outputs: []Pin{
+			Pin{
+				"passthrough",
+			},
+		},
+		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
-				log.Fatal("could not parse duration string")
+				out[0] = err
+				return nil
 			}
-			t := time.NewTimer(d)
+			timer := time.NewTimer(t)
 			select {
-			case <-quit:
-				return nil, false
-			case <-t.C:
-				break
+			case <-timer.C:
+				out[0] = in[0]
+				return nil
+			case f := <-i:
+				return f
 			}
-			return output, true
+			return nil
 		},
 	},
-	"pusher": Spec{
-		Name:    "pusher",
-		Inputs:  []string{"value"},
-		Outputs: []string{"out"},
-		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			output := make(map[string]Message)
-			output["out"] = inputs["value"]
-			return output, true
+	"set": Spec{
+		Inputs: []Pin{
+			Pin{
+				"key",
+			},
+			Pin{
+				"value",
+			},
 		},
-	},
-	"latch": Spec{
-		Name:    "latch",
-		Inputs:  []string{"in", "ctrl"},
-		Outputs: []string{"out"},
-		Kernel: func(quit chan bool, inputs map[string]Message) (map[string]Message, bool) {
-			ctrlSignal := inputs["ctrl"]
-			output := make(map[string]Message)
-			switch ctrlSignal := ctrlSignal.(type) {
-			case bool:
-				if ctrlSignal {
-					output["out"] = inputs["in"]
-					return output, true
-				}
-			case error:
-				log.Fatal(ctrlSignal)
-			default:
-				log.Fatal(errors.New("unrecognised control signal in latch"))
+		Outputs: []Pin{
+			Pin{
+				"object",
+			},
+		},
+		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+			out[0] = map[string]interface{}{
+				in[0].(string): in[1],
 			}
-			return nil, true
+			return nil
 		},
 	},
-	"set": Set(),
+	"log": Spec{
+		Inputs: []Pin{
+			Pin{
+				"log",
+			},
+		},
+		Outputs: []Pin{},
+		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+			o, err := json.Marshal(in[0])
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(string(o))
+			return nil
+		},
+	},
 }

@@ -45,6 +45,7 @@ type BlockState struct {
 	inputValues  MessageMap
 	outputValues MessageMap
 	manifest     Manifest
+	Processed    bool
 }
 
 type BlockRouting struct {

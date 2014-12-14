@@ -7,25 +7,7 @@ import (
 )
 
 var Library = map[string]Spec{
-	"plus": Spec{
-		Inputs: []Pin{
-			Pin{
-				"addend",
-			},
-			Pin{
-				"addend",
-			},
-		},
-		Outputs: []Pin{
-			Pin{
-				"sum",
-			},
-		},
-		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
-			out[0] = in[0].(float64) + in[1].(float64)
-			return nil
-		},
-	},
+	"plus": Plus(),
 	"delay": Spec{
 		Inputs: []Pin{
 			Pin{

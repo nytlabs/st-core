@@ -37,7 +37,7 @@ func NewBlock(s Spec) *Block {
 		routing: BlockRouting{
 			Inputs:        in,
 			Outputs:       out,
-			InterruptChan: make(chan InterruptFunc),
+			InterruptChan: make(chan Interrupt),
 		},
 		kernel: s.Kernel,
 	}
@@ -46,7 +46,7 @@ func NewBlock(s Spec) *Block {
 // suture: the main routine the block runs
 func (b *Block) Serve() {
 	for {
-		var interrupt InterruptFunc
+		var interrupt Interrupt
 
 		b.routing.RLock()
 		for {
@@ -124,7 +124,7 @@ func (b *Block) Stop() {
 }
 
 // wait and listen for all kernel inputs to be filled.
-func (b *Block) receive() InterruptFunc {
+func (b *Block) receive() Interrupt {
 	var err error
 	for id, input := range b.routing.Inputs {
 		//if we have already received a value on this input, skip.
@@ -153,7 +153,7 @@ func (b *Block) receive() InterruptFunc {
 }
 
 // broadcast the kernel output to all connections on all outputs.
-func (b *Block) broadcast() InterruptFunc {
+func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
 		// if there no connection for this output then wait until there
 		// is one. that means we have to wait for an interrupt.

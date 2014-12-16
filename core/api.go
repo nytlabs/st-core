@@ -13,7 +13,8 @@ import (
 	"github.com/thejerf/suture"
 )
 
-// Block defines the JSON that must be posted to create a new block
+// BlockLedger is the information the API keeps about the block
+// TODO Token and ID should probably be the same thing
 type BlockLedger struct {
 	Name      string
 	BlockType string
@@ -27,6 +28,7 @@ func (b BlockLedger) GetID() int {
 	return b.ID
 }
 
+// GetName returns the block's Name
 func (b BlockLedger) GetName() string {
 	return b.Name
 }
@@ -50,6 +52,7 @@ func (g *Group) GetID() int {
 	return g.id
 }
 
+// GetName returns the group's Name
 func (g *Group) GetName() string {
 	return g.name
 }
@@ -125,7 +128,7 @@ func (s *Server) GetNextID() int {
 	return s.lastID
 }
 
-// Creates a new block and adds it to the Server.
+// CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
 // TODO currently all blocks start off life in the root group, which may be a bit limiting.
 func (s *Server) CreateBlockHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
@@ -161,7 +164,8 @@ type createGroupRequest struct {
 	ChildIDs []int
 }
 
-// creates a new group and adds it to the Server. Moves all of the specified children out of the parent's group and into the new group.
+// CreateGroupHandler responds to a POST request to instantiate a new group and add it to the Server.
+// Moves all of the specified children out of the parent's group and into the new group.
 func (s *Server) CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -204,6 +208,7 @@ type connectRequest struct {
 	ToRouteIndex   int
 }
 
+// CreateConnectionHandler responds to a POST request to instantiate a new connection
 func (s *Server) CreateConnectionHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -249,11 +254,7 @@ func (s *Server) String() string {
 	return out
 }
 
-// @Title RootHandler
-// @Description Retrieves the current state
-// @Accept  json
-// @Success 200 {object}  Asset
-// @Router / [get]
+// RootHandler returns a string representation of the groups in the Server. This won't last!
 func (s *Server) RootHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte(fmt.Sprint(s)))

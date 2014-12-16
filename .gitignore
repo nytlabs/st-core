@@ -24,3 +24,6 @@ _testmain.go
 
 # vim
 *.swp
+
+#binaries 
+st-core

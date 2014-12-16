@@ -14,11 +14,13 @@ func main() {
 	supervisor := suture.NewSimple("st-core")
 	supervisor.ServeBackground()
 
-	b := core.NewBlock(core.Library["plus"])
-	d := core.NewBlock(core.Library["delay"])
-	l := core.NewBlock(core.Library["log"])
-	o := core.NewBlock(core.Library["set"])
-	l2 := core.NewBlock(core.Library["log"])
+	library := core.GetLibrary()
+
+	b := core.NewBlock(library["plus"])
+	d := core.NewBlock(library["delay"])
+	l := core.NewBlock(library["log"])
+	o := core.NewBlock(library["set"])
+	l2 := core.NewBlock(library["log"])
 
 	a := supervisor.Add(b)
 	_ = supervisor.Add(d)

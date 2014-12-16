@@ -1,10 +1,12 @@
 package core
 
 import (
-	"github.com/nikhan/go-fetch"
 	"log"
+
+	"github.com/nikhan/go-fetch"
 )
 
+// NewBlock creates a new block from a spec
 func NewBlock(s Spec) *Block {
 	var in []Route
 	var out []Output
@@ -35,7 +37,7 @@ func NewBlock(s Spec) *Block {
 		routing: BlockRouting{
 			Inputs:        in,
 			Outputs:       out,
-			InterruptChan: make(chan InterruptFunc),
+			InterruptChan: make(chan Interrupt),
 		},
 		kernel: s.Kernel,
 	}
@@ -44,7 +46,7 @@ func NewBlock(s Spec) *Block {
 // suture: the main routine the block runs
 func (b *Block) Serve() {
 	for {
-		var interrupt InterruptFunc
+		var interrupt Interrupt
 
 		b.routing.RLock()
 		for {
@@ -73,13 +75,15 @@ func (b *Block) Serve() {
 
 // todo: proper getter/setters of route properties
 // 	GetRouteValue, GetRoutePath, GetRouteChan
+
+// Input returns the specfied Route
 func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
 	defer b.routing.RUnlock()
 	return b.routing.Inputs[id]
 }
 
-// sets route value
+// RouteValue sets the route to always be the specified value
 func (b *Block) RouteValue(id RouteID, v Message) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Inputs[id].Value = &v
@@ -87,7 +91,7 @@ func (b *Block) RouteValue(id RouteID, v Message) {
 	}
 }
 
-// sets route path.
+// RoutePath sets a Route's Path to the supplied go-fetch Query
 func (b *Block) RoutePath(id RouteID, p *fetch.Query) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Inputs[id].Path = p
@@ -96,7 +100,7 @@ func (b *Block) RoutePath(id RouteID, p *fetch.Query) {
 	}
 }
 
-// connect blocks
+// Connect connects a Route, specified by ID, to a connection
 func (b *Block) Connect(id RouteID, c Connection) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Outputs[id].Connections[c] = struct{}{}
@@ -104,7 +108,7 @@ func (b *Block) Connect(id RouteID, c Connection) {
 	}
 }
 
-// disconnect blocks
+// Disconnect removes a connection from a Route
 func (b *Block) Disconnect(id RouteID, c Connection) {
 	b.routing.InterruptChan <- func() bool {
 		delete(b.routing.Outputs[id].Connections, c)
@@ -120,7 +124,7 @@ func (b *Block) Stop() {
 }
 
 // wait and listen for all kernel inputs to be filled.
-func (b *Block) receive() InterruptFunc {
+func (b *Block) receive() Interrupt {
 	var err error
 	for id, input := range b.routing.Inputs {
 		//if we have already received a value on this input, skip.
@@ -149,7 +153,7 @@ func (b *Block) receive() InterruptFunc {
 }
 
 // broadcast the kernel output to all connections on all outputs.
-func (b *Block) broadcast() InterruptFunc {
+func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
 		// if there no connection for this output then wait until there
 		// is one. that means we have to wait for an interrupt.

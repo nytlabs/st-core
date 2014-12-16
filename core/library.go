@@ -6,26 +6,9 @@ import (
 	"time"
 )
 
+// Library is the set of all core block Specs
 var Library = map[string]Spec{
-	"plus": Spec{
-		Inputs: []Pin{
-			Pin{
-				"addend",
-			},
-			Pin{
-				"addend",
-			},
-		},
-		Outputs: []Pin{
-			Pin{
-				"sum",
-			},
-		},
-		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
-			out[0] = in[0].(float64) + in[1].(float64)
-			return nil
-		},
-	},
+	"plus": Plus(),
 	"delay": Spec{
 		Inputs: []Pin{
 			Pin{
@@ -40,7 +23,7 @@ var Library = map[string]Spec{
 				"passthrough",
 			},
 		},
-		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
 				out[0] = err
@@ -71,7 +54,7 @@ var Library = map[string]Spec{
 				"object",
 			},
 		},
-		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			out[0] = map[string]interface{}{
 				in[0].(string): in[1],
 			}
@@ -85,7 +68,7 @@ var Library = map[string]Spec{
 			},
 		},
 		Outputs: []Pin{},
-		Kernel: func(in MessageMap, out MessageMap, i chan InterruptFunc) InterruptFunc {
+		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			o, err := json.Marshal(in[0])
 			if err != nil {
 				fmt.Println(err)

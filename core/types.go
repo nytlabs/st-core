@@ -78,3 +78,7 @@ type Block struct {
 	routing BlockRouting
 	kernel  Kernel
 }
+
+type Store struct {
+	sync.Mutex
+}

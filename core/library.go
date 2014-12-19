@@ -13,6 +13,7 @@ func GetLibrary() map[string]Spec {
 		"delay": Delay(),
 		"set":   Set(),
 		"log":   Log(),
+		"first": First(),
 	}
 }
 
@@ -93,7 +94,8 @@ func Set() Spec {
 	}
 }
 
-// Log writes the inbound message to stdout TODO where should this write exactly?
+// Log writes the inbound message to stdout
+// TODO where should this write exactly?
 func Log() Spec {
 	return Spec{
 		Inputs: []Pin{
@@ -108,6 +110,31 @@ func Log() Spec {
 				fmt.Println(err)
 			}
 			fmt.Println(string(o))
+			return nil
+		},
+	}
+}
+
+func First() Spec {
+	return Spec{
+		Inputs: []Pin{
+			Pin{"in"},
+			Pin{"firstN"},
+		},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+			var count int
+			countMessage, ok := in[2]
+			if !ok {
+				count = 0
+			} else {
+				count = countMessage.(int)
+			}
+			if in[1].(int) < count {
+				out[0] = in[0]
+			}
+			count++
+			in[2] = count
 			return nil
 		},
 	}

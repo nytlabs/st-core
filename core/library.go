@@ -3,53 +3,44 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 )
+
+type stcoreError struct {
+	s string
+}
+
+func (s *stcoreError) Error() string {
+	log.Println(e.s)
+	return e.s
+}
+
+func NewError(s string) *stcoreError {
+	return stcoreError{
+		s: s,
+	}
+}
 
 // Library is the set of all core block Specs
 func GetLibrary() map[string]Spec {
 	return map[string]Spec{
-		"plus":  Plus(),
 		"delay": Delay(),
 		"set":   Set(),
 		"log":   Log(),
-		"first": First(),
-	}
-}
-
-// Sum sums together numbers on each addend
-func Plus() Spec {
-	return Spec{
-		Inputs: []Pin{
-			Pin{"addend"},
-			Pin{"addend"},
-		},
-		Outputs: []Pin{
-			Pin{"sum"},
-		},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
-			out[0] = in[0].(float64) + in[1].(float64)
-			return nil
-		},
+		"sink":  Sink(),
+		"+":     Addition(),
+		"-":     Subtraction(),
+		"×":     Multiplication(),
+		"÷":     Division(),
 	}
 }
 
 // Delay emits the message on passthrough after the specified duration
 func Delay() Spec {
 	return Spec{
-		Inputs: []Pin{
-			Pin{
-				"passthrough",
-			},
-			Pin{
-				"duration",
-			},
-		},
-		Outputs: []Pin{
-			Pin{
-				"passthrough",
-			},
-		},
+		Inputs:  []Pin{Pin{"passthrough"}, Pin{"duration"}},
+		Outputs: []Pin{Pin{"passthrough"}},
 		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
@@ -72,19 +63,8 @@ func Delay() Spec {
 // Set creates a new message with the specified key and value
 func Set() Spec {
 	return Spec{
-		Inputs: []Pin{
-			Pin{
-				"key",
-			},
-			Pin{
-				"value",
-			},
-		},
-		Outputs: []Pin{
-			Pin{
-				"object",
-			},
-		},
+		Inputs:  []Pin{Pin{"key"}, Pin{"value"}},
+		Outputs: []Pin{Pin{"object"}},
 		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			out[0] = map[string]interface{}{
 				in[0].(string): in[1],
@@ -98,11 +78,7 @@ func Set() Spec {
 // TODO where should this write exactly?
 func Log() Spec {
 	return Spec{
-		Inputs: []Pin{
-			Pin{
-				"log",
-			},
-		},
+		Inputs:  []Pin{Pin{"log"}},
 		Outputs: []Pin{},
 		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
 			o, err := json.Marshal(in[0])
@@ -115,26 +91,100 @@ func Log() Spec {
 	}
 }
 
-func First() Spec {
+// Sink discards the inbound message
+func Sink() Spec {
 	return Spec{
-		Inputs: []Pin{
-			Pin{"in"},
-			Pin{"firstN"},
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			return nil
 		},
-		Outputs: []Pin{Pin{"out"}},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
-			var count int
-			countMessage, ok := in[2]
+	}
+}
+
+// Addition returns the sum of the addenda
+func Addition() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"addend"}, Pin{"addend"}},
+		Outputs: []Pin{Pin{"sum"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			a1, ok := in[0].(float64)
 			if !ok {
-				count = 0
-			} else {
-				count = countMessage.(int)
+				out[0] = NewError("Addition requires floats")
+				return nil
 			}
-			if in[1].(int) < count {
-				out[0] = in[0]
+			a2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Addition requires floats")
+				return nil
 			}
-			count++
-			in[2] = count
+			out[0] = a1 + a2
+			return nil
+		},
+	}
+}
+
+// Subtraction returns the difference of the minuend - subtrahend
+func Subtraction() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"minuend"}, Pin{"subtrahend"}},
+		Outputs: []Pin{Pin{"difference"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			m, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("Subtraction requires floats")
+				return nil
+			}
+			s, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Subtraction requires floats")
+				return nil
+			}
+			out[0] = m - s
+			return nil
+		},
+	}
+}
+
+// Multiplication returns the product of the multiplicanda
+func Multiplication() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"multiplicand"}, Pin{"multiplicand"}},
+		Outputs: []Pin{Pin{"product"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			m1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("Multiplication requires floats")
+				return nil
+			}
+			m2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Multiplication requires floats")
+				return nil
+			}
+			out[0] = m1 * m2
+			return nil
+		},
+	}
+}
+
+// Division returns the quotient of the dividend / divisor
+func Division() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
+		Outputs: []Pin{Pin{"quotient"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			d1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("Division requires floats")
+				return nil
+			}
+			d2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Division requires floats")
+				return nil
+			}
+			out[0] = d1 / d2
 			return nil
 		},
 	}

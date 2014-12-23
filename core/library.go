@@ -11,13 +11,13 @@ type stcoreError struct {
 	s string
 }
 
-func (s *stcoreError) Error() string {
+func (e *stcoreError) Error() string {
 	log.Println(e.s)
 	return e.s
 }
 
 func NewError(s string) *stcoreError {
-	return stcoreError{
+	return &stcoreError{
 		s: s,
 	}
 }

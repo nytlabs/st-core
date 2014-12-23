@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"time"
 )
 
@@ -29,10 +30,17 @@ func GetLibrary() map[string]Spec {
 		"set":   Set(),
 		"log":   Log(),
 		"sink":  Sink(),
+		"latch": Latch(),
 		"+":     Addition(),
 		"-":     Subtraction(),
 		"×":     Multiplication(),
 		"÷":     Division(),
+		"^":     Exponentiation(),
+		"%":     Modulation(),
+		">":     GreaterThan(),
+		"<":     LessThan(),
+		"==":    EqualTo(),
+		"!=":    NotEqualTo(),
 	}
 }
 
@@ -97,6 +105,42 @@ func Sink() Spec {
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{},
 		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			return nil
+		},
+	}
+}
+
+// Latch emits the inbound message on the 0th output if ctrl is true,
+// and the 1st output if ctrl is false
+func Latch() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
+		Outputs: []Pin{Pin{"out"}, Pin{"out"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			controlSignal, ok := in[1].(bool)
+			if !ok {
+				out[0] = NewError("Latch ctrl requires bool")
+				return nil
+			}
+			if controlSignal {
+				out[0] = in[0]
+				out[1] = nil
+			} else {
+				out[1] = in[0]
+				out[0] = nil
+			}
+			return nil
+		},
+	}
+}
+
+// Gate emits the inbound message upon receiving a message on its trigger
+func Gate() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			out[0] = in[0]
 			return nil
 		},
 	}
@@ -185,6 +229,118 @@ func Division() Spec {
 				return nil
 			}
 			out[0] = d1 / d2
+			return nil
+		},
+	}
+}
+
+// Exponentiation returns the base raised to the exponent
+func Exponentiation() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"base"}, Pin{"exponent"}},
+		Outputs: []Pin{Pin{"power"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			d1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("Exponentiation requires floats")
+				return nil
+			}
+			d2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Exponentiation requires floats")
+				return nil
+			}
+			out[0] = math.Pow(d1, d2)
+			return nil
+		},
+	}
+}
+
+// Modulation returns the remainder of the dividend mod divisor
+func Modulation() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
+		Outputs: []Pin{Pin{"remainder"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			d1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("Modulation requires floats")
+				return nil
+			}
+			d2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("Modultion requires floats")
+				return nil
+			}
+			out[0] = math.Mod(d1, d2)
+			return nil
+		},
+	}
+}
+
+// GreaterThan returns true if value[0] > value[1] or false otherwise
+func GreaterThan() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
+		Outputs: []Pin{Pin{"IsGreaterThan"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			d1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("GreaterThan requires floats")
+				return nil
+			}
+			d2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("GreaterThan requires floats")
+				return nil
+			}
+			out[0] = d1 > d2
+			return nil
+		},
+	}
+}
+
+// LessThan returns true if value[0] < value[1] or false otherwise
+func LessThan() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
+		Outputs: []Pin{Pin{"IsLessThan"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			d1, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("LessThan requires floats")
+				return nil
+			}
+			d2, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("LessThan requires floats")
+				return nil
+			}
+			out[0] = d1 < d2
+			return nil
+		},
+	}
+}
+
+// EqualTo returns true if value[0] == value[1] or false otherwise
+func EqualTo() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
+		Outputs: []Pin{Pin{"IsEqualTo"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			out[0] = in[0] == in[1]
+			return nil
+		},
+	}
+}
+
+// NotEqualTo returns true if value[0] != value[1] or false otherwise
+func NotEqualTo() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
+		Outputs: []Pin{Pin{"IsNotEqualTo"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			out[0] = in[0] != in[1]
 			return nil
 		},
 	}

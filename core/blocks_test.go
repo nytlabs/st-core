@@ -3,6 +3,7 @@ package core
 import (
 	"log"
 	"testing"
+	"time"
 )
 
 type blockTest struct {
@@ -28,6 +29,30 @@ func TestSimpleDyads(t *testing.T) {
 			in:       MessageMap{0: 6.0, 1: 2.0},
 			expected: MessageMap{0: 3.0},
 		},
+		"^": blockTest{
+			in:       MessageMap{0: 2.0, 1: 3.0},
+			expected: MessageMap{0: 8.0},
+		},
+		"%": blockTest{
+			in:       MessageMap{0: 3.0, 1: 2.0},
+			expected: MessageMap{0: 1.0},
+		},
+		">": blockTest{
+			in:       MessageMap{0: 3.0, 1: 2.0},
+			expected: MessageMap{0: true},
+		},
+		"<": blockTest{
+			in:       MessageMap{0: 3.0, 1: 2.0},
+			expected: MessageMap{0: false},
+		},
+		"==": blockTest{
+			in:       MessageMap{0: 3.0, 1: "hello"},
+			expected: MessageMap{0: false},
+		},
+		"==": blockTest{
+			in:       MessageMap{0: 3.0, 1: "hello"},
+			expected: MessageMap{0: true},
+		},
 	}
 	library := GetLibrary()
 	for blockType, test := range simpleBlockTests {
@@ -50,5 +75,29 @@ func TestSimpleDyads(t *testing.T) {
 		if interrupt != nil {
 			t.Error(blockType, "returns inappropriate interrupt")
 		}
+	}
+}
+
+func TestDelay(t *testing.T) {
+	spec := Delay()
+	in := MessageMap{
+		0: "test",
+		1: "1s",
+	}
+	ic := make(chan Interrupt)
+	out := MessageMap{}
+	expected := MessageMap{0: "test"}
+	tolerance, _ := time.ParseDuration("1ms")
+	timerDuration, _ := time.ParseDuration("1s")
+	timer := time.AfterFunc(timerDuration+tolerance, func() {
+		t.Error("delay took longer than specified duration +", tolerance)
+	})
+	interrupt := spec.Kernel(in, out, ic)
+	timer.Stop()
+	if out[0] != expected[0] {
+		t.Error("delay didn't pass the correct message")
+	}
+	if interrupt != nil {
+		t.Error("delay returns inappropriate interrupt")
 	}
 }

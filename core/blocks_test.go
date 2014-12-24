@@ -33,7 +33,7 @@ func TestSimpleDyads(t *testing.T) {
 			in:       MessageMap{0: 2.0, 1: 3.0},
 			expected: MessageMap{0: 8.0},
 		},
-		"%": blockTest{
+		"mod": blockTest{
 			in:       MessageMap{0: 3.0, 1: 2.0},
 			expected: MessageMap{0: 1.0},
 		},

@@ -26,6 +26,7 @@ func NewError(s string) *stcoreError {
 // Library is the set of all core block Specs
 func GetLibrary() map[string]Spec {
 	return map[string]Spec{
+		// mechanisms
 		"delay":    Delay(),
 		"set":      Set(),
 		"log":      Log(),
@@ -33,16 +34,29 @@ func GetLibrary() map[string]Spec {
 		"latch":    Latch(),
 		"gate":     Gate(),
 		"identity": Identity(),
-		"+":        Addition(),
-		"-":        Subtraction(),
-		"×":        Multiplication(),
-		"÷":        Division(),
-		"^":        Exponentiation(),
-		"%":        Modulation(),
-		">":        GreaterThan(),
-		"<":        LessThan(),
-		"==":       EqualTo(),
-		"!=":       NotEqualTo(),
+		// dyads
+		"+":  Addition(),
+		"-":  Subtraction(),
+		"×":  Multiplication(),
+		"÷":  Division(),
+		"^":  Exponentiation(),
+		"%":  Modulation(),
+		">":  GreaterThan(),
+		"<":  LessThan(),
+		"==": EqualTo(),
+		"!=": NotEqualTo(),
+		// random sources
+		"uniform":   UniformRandom(),
+		"normal":    NormalRandom(),
+		"Zipf":      ZipfRandom(),
+		"Poisson":   PoissonRandom(),
+		"Bernoulli": BernoulliRandom(),
+		// keyvalue
+		"kvGet":    kvGet(),
+		"kvSet":    kvSet(),
+		"kvClear":  kvClear(),
+		"kvDump":   kvDump(),
+		"kvDelete": kvDelete(),
 	}
 }
 
@@ -51,7 +65,7 @@ func Delay() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"passthrough"}, Pin{"duration"}},
 		Outputs: []Pin{Pin{"passthrough"}},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
 				out[0] = err
@@ -75,7 +89,7 @@ func Set() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"key"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"object"}},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = map[string]interface{}{
 				in[0].(string): in[1],
 			}
@@ -90,7 +104,7 @@ func Log() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"log"}},
 		Outputs: []Pin{},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			o, err := json.Marshal(in[0])
 			if err != nil {
 				fmt.Println(err)
@@ -106,7 +120,7 @@ func Sink() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			return nil
 		},
 	}
@@ -118,7 +132,7 @@ func Latch() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
 		Outputs: []Pin{Pin{"out"}, Pin{"out"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			controlSignal, ok := in[1].(bool)
 			if !ok {
 				out[0] = NewError("Latch ctrl requires bool")
@@ -141,7 +155,7 @@ func Gate() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
 		Outputs: []Pin{Pin{"out"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = in[0]
 			return nil
 		},
@@ -153,7 +167,7 @@ func Identity() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"out"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = in[0]
 			return nil
 		},
@@ -166,7 +180,7 @@ func Head() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"head"}, Pin{"tail"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("head requires an array")
@@ -185,7 +199,7 @@ func Tail() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"tail"}, Pin{"head"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("tail requires an array")
@@ -203,7 +217,7 @@ func Addition() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"addend"}, Pin{"addend"}},
 		Outputs: []Pin{Pin{"sum"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			a1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Addition requires floats")
@@ -225,18 +239,18 @@ func Subtraction() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"minuend"}, Pin{"subtrahend"}},
 		Outputs: []Pin{Pin{"difference"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
-			m, ok := in[0].(float64)
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
+			minuend, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Subtraction requires floats")
 				return nil
 			}
-			s, ok := in[1].(float64)
+			subtrahend, ok := in[1].(float64)
 			if !ok {
 				out[0] = NewError("Subtraction requires floats")
 				return nil
 			}
-			out[0] = m - s
+			out[0] = minuend - subtrahend
 			return nil
 		},
 	}
@@ -247,7 +261,7 @@ func Multiplication() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"multiplicand"}, Pin{"multiplicand"}},
 		Outputs: []Pin{Pin{"product"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Multiplication requires floats")
@@ -269,7 +283,7 @@ func Division() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
 		Outputs: []Pin{Pin{"quotient"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Division requires floats")
@@ -291,7 +305,7 @@ func Exponentiation() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"base"}, Pin{"exponent"}},
 		Outputs: []Pin{Pin{"power"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Exponentiation requires floats")
@@ -313,7 +327,7 @@ func Modulation() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
 		Outputs: []Pin{Pin{"remainder"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Modulation requires floats")
@@ -335,7 +349,7 @@ func GreaterThan() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsGreaterThan"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("GreaterThan requires floats")
@@ -357,7 +371,7 @@ func LessThan() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsLessThan"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("LessThan requires floats")
@@ -379,7 +393,7 @@ func EqualTo() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsEqualTo"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = in[0] == in[1]
 			return nil
 		},
@@ -391,7 +405,7 @@ func NotEqualTo() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsNotEqualTo"}},
-		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = in[0] != in[1]
 			return nil
 		},

@@ -49,7 +49,7 @@ func TestSimpleDyads(t *testing.T) {
 			in:       MessageMap{0: 3.0, 1: "hello"},
 			expected: MessageMap{0: false},
 		},
-		"==": blockTest{
+		"!=": blockTest{
 			in:       MessageMap{0: 3.0, 1: "hello"},
 			expected: MessageMap{0: true},
 		},
@@ -60,6 +60,7 @@ func TestSimpleDyads(t *testing.T) {
 		if !ok {
 			log.Fatal("could not find", blockType, "in library")
 		}
+		log.Println("testing", blockType)
 		ic := make(chan Interrupt)
 		out := MessageMap{}
 		interrupt := block.Kernel(test.in, out, ic)
@@ -79,6 +80,7 @@ func TestSimpleDyads(t *testing.T) {
 }
 
 func TestDelay(t *testing.T) {
+	log.Println("testing delay")
 	spec := Delay()
 	in := MessageMap{
 		0: "test",

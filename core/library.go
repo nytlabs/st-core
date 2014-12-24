@@ -26,21 +26,23 @@ func NewError(s string) *stcoreError {
 // Library is the set of all core block Specs
 func GetLibrary() map[string]Spec {
 	return map[string]Spec{
-		"delay": Delay(),
-		"set":   Set(),
-		"log":   Log(),
-		"sink":  Sink(),
-		"latch": Latch(),
-		"+":     Addition(),
-		"-":     Subtraction(),
-		"×":     Multiplication(),
-		"÷":     Division(),
-		"^":     Exponentiation(),
-		"%":     Modulation(),
-		">":     GreaterThan(),
-		"<":     LessThan(),
-		"==":    EqualTo(),
-		"!=":    NotEqualTo(),
+		"delay":    Delay(),
+		"set":      Set(),
+		"log":      Log(),
+		"sink":     Sink(),
+		"latch":    Latch(),
+		"gate":     Gate(),
+		"identity": Identity(),
+		"+":        Addition(),
+		"-":        Subtraction(),
+		"×":        Multiplication(),
+		"÷":        Division(),
+		"^":        Exponentiation(),
+		"%":        Modulation(),
+		">":        GreaterThan(),
+		"<":        LessThan(),
+		"==":       EqualTo(),
+		"!=":       NotEqualTo(),
 	}
 }
 
@@ -141,6 +143,56 @@ func Gate() Spec {
 		Outputs: []Pin{Pin{"out"}},
 		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
 			out[0] = in[0]
+			return nil
+		},
+	}
+}
+
+// Identity emits the inbound message immediately
+func Identity() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			out[0] = in[0]
+			return nil
+		},
+	}
+}
+
+// Head emits the first element of the inbound array on one output,
+//and the tail of the array on the other.
+func Head() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{Pin{"head"}, Pin{"tail"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			arr, ok := in[0].([]interface{})
+			if !ok {
+				out[0] = NewError("head requires an array")
+				return nil
+			}
+			out[0] = arr[0]
+			out[1] = arr[1:len(arr)]
+			return nil
+		},
+	}
+}
+
+// Tail emits the last element of the inbound array on one output,
+//and the head of the array on the other.
+func Tail() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{Pin{"tail"}, Pin{"head"}},
+		Kernel: func(in, out MessageMap, i chan Interrupt) Interrupt {
+			arr, ok := in[0].([]interface{})
+			if !ok {
+				out[0] = NewError("tail requires an array")
+				return nil
+			}
+			out[0] = arr[len(arr)]
+			out[1] = arr[0 : len(arr)-1]
 			return nil
 		},
 	}

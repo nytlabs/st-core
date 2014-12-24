@@ -1,4 +1,5 @@
-package core
+// Package stores provides a set of stores for streamtools
+package stores
 
 // KeyValue implements a simple key value store. Access is maintained via KeyValueGet and KeyValueSet blocks.
 type KeyValue struct {

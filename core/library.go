@@ -34,6 +34,9 @@ func GetLibrary() map[string]Spec {
 		"latch":    Latch(),
 		"gate":     Gate(),
 		"identity": Identity(),
+		"append":   Append(),
+		"tail":     Tail(),
+		"head":     Head(),
 		// dyads
 		"+":   Addition(),
 		"-":   Subtraction(),
@@ -207,6 +210,23 @@ func Tail() Spec {
 			}
 			out[0] = arr[len(arr)]
 			out[1] = arr[0 : len(arr)-1]
+			return nil
+		},
+	}
+}
+
+// Append appends the supplied element to the supplied array
+func Append() Spec {
+	return Spec{
+		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
+		Outputs: []Pin{Pin{"array"}},
+		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
+			arr, ok := in[1].([]interface{})
+			if !ok {
+				out[0] = NewError("Append requires an array")
+				return nil
+			}
+			out[0] = append(arr, in[0])
 			return nil
 		},
 	}

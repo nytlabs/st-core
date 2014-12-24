@@ -9,7 +9,12 @@ import (
 // Library is the set of all core block Specs
 func GetLibrary() map[string]Spec {
 	return map[string]Spec{
-		"plus": Plus(),
+		"kvGet":    kvGet(),
+		"kvSet":    kvSet(),
+		"kvClear":  kvClear(),
+		"kvDump":   kvDump(),
+		"kvDelete": kvDelete(),
+		"plus":     Plus(),
 		"delay": Spec{
 			Inputs: []Pin{
 				Pin{
@@ -24,7 +29,7 @@ func GetLibrary() map[string]Spec {
 					"passthrough",
 				},
 			},
-			Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+			Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 				t, err := time.ParseDuration(in[1].(string))
 				if err != nil {
 					out[0] = err
@@ -55,7 +60,7 @@ func GetLibrary() map[string]Spec {
 					"object",
 				},
 			},
-			Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+			Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 				out[0] = map[string]interface{}{
 					in[0].(string): in[1],
 				}
@@ -69,7 +74,7 @@ func GetLibrary() map[string]Spec {
 				},
 			},
 			Outputs: []Pin{},
-			Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+			Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 				o, err := json.Marshal(in[0])
 				if err != nil {
 					fmt.Println(err)

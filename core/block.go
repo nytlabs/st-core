@@ -57,7 +57,7 @@ func (b *Block) Serve() {
 			}
 
 			if b.state.Processed == false {
-				interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.InterruptChan)
+				interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.store, b.routing.InterruptChan)
 				if interrupt != nil {
 					break
 				}
@@ -87,6 +87,13 @@ func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
 	defer b.routing.RUnlock()
 	return b.routing.Inputs[id]
+}
+
+func (b *Block) Store(s Store) {
+	b.routing.InterruptChan <- func() bool {
+		b.routing.store = s
+		return true
+	}
 }
 
 // RouteValue sets the route to always be the specified value

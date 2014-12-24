@@ -12,7 +12,7 @@ func Plus() Spec {
 		Outputs: []Pin{
 			Pin{"sum"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = in[0].(float64) + in[1].(float64)
 			return nil
 		},
@@ -35,7 +35,7 @@ func Delay() Spec {
 				"passthrough",
 			},
 		},
-		Kernel: func(in MessageMap, out MessageMap, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
 				out[0] = err

@@ -33,6 +33,7 @@ func NewBlock(s Spec) *Block {
 			make(MessageMap),
 			make(MessageMap),
 			make(Manifest),
+			false,
 		},
 		routing: BlockRouting{
 			Inputs:        in,
@@ -54,10 +55,15 @@ func (b *Block) Serve() {
 			if interrupt != nil {
 				break
 			}
-			interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.InterruptChan)
-			if interrupt != nil {
-				break
+
+			if b.state.Processed == false {
+				interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.store, b.routing.InterruptChan)
+				if interrupt != nil {
+					break
+				}
 			}
+			b.state.Processed = true
+
 			interrupt = b.broadcast()
 			if interrupt != nil {
 				break
@@ -81,6 +87,13 @@ func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
 	defer b.routing.RUnlock()
 	return b.routing.Inputs[id]
+}
+
+func (b *Block) Store(s Store) {
+	b.routing.InterruptChan <- func() bool {
+		b.routing.store = s
+		return true
+	}
 }
 
 // RouteValue sets the route to always be the specified value
@@ -196,4 +209,5 @@ func (b *Block) crank() {
 	for k, _ := range b.state.manifest {
 		delete(b.state.manifest, k)
 	}
+	b.state.Processed = false
 }

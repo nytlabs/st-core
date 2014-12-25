@@ -60,7 +60,7 @@ type Output struct {
 
 // A ManifestPair is a unique reference to an Output/Connection pair
 type ManifestPair struct {
-	string
+	int
 	Connection
 }
 

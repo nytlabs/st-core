@@ -90,6 +90,20 @@ func (b *Block) Input(id RouteID) Route {
 	return b.routing.Inputs[id]
 }
 
+// Outputs return a list of manifest pairs for the block
+func (b *Block) Outputs() []ManifestPair {
+	var m []ManifestPair
+	b.routing.RLock()
+	for id, out := range b.routing.Outputs {
+		for c, _ := range out.Connections {
+			m = append(m, ManifestPair{id, c})
+		}
+	}
+	b.routing.RUnlock()
+	return m
+}
+
+// sets a store for the block. can be set to nil
 func (b *Block) Store(s Store) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Shared.Store = s
@@ -225,7 +239,7 @@ func (b *Block) broadcast() Interrupt {
 			// check to see if we have delivered a message to this
 			// connection for this block crank. if we have, then
 			// skip this delivery.
-			m := ManifestPair{out.Name, c}
+			m := ManifestPair{id, c}
 			if _, ok := b.state.manifest[m]; ok {
 				continue
 			}

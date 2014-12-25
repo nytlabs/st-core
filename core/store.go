@@ -2,7 +2,7 @@ package core
 
 import "sync"
 
-func NewKeyValue() Store {
+func NewKeyValue() StateLocker {
 	return &KeyValue{
 		kv: make(map[string]Message),
 	}
@@ -22,15 +22,14 @@ func kvGet() Spec {
 		Outputs: []Pin{
 			Pin{"value"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if value, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = "error"
 			} else {
 				out[0] = value
 			}
-			s.Unlock()
 			return nil
 		},
 	}
@@ -46,8 +45,8 @@ func kvSet() Spec {
 		Outputs: []Pin{
 			Pin{"inserted"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if _, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = true
@@ -56,7 +55,6 @@ func kvSet() Spec {
 			}
 
 			kv.kv[in[0].(string)] = in[1]
-			s.Unlock()
 			return nil
 		},
 	}
@@ -72,12 +70,11 @@ func kvClear() Spec {
 		Outputs: []Pin{
 			Pin{"cleared"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			kv.kv = make(map[string]Message)
 			out[0] = true
-			s.Unlock()
 			return nil
 		},
 	}
@@ -94,15 +91,14 @@ func kvDump() Spec {
 		Outputs: []Pin{
 			Pin{"object"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			outMap := make(map[string]Message)
 			for k, v := range kv.kv {
 				outMap[k] = v
 			}
 			out[0] = outMap
-			s.Unlock()
 			return nil
 		},
 	}
@@ -117,8 +113,8 @@ func kvDelete() Spec {
 		Outputs: []Pin{
 			Pin{"deleted"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if _, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = false
@@ -126,7 +122,6 @@ func kvDelete() Spec {
 				delete(kv.kv, in[0].(string))
 				out[0] = true
 			}
-			s.Unlock()
 			return nil
 		},
 	}

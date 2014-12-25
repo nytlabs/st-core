@@ -39,9 +39,49 @@ func NewBlock(s Spec) *Block {
 			Inputs:        in,
 			Outputs:       out,
 			InterruptChan: make(chan Interrupt),
+			Shared: SharedState{
+				Type: s.Shared,
+			},
 		},
 		kernel: s.Kernel,
 	}
+}
+
+func (b *Block) process() Interrupt {
+	if b.state.Processed == true {
+		return nil
+	}
+
+	if b.routing.Shared.Type != NONE && b.routing.Shared.State == nil {
+		select {
+		case f := <-b.routing.InterruptChan:
+			return f
+		}
+	}
+
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.State.Lock()
+	}
+
+	interrupt := b.kernel(b.state.inputValues,
+		b.state.outputValues,
+		b.routing.Shared.State,
+		b.routing.InterruptChan)
+
+	if interrupt != nil {
+		if b.routing.Shared.Type != NONE {
+			b.routing.Shared.State.Unlock()
+		}
+		return interrupt
+	}
+
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.State.Unlock()
+	}
+
+	b.state.Processed = true
+
+	return nil
 }
 
 // suture: the main routine the block runs
@@ -56,18 +96,16 @@ func (b *Block) Serve() {
 				break
 			}
 
-			if b.state.Processed == false {
-				interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.store, b.routing.InterruptChan)
-				if interrupt != nil {
-					break
-				}
+			interrupt = b.process()
+			if interrupt != nil {
+				break
 			}
-			b.state.Processed = true
 
 			interrupt = b.broadcast()
 			if interrupt != nil {
 				break
 			}
+
 			b.crank()
 		}
 		b.routing.RUnlock()
@@ -89,9 +127,9 @@ func (b *Block) Input(id RouteID) Route {
 	return b.routing.Inputs[id]
 }
 
-func (b *Block) Store(s Store) {
+func (b *Block) Store(s StateLocker) {
 	b.routing.InterruptChan <- func() bool {
-		b.routing.store = s
+		b.routing.Shared.State = s
 		return true
 	}
 }

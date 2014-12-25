@@ -131,7 +131,7 @@ func (g *Group) RemoveNode(n Node) {
 type Server struct {
 	groups     map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
 	blocks     map[int]*BlockLedger
-	stores     map[int]*Store
+	stores     map[int]*StateLocker
 	library    map[string]Spec
 	supervisor *suture.Supervisor
 	lastID     int
@@ -149,7 +149,7 @@ func NewServer() *Server {
 	groups := make(map[int]*Group)
 	groups[0] = NewGroup(0, "root") // this is the top level group
 	blocks := make(map[int]*BlockLedger)
-	stores := make(map[int]*Store)
+	stores := make(map[int]*StateLocker)
 	library := GetLibrary()
 	s := &Server{
 		supervisor: supervisor,

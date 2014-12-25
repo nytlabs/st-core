@@ -6,7 +6,16 @@ import (
 	"github.com/nikhan/go-fetch"
 )
 
+const (
+	NONE = iota
+	KEY_VALUE
+	PRIORITY
+	ARRAY
+	VALUE
+)
+
 type RouteID int
+type SharedType int
 type Message interface{}
 type Connection chan Message
 type MessageMap map[RouteID]Message
@@ -17,7 +26,7 @@ type Interrupt func() bool
 
 // Kernel is the core function that operates on an inbound message. It works by populating
 // the outbound MessageMap, and can be interrupted on its Interrupt channel.
-type Kernel func(MessageMap, MessageMap, Store, chan Interrupt) Interrupt
+type Kernel func(MessageMap, MessageMap, StateLocker, chan Interrupt) Interrupt
 
 // A Pin is an inbound or outbound route to a block used in the Spec.
 type Pin struct {
@@ -28,6 +37,7 @@ type Pin struct {
 type Spec struct {
 	Inputs  []Pin
 	Outputs []Pin
+	Shared  SharedType
 	Kernel  Kernel
 }
 
@@ -65,11 +75,21 @@ type BlockState struct {
 	Processed    bool
 }
 
+type StateLocker interface {
+	Lock()
+	Unlock()
+}
+
+type SharedState struct {
+	Type  SharedType
+	State StateLocker
+}
+
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel
 type BlockRouting struct {
 	Inputs        []Route
 	Outputs       []Output
-	store         Store
+	Shared        SharedState
 	InterruptChan chan Interrupt
 	sync.RWMutex
 }
@@ -79,9 +99,4 @@ type Block struct {
 	state   BlockState
 	routing BlockRouting
 	kernel  Kernel
-}
-
-type Store interface {
-	Lock()
-	Unlock()
 }

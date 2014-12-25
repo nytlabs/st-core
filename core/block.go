@@ -47,43 +47,6 @@ func NewBlock(s Spec) *Block {
 	}
 }
 
-func (b *Block) process() Interrupt {
-	if b.state.Processed == true {
-		return nil
-	}
-
-	if b.routing.Shared.Type != NONE && b.routing.Shared.Store == nil {
-		select {
-		case f := <-b.routing.InterruptChan:
-			return f
-		}
-	}
-
-	if b.routing.Shared.Type != NONE {
-		b.routing.Shared.Store.Lock()
-	}
-
-	interrupt := b.kernel(b.state.inputValues,
-		b.state.outputValues,
-		b.routing.Shared.Store,
-		b.routing.InterruptChan)
-
-	if interrupt != nil {
-		if b.routing.Shared.Type != NONE {
-			b.routing.Shared.Store.Unlock()
-		}
-		return interrupt
-	}
-
-	if b.routing.Shared.Type != NONE {
-		b.routing.Shared.Store.Unlock()
-	}
-
-	b.state.Processed = true
-
-	return nil
-}
-
 // suture: the main routine the block runs
 func (b *Block) Serve() {
 	for {
@@ -200,6 +163,50 @@ func (b *Block) receive() Interrupt {
 			return f
 		}
 	}
+	return nil
+}
+
+// run kernel on inputs, produce outputs
+func (b *Block) process() Interrupt {
+	if b.state.Processed == true {
+		return nil
+	}
+
+	// if this kernel relies on an external shared state then we need to
+	// block until an interrupt connects us to a shared external state.
+	if b.routing.Shared.Type != NONE && b.routing.Shared.Store == nil {
+		select {
+		case f := <-b.routing.InterruptChan:
+			return f
+		}
+	}
+
+	// we should only be able to get here if
+	// - we don't need an shared state
+	// - we have an external shared state and it has been attached
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.Store.Lock()
+	}
+
+	// run the kernel
+	interrupt := b.kernel(b.state.inputValues,
+		b.state.outputValues,
+		b.routing.Shared.Store,
+		b.routing.InterruptChan)
+
+	if interrupt != nil {
+		if b.routing.Shared.Type != NONE {
+			b.routing.Shared.Store.Unlock()
+		}
+		return interrupt
+	}
+
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.Store.Unlock()
+	}
+
+	b.state.Processed = true
+
 	return nil
 }
 

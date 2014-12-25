@@ -39,7 +39,7 @@ func NewBlock(s Spec) *Block {
 			Inputs:        in,
 			Outputs:       out,
 			InterruptChan: make(chan Interrupt),
-			Shared: SharedState{
+			Shared: SharedStore{
 				Type: s.Shared,
 			},
 		},
@@ -52,7 +52,7 @@ func (b *Block) process() Interrupt {
 		return nil
 	}
 
-	if b.routing.Shared.Type != NONE && b.routing.Shared.State == nil {
+	if b.routing.Shared.Type != NONE && b.routing.Shared.Store == nil {
 		select {
 		case f := <-b.routing.InterruptChan:
 			return f
@@ -60,23 +60,23 @@ func (b *Block) process() Interrupt {
 	}
 
 	if b.routing.Shared.Type != NONE {
-		b.routing.Shared.State.Lock()
+		b.routing.Shared.Store.Lock()
 	}
 
 	interrupt := b.kernel(b.state.inputValues,
 		b.state.outputValues,
-		b.routing.Shared.State,
+		b.routing.Shared.Store,
 		b.routing.InterruptChan)
 
 	if interrupt != nil {
 		if b.routing.Shared.Type != NONE {
-			b.routing.Shared.State.Unlock()
+			b.routing.Shared.Store.Unlock()
 		}
 		return interrupt
 	}
 
 	if b.routing.Shared.Type != NONE {
-		b.routing.Shared.State.Unlock()
+		b.routing.Shared.Store.Unlock()
 	}
 
 	b.state.Processed = true
@@ -127,9 +127,9 @@ func (b *Block) Input(id RouteID) Route {
 	return b.routing.Inputs[id]
 }
 
-func (b *Block) Store(s StateLocker) {
+func (b *Block) Store(s Store) {
 	b.routing.InterruptChan <- func() bool {
-		b.routing.Shared.State = s
+		b.routing.Shared.Store = s
 		return true
 	}
 }

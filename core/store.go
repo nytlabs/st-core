@@ -2,7 +2,7 @@ package core
 
 import "sync"
 
-func NewKeyValue() StateLocker {
+func NewKeyValue() Store {
 	return &KeyValue{
 		kv: make(map[string]Message),
 	}
@@ -23,7 +23,7 @@ func kvGet() Spec {
 			Pin{"value"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if value, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = "error"
@@ -46,7 +46,7 @@ func kvSet() Spec {
 			Pin{"inserted"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if _, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = true
@@ -71,7 +71,7 @@ func kvClear() Spec {
 			Pin{"cleared"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			kv.kv = make(map[string]Message)
 			out[0] = true
@@ -92,7 +92,7 @@ func kvDump() Spec {
 			Pin{"object"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			outMap := make(map[string]Message)
 			for k, v := range kv.kv {
@@ -114,7 +114,7 @@ func kvDelete() Spec {
 			Pin{"deleted"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s StateLocker, i chan Interrupt) Interrupt {
+		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			if _, ok := kv.kv[in[0].(string)]; !ok {
 				out[0] = false

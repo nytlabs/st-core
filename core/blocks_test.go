@@ -89,7 +89,7 @@ func TestDelay(t *testing.T) {
 	ic := make(chan Interrupt)
 	out := MessageMap{}
 	expected := MessageMap{0: "test"}
-	tolerance, _ := time.ParseDuration("1ms")
+	tolerance, _ := time.ParseDuration("10ms")
 	timerDuration, _ := time.ParseDuration("1s")
 	timer := time.AfterFunc(timerDuration+tolerance, func() {
 		t.Error("delay took longer than specified duration +", tolerance)

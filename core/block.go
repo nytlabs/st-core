@@ -32,6 +32,7 @@ func NewBlock(s Spec) *Block {
 		state: BlockState{
 			make(MessageMap),
 			make(MessageMap),
+			make(MessageMap),
 			make(Manifest),
 			false,
 		},
@@ -208,6 +209,7 @@ func (b *Block) process() Interrupt {
 	// run the kernel
 	interrupt := b.kernel(b.state.inputValues,
 		b.state.outputValues,
+		b.state.internalValues,
 		b.routing.Shared.Store,
 		b.routing.InterruptChan)
 

@@ -26,7 +26,7 @@ type Interrupt func() bool
 
 // Kernel is the core function that operates on an inbound message. It works by populating
 // the outbound MessageMap, and can be interrupted on its Interrupt channel.
-type Kernel func(MessageMap, MessageMap, Store, chan Interrupt) Interrupt
+type Kernel func(MessageMap, MessageMap, MessageMap, Store, chan Interrupt) Interrupt
 
 // A Pin is an inbound or outbound route to a block used in the Spec.
 type Pin struct {
@@ -69,10 +69,11 @@ type Manifest map[ManifestPair]struct{}
 
 // A block's BlockState is the pair of input/output MessageMaps, and the Manifest
 type BlockState struct {
-	inputValues  MessageMap
-	outputValues MessageMap
-	manifest     Manifest
-	Processed    bool
+	inputValues    MessageMap
+	outputValues   MessageMap
+	internalValues MessageMap
+	manifest       Manifest
+	Processed      bool
 }
 
 type Store interface {

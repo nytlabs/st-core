@@ -23,7 +23,7 @@ func kvGet() Spec {
 			Pin{"value"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {
@@ -53,7 +53,7 @@ func kvSet() Spec {
 			Pin{"new"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {
@@ -85,7 +85,7 @@ func kvClear() Spec {
 			Pin{"cleared"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			kv.kv = make(map[string]Message)
 			out[0] = true
@@ -107,7 +107,7 @@ func kvDump() Spec {
 			Pin{"object"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			outMap := make(map[string]Message)
 			for k, v := range kv.kv {
@@ -129,7 +129,7 @@ func kvDelete() Spec {
 			Pin{"deleted"},
 		},
 		Shared: KEY_VALUE,
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {

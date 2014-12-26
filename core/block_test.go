@@ -91,7 +91,26 @@ func TestKeyValue(t *testing.T) {
 
 }
 
+func TestFirst(t *testing.T) {
+	log.Println("testing first")
+	f := NewBlock(GetLibrary()["first"])
+	go f.Serve()
+	sink := make(chan Message)
+	f.Connect(0, sink)
+
+	expected := []interface{}{true, false, false, false, false}
+	in := f.Input(0).C
+
+	for i, v := range expected {
+		in <- i
+		if v != <-sink {
+			t.Error("first did not produce expected results")
+		}
+	}
+}
+
 func TestNull(t *testing.T) {
+	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
 	go null.Serve()
 	null.RouteValue(0, nil)

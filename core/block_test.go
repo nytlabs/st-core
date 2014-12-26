@@ -91,6 +91,21 @@ func TestKeyValue(t *testing.T) {
 
 }
 
+func TestNull(t *testing.T) {
+	null := NewBlock(GetLibrary()["identity"])
+	go null.Serve()
+	null.RouteValue(0, nil)
+	out := make(chan Message)
+	null.Connect(0, out)
+	o, err := json.Marshal(<-out)
+	if err != nil {
+		t.Error("could not marshall null stream")
+	}
+	if string(o) != "null" {
+		t.Error("null stream is not null!")
+	}
+}
+
 func BenchmarkAddition(b *testing.B) {
 	sink := make(chan Message)
 	add := NewBlock(GetLibrary()["+"])

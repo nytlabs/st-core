@@ -86,8 +86,11 @@ func (b *Block) Serve() {
 // Input returns the specfied Route
 func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
-	defer b.routing.RUnlock()
-	return b.routing.Inputs[id]
+	// not entirely sure about this
+	// may need a more thorough copy in the future (?)
+	r := b.routing.Inputs[id]
+	b.routing.RUnlock()
+	return r
 }
 
 // Outputs return a list of manifest pairs for the block

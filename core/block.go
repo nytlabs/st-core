@@ -32,6 +32,7 @@ func NewBlock(s Spec) *Block {
 		state: BlockState{
 			make(MessageMap),
 			make(MessageMap),
+			make(MessageMap),
 			make(Manifest),
 			false,
 		},
@@ -39,6 +40,9 @@ func NewBlock(s Spec) *Block {
 			Inputs:        in,
 			Outputs:       out,
 			InterruptChan: make(chan Interrupt),
+			Shared: SharedStore{
+				Type: s.Shared,
+			},
 		},
 		kernel: s.Kernel,
 	}
@@ -56,18 +60,16 @@ func (b *Block) Serve() {
 				break
 			}
 
-			if b.state.Processed == false {
-				interrupt = b.kernel(b.state.inputValues, b.state.outputValues, b.routing.store, b.routing.InterruptChan)
-				if interrupt != nil {
-					break
-				}
+			interrupt = b.process()
+			if interrupt != nil {
+				break
 			}
-			b.state.Processed = true
 
 			interrupt = b.broadcast()
 			if interrupt != nil {
 				break
 			}
+
 			b.crank()
 		}
 		b.routing.RUnlock()
@@ -85,13 +87,30 @@ func (b *Block) Serve() {
 // Input returns the specfied Route
 func (b *Block) Input(id RouteID) Route {
 	b.routing.RLock()
-	defer b.routing.RUnlock()
-	return b.routing.Inputs[id]
+	// not entirely sure about this
+	// may need a more thorough copy in the future (?)
+	r := b.routing.Inputs[id]
+	b.routing.RUnlock()
+	return r
 }
 
+// Outputs return a list of manifest pairs for the block
+func (b *Block) Outputs() []ManifestPair {
+	var m []ManifestPair
+	b.routing.RLock()
+	for id, out := range b.routing.Outputs {
+		for c, _ := range out.Connections {
+			m = append(m, ManifestPair{id, c})
+		}
+	}
+	b.routing.RUnlock()
+	return m
+}
+
+// sets a store for the block. can be set to nil
 func (b *Block) Store(s Store) {
 	b.routing.InterruptChan <- func() bool {
-		b.routing.store = s
+		b.routing.Shared.Store = s
 		return true
 	}
 }
@@ -165,6 +184,51 @@ func (b *Block) receive() Interrupt {
 	return nil
 }
 
+// run kernel on inputs, produce outputs
+func (b *Block) process() Interrupt {
+	if b.state.Processed == true {
+		return nil
+	}
+
+	// if this kernel relies on an external shared state then we need to
+	// block until an interrupt connects us to a shared external state.
+	if b.routing.Shared.Type != NONE && b.routing.Shared.Store == nil {
+		select {
+		case f := <-b.routing.InterruptChan:
+			return f
+		}
+	}
+
+	// we should only be able to get here if
+	// - we don't need an shared state
+	// - we have an external shared state and it has been attached
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.Store.Lock()
+	}
+
+	// run the kernel
+	interrupt := b.kernel(b.state.inputValues,
+		b.state.outputValues,
+		b.state.internalValues,
+		b.routing.Shared.Store,
+		b.routing.InterruptChan)
+
+	if interrupt != nil {
+		if b.routing.Shared.Type != NONE {
+			b.routing.Shared.Store.Unlock()
+		}
+		return interrupt
+	}
+
+	if b.routing.Shared.Type != NONE {
+		b.routing.Shared.Store.Unlock()
+	}
+
+	b.state.Processed = true
+
+	return nil
+}
+
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
@@ -180,7 +244,7 @@ func (b *Block) broadcast() Interrupt {
 			// check to see if we have delivered a message to this
 			// connection for this block crank. if we have, then
 			// skip this delivery.
-			m := ManifestPair{out.Name, c}
+			m := ManifestPair{id, c}
 			if _, ok := b.state.manifest[m]; ok {
 				continue
 			}

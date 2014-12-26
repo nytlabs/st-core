@@ -10,7 +10,7 @@ func UniformRandom() Spec {
 	return Spec{
 		Inputs:  []Pin{},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			out[0] = rand.Float64()
 			return nil
 		},
@@ -23,7 +23,7 @@ func NormalRandom() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"mean"}, Pin{"variance"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			variance, ok := in[1].(float64)
 			if !ok {
 				out[0] = NewError("variance must be a float")
@@ -49,7 +49,7 @@ func ZipfRandom() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"q"}, Pin{"s"}, Pin{"N"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
 
 			q, ok := in[0].(float64)
 			if !ok {
@@ -93,7 +93,7 @@ func PoissonRandom() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"rate"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
 			λ, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("rate must be a float")
@@ -114,7 +114,7 @@ func BernoulliRandom() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"bias"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
 			r := RAND.Float64()
 			p, ok := in[0].(float64)
 			if !ok {

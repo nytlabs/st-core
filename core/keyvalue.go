@@ -13,7 +13,7 @@ type KeyValue struct {
 	sync.Mutex
 }
 
-// TODO: proper type checking on input key
+// retrieves a value from the key value store
 func kvGet() Spec {
 	return Spec{
 		Inputs: []Pin{
@@ -22,21 +22,27 @@ func kvGet() Spec {
 		Outputs: []Pin{
 			Pin{"value"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
-			if value, ok := kv.kv[in[0].(string)]; !ok {
-				out[0] = "error"
+			key, ok := in[0].(string)
+			if !ok {
+				out[0] = NewError("Key is not type string")
+				return nil
+			}
+
+			if value, ok := kv.kv[key]; !ok {
+				out[0] = NewError("Key not found")
 			} else {
 				out[0] = value
 			}
-			s.Unlock()
 			return nil
 		},
 	}
 }
 
-// TODO: proper type checking on input key
+// sets an entry in a key value store
+// if the entry is new, emits true
 func kvSet() Spec {
 	return Spec{
 		Inputs: []Pin{
@@ -44,24 +50,30 @@ func kvSet() Spec {
 			Pin{"value"},
 		},
 		Outputs: []Pin{
-			Pin{"inserted"},
+			Pin{"new"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
-			if _, ok := kv.kv[in[0].(string)]; !ok {
+			key, ok := in[0].(string)
+			if !ok {
+				out[0] = NewError("Key is not type string")
+				return nil
+			}
+
+			if _, ok := kv.kv[key]; !ok {
 				out[0] = true
 			} else {
 				out[0] = false
 			}
 
 			kv.kv[in[0].(string)] = in[1]
-			s.Unlock()
 			return nil
 		},
 	}
 }
 
+// clears the entire map
 // TODO: prefer "empty"
 // change interface{} to message
 func kvClear() Spec {
@@ -72,17 +84,17 @@ func kvClear() Spec {
 		Outputs: []Pin{
 			Pin{"cleared"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			kv.kv = make(map[string]Message)
 			out[0] = true
-			s.Unlock()
 			return nil
 		},
 	}
 }
 
+// dumps the entire map into a message
 // should output be named "object" ?
 // TODO: convert interface{} to message
 // !! should probably double check this to ensure that we don't need a deep copy
@@ -94,21 +106,20 @@ func kvDump() Spec {
 		Outputs: []Pin{
 			Pin{"object"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			outMap := make(map[string]Message)
 			for k, v := range kv.kv {
 				outMap[k] = v
 			}
 			out[0] = outMap
-			s.Unlock()
 			return nil
 		},
 	}
 }
 
-// TODO: proper type checking on input key
+// deletes an entry in a key value store
 func kvDelete() Spec {
 	return Spec{
 		Inputs: []Pin{
@@ -117,16 +128,21 @@ func kvDelete() Spec {
 		Outputs: []Pin{
 			Pin{"deleted"},
 		},
-		Kernel: func(in MessageMap, out MessageMap, s Store, i chan Interrupt) Interrupt {
-			s.Lock()
+		Shared: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
-			if _, ok := kv.kv[in[0].(string)]; !ok {
+			key, ok := in[0].(string)
+			if !ok {
+				out[0] = NewError("Key is not type string")
+				return nil
+			}
+
+			if _, ok := kv.kv[key]; !ok {
 				out[0] = false
 			} else {
-				delete(kv.kv, in[0].(string))
+				delete(kv.kv, key)
 				out[0] = true
 			}
-			s.Unlock()
 			return nil
 		},
 	}

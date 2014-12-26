@@ -63,7 +63,7 @@ func TestSimpleDyads(t *testing.T) {
 		log.Println("testing", blockType)
 		ic := make(chan Interrupt)
 		out := MessageMap{}
-		interrupt := block.Kernel(test.in, out, nil, ic)
+		interrupt := block.Kernel(test.in, out, nil, nil, ic)
 		for k, v := range test.expected {
 			r, ok := out[k]
 			if !ok {
@@ -89,12 +89,12 @@ func TestDelay(t *testing.T) {
 	ic := make(chan Interrupt)
 	out := MessageMap{}
 	expected := MessageMap{0: "test"}
-	tolerance, _ := time.ParseDuration("1ms")
+	tolerance, _ := time.ParseDuration("10ms")
 	timerDuration, _ := time.ParseDuration("1s")
 	timer := time.AfterFunc(timerDuration+tolerance, func() {
 		t.Error("delay took longer than specified duration +", tolerance)
 	})
-	interrupt := spec.Kernel(in, out, nil, ic)
+	interrupt := spec.Kernel(in, out, nil, nil, ic)
 	timer.Stop()
 	if out[0] != expected[0] {
 		t.Error("delay didn't pass the correct message")

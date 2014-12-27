@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 )
@@ -89,6 +90,23 @@ func TestKeyValue(t *testing.T) {
 		}
 	}
 
+}
+
+func TestRouteRace(t *testing.T) {
+	sink := make(chan Message)
+	identity := NewBlock(GetLibrary()["identity"])
+	go identity.Serve()
+	identity.Connect(0, sink)
+	f := map[string]interface{}{
+		"lol": "lol",
+	}
+	identity.RouteValue(0, f)
+
+	z := <-sink
+
+	if fmt.Sprintf("%p", f) == fmt.Sprintf("%p", z) {
+		t.Error("route value race")
+	}
 }
 
 func TestFirst(t *testing.T) {

@@ -167,7 +167,7 @@ func (b *Block) receive() Interrupt {
 		// if there is a value set for this input, place value on
 		// buffer and set it in map.
 		if input.Value != nil {
-			b.state.inputValues[RouteID(id)] = *input.Value
+			b.state.inputValues[RouteID(id)] = Copy(*input.Value)
 			continue
 		}
 

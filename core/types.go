@@ -1,10 +1,6 @@
 package core
 
-import (
-	"sync"
-
-	"github.com/nikhan/go-fetch"
-)
+import "sync"
 
 const (
 	NONE = iota
@@ -46,8 +42,14 @@ type Spec struct {
 // MessageMap and calling the Kernel. A Route can be set to a Value, instead of waiting for an inbound message.
 type Route struct {
 	Name  string
-	Path  *fetch.Query
-	Value *Message
+	Value interface{}
+	C     chan Message
+}
+
+type RouteExport struct {
+	Name  string
+	Path  string
+	Value Message
 	C     chan Message
 }
 

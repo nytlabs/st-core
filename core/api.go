@@ -385,7 +385,10 @@ func (s *Server) CreateConnectionHandler(w http.ResponseWriter, r *http.Request)
 	from := s.blocks[connectReq.FromBlockID]
 	to := s.blocks[connectReq.ToBlockID]
 	fromRoute := RouteID(connectReq.FromRouteIndex)
-	toRoute := to.Block.Input(RouteID(connectReq.ToRouteIndex))
+	toRoute, err := to.Block.GetRoute(RouteID(connectReq.ToRouteIndex))
+	if err != nil {
+		log.Println("error:", err)
+	}
 
 	log.Printf("Connecting %v:%v -> %v:%v\n", from.Name, connectReq.FromRouteIndex, connectReq.ToRouteIndex, to.Name)
 	from.Block.Connect(fromRoute, toRoute.C)

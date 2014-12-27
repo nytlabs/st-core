@@ -14,8 +14,6 @@ func Copy(i interface{}) interface{} {
 			n[i] = Copy(v)
 		}
 		return n
-	default:
-		return t
 	}
-	return nil
+	return i
 }

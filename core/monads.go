@@ -35,7 +35,7 @@ func Log10() Spec {
 		},
 	}
 }
-func Log() Spec {
+func Ln() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"ln"}},

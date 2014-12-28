@@ -48,6 +48,14 @@ func GetLibrary() map[string]Spec {
 		"<":   LessThan(),
 		"==":  EqualTo(),
 		"!=":  NotEqualTo(),
+		// monads
+		"exp":   Exp(),
+		"log10": Log10(),
+		"ln":    Ln(),
+		"sqrt":  Sqrt(),
+		"sin":   Sin(),
+		"cos":   Cos(),
+		"tan":   Tan(),
 		// random sources
 		"uniform":   UniformRandom(),
 		"normal":    NormalRandom(),

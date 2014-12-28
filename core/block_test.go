@@ -4,7 +4,33 @@ import (
 	"encoding/json"
 	"log"
 	"testing"
+	"time"
 )
+
+func TestDelay(t *testing.T) {
+	log.Println("testing delay")
+	spec := Delay()
+	in := MessageMap{
+		0: "test",
+		1: "1s",
+	}
+	ic := make(chan Interrupt)
+	out := MessageMap{}
+	expected := MessageMap{0: "test"}
+	tolerance, _ := time.ParseDuration("10ms")
+	timerDuration, _ := time.ParseDuration("1s")
+	timer := time.AfterFunc(timerDuration+tolerance, func() {
+		t.Error("delay took longer than specified duration +", tolerance)
+	})
+	interrupt := spec.Kernel(in, out, nil, nil, ic)
+	timer.Stop()
+	if out[0] != expected[0] {
+		t.Error("delay didn't pass the correct message")
+	}
+	if interrupt != nil {
+		t.Error("delay returns inappropriate interrupt")
+	}
+}
 
 func TestSingleBlock(t *testing.T) {
 	log.Println("testing single block")

@@ -111,12 +111,11 @@ func (b *Block) GetRoute(id RouteID) (*Route, error) {
 	return r, err
 }
 
-func (b *Block) GetRoutes() []Route {
+func (b *Block) GetRoutes() []*Route {
 	b.routing.RLock()
-	re := make([]Route, len(b.routing.Inputs), len(b.routing.Inputs))
+	re := make([]*Route, len(b.routing.Inputs), len(b.routing.Inputs))
 	for i, _ := range b.routing.Inputs {
-		r, _ := b.exportRoute(RouteID(i))
-		re[i] = *r
+		re[i], _ = b.exportRoute(RouteID(i))
 	}
 	b.routing.RUnlock()
 	return re

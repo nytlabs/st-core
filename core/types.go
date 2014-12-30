@@ -46,13 +46,6 @@ type Route struct {
 	C     chan Message
 }
 
-type RouteExport struct {
-	Name  string
-	Path  string
-	Value Message
-	C     chan Message
-}
-
 // An Output holds a set of Connections. Each Connection refers to a Route.C. Every outbound
 // mesage is sent on every Connection in the Connections set.
 type Output struct {

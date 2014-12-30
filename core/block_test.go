@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 )
@@ -15,8 +16,10 @@ func TestSingleBlock(t *testing.T) {
 
 	set.Connect(0, out)
 
-	set.Input(0).C <- "testing"
-	set.Input(1).C <- "success"
+	sr1, _ := set.GetRoute(0)
+	sr1.C <- "testing"
+	sr2, _ := set.GetRoute(1)
+	sr2.C <- "success"
 
 	p, err := json.Marshal(<-out)
 	if err != nil {
@@ -52,21 +55,27 @@ func TestKeyValue(t *testing.T) {
 	kvset := NewBlock(GetLibrary()["kvSet"])
 	kv := NewKeyValue()
 	go kvset.Serve()
-	kvset.Store(kv)
+	kvset.SetStore(kv)
 
 	kvset.Connect(0, sink)
 	kvdump := NewBlock(GetLibrary()["kvDump"])
 	go kvdump.Serve()
-	kvdump.Store(kv)
+	kvdump.SetStore(kv)
 
 	kvdump.Connect(0, output)
+
+	kv1, _ := kvset.GetRoute(0)
+	kv2, _ := kvset.GetRoute(1)
+
 	for k, v := range testValues {
-		kvset.Input(0).C <- k
-		kvset.Input(1).C <- v
+		kv1.C <- k
+		kv2.C <- v
 		_ = <-sink
 	}
 
-	kvdump.Input(0).C <- "bang"
+	kvd, _ := kvdump.GetRoute(0)
+	kvd.C <- "bang"
+
 	dump := <-output
 
 	for k, vd := range dump.(map[string]Message) {
@@ -91,6 +100,23 @@ func TestKeyValue(t *testing.T) {
 
 }
 
+func TestRouteRace(t *testing.T) {
+	sink := make(chan Message)
+	identity := NewBlock(GetLibrary()["identity"])
+	go identity.Serve()
+	identity.Connect(0, sink)
+	f := map[string]interface{}{
+		"lol": "lol",
+	}
+	identity.SetRoute(0, f)
+
+	z := <-sink
+
+	if fmt.Sprintf("%p", f) == fmt.Sprintf("%p", z) {
+		t.Error("route value race")
+	}
+}
+
 func TestFirst(t *testing.T) {
 	log.Println("testing first")
 	f := NewBlock(GetLibrary()["first"])
@@ -99,10 +125,10 @@ func TestFirst(t *testing.T) {
 	f.Connect(0, sink)
 
 	expected := []interface{}{true, false, false, false, false}
-	in := f.Input(0).C
+	in, _ := f.GetRoute(0)
 
 	for i, v := range expected {
-		in <- i
+		in.C <- i
 		if v != <-sink {
 			t.Error("first did not produce expected results")
 		}
@@ -113,7 +139,7 @@ func TestNull(t *testing.T) {
 	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
 	go null.Serve()
-	null.RouteValue(0, nil)
+	null.SetRoute(0, nil)
 	out := make(chan Message)
 	null.Connect(0, out)
 	o, err := json.Marshal(<-out)
@@ -130,13 +156,13 @@ func BenchmarkAddition(b *testing.B) {
 	add := NewBlock(GetLibrary()["+"])
 	go add.Serve()
 	add.Connect(0, sink)
-	addend1 := add.Input(0).C
-	addend2 := add.Input(1).C
+	addend1, _ := add.GetRoute(0)
+	addend2, _ := add.GetRoute(1)
 
 	b.ResetTimer()
 	for i := 0; i < 100000; i++ {
-		addend1 <- 1.0
-		addend2 <- 2.0
+		addend1.C <- 1.0
+		addend2.C <- 2.0
 		_ = <-sink
 	}
 }
@@ -154,10 +180,15 @@ func BenchmarkRandomMath(b *testing.B) {
 	go add.Serve()
 	go mul.Serve()
 
-	u1.Connect(0, add.Input(0).C)
-	u2.Connect(0, add.Input(1).C)
-	add.Connect(0, mul.Input(0).C)
-	u3.Connect(0, mul.Input(1).C)
+	a1, _ := add.GetRoute(0)
+	a2, _ := add.GetRoute(1)
+	m1, _ := mul.GetRoute(0)
+	m2, _ := mul.GetRoute(1)
+
+	u1.Connect(0, a1.C)
+	u2.Connect(0, a2.C)
+	add.Connect(0, m1.C)
+	u3.Connect(0, m2.C)
 	mul.Connect(0, sink)
 
 	b.ResetTimer()

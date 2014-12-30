@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"log"
 
 	"github.com/nikhan/go-fetch"
@@ -15,9 +16,9 @@ func NewBlock(s Spec) *Block {
 
 		q, _ := fetch.Parse(".")
 		in = append(in, Route{
-			Name: v.Name,
-			Path: q,
-			C:    make(chan Message),
+			Name:  v.Name,
+			Value: q,
+			C:     make(chan Message),
 		})
 	}
 
@@ -81,34 +82,65 @@ func (b *Block) Serve() {
 	}
 }
 
-// todo: proper getter/setters of route properties
-// 	GetRouteValue, GetRoutePath, GetRouteChan
+func (b *Block) exportRoute(id RouteID) (*Route, error) {
+	if int(id) >= len(b.routing.Inputs) || int(id) < 0 {
+		return nil, errors.New("index out of range")
+	}
+
+	var v interface{}
+	switch n := b.routing.Inputs[id].Value.(type) {
+	case *fetch.Query:
+		// yuck copy
+		v, _ = fetch.Parse(n.String())
+	default:
+		v = Copy(n)
+	}
+
+	return &Route{
+		Value: v,
+		C:     b.routing.Inputs[id].C,
+		Name:  b.routing.Inputs[id].Name,
+	}, nil
+}
 
 // Input returns the specfied Route
-func (b *Block) Input(id RouteID) Route {
+func (b *Block) GetRoute(id RouteID) (*Route, error) {
 	b.routing.RLock()
-	// not entirely sure about this
-	// may need a more thorough copy in the future (?)
-	r := b.routing.Inputs[id]
+	r, err := b.exportRoute(id)
 	b.routing.RUnlock()
-	return r
+	return r, err
+}
+
+func (b *Block) GetRoutes() []*Route {
+	b.routing.RLock()
+	re := make([]*Route, len(b.routing.Inputs), len(b.routing.Inputs))
+	for i, _ := range b.routing.Inputs {
+		re[i], _ = b.exportRoute(RouteID(i))
+	}
+	b.routing.RUnlock()
+	return re
 }
 
 // Outputs return a list of manifest pairs for the block
-func (b *Block) Outputs() []ManifestPair {
-	var m []ManifestPair
+func (b *Block) GetOutputs() []Output {
 	b.routing.RLock()
+	m := make([]Output, len(b.routing.Outputs), len(b.routing.Outputs))
 	for id, out := range b.routing.Outputs {
-		for c, _ := range out.Connections {
-			m = append(m, ManifestPair{id, c})
-		}
+		m[id] = out
 	}
 	b.routing.RUnlock()
 	return m
 }
 
+func (b *Block) GetStore() Store {
+	b.routing.RLock()
+	v := b.routing.Shared.Store
+	b.routing.RUnlock()
+	return v
+}
+
 // sets a store for the block. can be set to nil
-func (b *Block) Store(s Store) {
+func (b *Block) SetStore(s Store) {
 	b.routing.InterruptChan <- func() bool {
 		b.routing.Shared.Store = s
 		return true
@@ -116,36 +148,61 @@ func (b *Block) Store(s Store) {
 }
 
 // RouteValue sets the route to always be the specified value
-func (b *Block) RouteValue(id RouteID, v Message) {
+func (b *Block) SetRoute(id RouteID, v interface{}) error {
+	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
-		b.routing.Inputs[id].Value = &v
-		return true
-	}
-}
+		if int(id) < 0 || int(id) >= len(b.routing.Inputs) {
+			returnVal <- errors.New("input out of range")
+			return true
+		}
 
-// RoutePath sets a Route's Path to the supplied go-fetch Query
-func (b *Block) RoutePath(id RouteID, p *fetch.Query) {
-	b.routing.InterruptChan <- func() bool {
-		b.routing.Inputs[id].Path = p
-		b.routing.Inputs[id].Value = nil
+		b.routing.Inputs[id].Value = v
+		returnVal <- nil
 		return true
 	}
+	return <-returnVal
 }
 
 // Connect connects a Route, specified by ID, to a connection
-func (b *Block) Connect(id RouteID, c Connection) {
+func (b *Block) Connect(id RouteID, c Connection) error {
+	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
+		if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
+			returnVal <- errors.New("output out of range")
+			return true
+		}
+
+		if _, ok := b.routing.Outputs[id].Connections[c]; ok {
+			returnVal <- errors.New("this connection already exists on this output")
+			return true
+		}
+
 		b.routing.Outputs[id].Connections[c] = struct{}{}
+		returnVal <- nil
 		return true
 	}
+	return <-returnVal
 }
 
 // Disconnect removes a connection from a Route
-func (b *Block) Disconnect(id RouteID, c Connection) {
+func (b *Block) Disconnect(id RouteID, c Connection) error {
+	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
+		if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
+			returnVal <- errors.New("output out of range")
+			return true
+		}
+
+		if _, ok := b.routing.Outputs[id].Connections[c]; !ok {
+			returnVal <- errors.New("connection does not exist")
+			return true
+		}
+
 		delete(b.routing.Outputs[id].Connections, c)
+		returnVal <- nil
 		return true
 	}
+	return <-returnVal
 }
 
 // suture: stop the block
@@ -166,14 +223,15 @@ func (b *Block) receive() Interrupt {
 
 		// if there is a value set for this input, place value on
 		// buffer and set it in map.
-		if input.Value != nil {
-			b.state.inputValues[RouteID(id)] = *input.Value
+		query, ok := input.Value.(*fetch.Query)
+		if !ok {
+			b.state.inputValues[RouteID(id)] = Copy(input.Value)
 			continue
 		}
 
 		select {
 		case m := <-input.C:
-			b.state.inputValues[RouteID(id)], err = fetch.Run(input.Path, m)
+			b.state.inputValues[RouteID(id)], err = fetch.Run(query, m)
 			if err != nil {
 				log.Fatal(err)
 			}

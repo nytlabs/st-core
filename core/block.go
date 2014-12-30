@@ -87,17 +87,13 @@ func (b *Block) exportRoute(id RouteID) (*Route, error) {
 		return nil, errors.New("index out of range")
 	}
 
-	// copy Value on route export
 	var v interface{}
-	var q *fetch.Query
-	var ok bool
-
-	q, ok = b.routing.Inputs[id].Value.(*fetch.Query)
-	if !ok {
-		v = Copy(b.routing.Inputs[id].Value)
-	} else {
-		t := *q
-		v = &t
+	switch n := b.routing.Inputs[id].Value.(type) {
+	case *fetch.Query:
+		// yuck copy
+		v, _ = fetch.Parse(n.String())
+	default:
+		v = Copy(n)
 	}
 
 	return &Route{

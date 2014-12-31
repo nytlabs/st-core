@@ -24,49 +24,60 @@ func NewError(s string) *stcoreError {
 }
 
 // Library is the set of all core block Specs
+// TODO: should just "Build" a global variable so we don't have to iterate
+// over all funcs every time we need the library
 func GetLibrary() map[string]Spec {
-	return map[string]Spec{
+	b := []Spec{
 		// mechanisms
-		"delay":    Delay(),
-		"set":      Set(),
-		"log":      Log(),
-		"sink":     Sink(),
-		"latch":    Latch(),
-		"gate":     Gate(),
-		"identity": Identity(),
-		"append":   Append(),
-		"tail":     Tail(),
-		"head":     Head(),
+		Delay(),
+		Set(),
+		Log(),
+		Sink(),
+		Latch(),
+		Gate(),
+		Identity(),
+		Append(),
+		Tail(),
+		Head(),
 		// dyads
-		"+":   Addition(),
-		"-":   Subtraction(),
-		"×":   Multiplication(),
-		"÷":   Division(),
-		"^":   Exponentiation(),
-		"mod": Modulation(),
-		">":   GreaterThan(),
-		"<":   LessThan(),
-		"==":  EqualTo(),
-		"!=":  NotEqualTo(),
+		Addition(),
+		Subtraction(),
+		Multiplication(),
+		Division(),
+		Exponentiation(),
+		Modulation(),
+		GreaterThan(),
+		LessThan(),
+		EqualTo(),
+		NotEqualTo(),
 		// random sources
-		"uniform":   UniformRandom(),
-		"normal":    NormalRandom(),
-		"Zipf":      ZipfRandom(),
-		"Poisson":   PoissonRandom(),
-		"Bernoulli": BernoulliRandom(),
-		// keyvalue
-		"kvGet":    kvGet(),
-		"kvSet":    kvSet(),
-		"kvClear":  kvClear(),
-		"kvDump":   kvDump(),
-		"kvDelete": kvDelete(),
+		UniformRandom(),
+		NormalRandom(),
+		ZipfRandom(),
+		PoissonRandom(),
+		BernoulliRandom(),
+		// key value
+		kvGet(),
+		kvSet(),
+		kvClear(),
+		kvDump(),
+		kvDelete(),
 		// stateful
-		"first": First(),
+		First(),
 	}
+
+	library := make(map[string]Spec)
+
+	for _, s := range b {
+		library[s.Name] = s
+	}
+
+	return library
 }
 
 func First() Spec {
 	return Spec{
+		Name:    "first",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"first"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -85,6 +96,7 @@ func First() Spec {
 // Delay emits the message on passthrough after the specified duration
 func Delay() Spec {
 	return Spec{
+		Name:    "delay",
 		Inputs:  []Pin{Pin{"passthrough"}, Pin{"duration"}},
 		Outputs: []Pin{Pin{"passthrough"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -109,6 +121,7 @@ func Delay() Spec {
 // Set creates a new message with the specified key and value
 func Set() Spec {
 	return Spec{
+		Name:    "set",
 		Inputs:  []Pin{Pin{"key"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"object"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -124,6 +137,7 @@ func Set() Spec {
 // TODO where should this write exactly?
 func Log() Spec {
 	return Spec{
+		Name:    "log",
 		Inputs:  []Pin{Pin{"log"}},
 		Outputs: []Pin{},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -140,6 +154,7 @@ func Log() Spec {
 // Sink discards the inbound message
 func Sink() Spec {
 	return Spec{
+		Name:    "sink",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -152,6 +167,7 @@ func Sink() Spec {
 // and the 1st output if ctrl is false
 func Latch() Spec {
 	return Spec{
+		Name:    "latch",
 		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
 		Outputs: []Pin{Pin{"out"}, Pin{"out"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -175,6 +191,7 @@ func Latch() Spec {
 // Gate emits the inbound message upon receiving a message on its trigger
 func Gate() Spec {
 	return Spec{
+		Name:    "gate",
 		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
 		Outputs: []Pin{Pin{"out"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -187,6 +204,7 @@ func Gate() Spec {
 // Identity emits the inbound message immediately
 func Identity() Spec {
 	return Spec{
+		Name:    "identity",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"out"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -200,6 +218,7 @@ func Identity() Spec {
 //and the tail of the array on the other.
 func Head() Spec {
 	return Spec{
+		Name:    "head",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"head"}, Pin{"tail"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -219,6 +238,7 @@ func Head() Spec {
 //and the head of the array on the other.
 func Tail() Spec {
 	return Spec{
+		Name:    "tail",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"tail"}, Pin{"head"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -237,6 +257,7 @@ func Tail() Spec {
 // Append appends the supplied element to the supplied array
 func Append() Spec {
 	return Spec{
+		Name:    "append",
 		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
 		Outputs: []Pin{Pin{"array"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -254,6 +275,7 @@ func Append() Spec {
 // Addition returns the sum of the addenda
 func Addition() Spec {
 	return Spec{
+		Name:    "+",
 		Inputs:  []Pin{Pin{"addend"}, Pin{"addend"}},
 		Outputs: []Pin{Pin{"sum"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -276,6 +298,7 @@ func Addition() Spec {
 // Subtraction returns the difference of the minuend - subtrahend
 func Subtraction() Spec {
 	return Spec{
+		Name:    "-",
 		Inputs:  []Pin{Pin{"minuend"}, Pin{"subtrahend"}},
 		Outputs: []Pin{Pin{"difference"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -298,6 +321,7 @@ func Subtraction() Spec {
 // Multiplication returns the product of the multiplicanda
 func Multiplication() Spec {
 	return Spec{
+		Name:    "×",
 		Inputs:  []Pin{Pin{"multiplicand"}, Pin{"multiplicand"}},
 		Outputs: []Pin{Pin{"product"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -320,6 +344,7 @@ func Multiplication() Spec {
 // Division returns the quotient of the dividend / divisor
 func Division() Spec {
 	return Spec{
+		Name:    "÷",
 		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
 		Outputs: []Pin{Pin{"quotient"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -342,6 +367,7 @@ func Division() Spec {
 // Exponentiation returns the base raised to the exponent
 func Exponentiation() Spec {
 	return Spec{
+		Name:    "^",
 		Inputs:  []Pin{Pin{"base"}, Pin{"exponent"}},
 		Outputs: []Pin{Pin{"power"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -364,6 +390,7 @@ func Exponentiation() Spec {
 // Modulation returns the remainder of the dividend mod divisor
 func Modulation() Spec {
 	return Spec{
+		Name:    "mod",
 		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
 		Outputs: []Pin{Pin{"remainder"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -386,6 +413,7 @@ func Modulation() Spec {
 // GreaterThan returns true if value[0] > value[1] or false otherwise
 func GreaterThan() Spec {
 	return Spec{
+		Name:    ">",
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsGreaterThan"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -408,6 +436,7 @@ func GreaterThan() Spec {
 // LessThan returns true if value[0] < value[1] or false otherwise
 func LessThan() Spec {
 	return Spec{
+		Name:    "<",
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsLessThan"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -430,6 +459,7 @@ func LessThan() Spec {
 // EqualTo returns true if value[0] == value[1] or false otherwise
 func EqualTo() Spec {
 	return Spec{
+		Name:    "=",
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsEqualTo"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -442,6 +472,7 @@ func EqualTo() Spec {
 // NotEqualTo returns true if value[0] != value[1] or false otherwise
 func NotEqualTo() Spec {
 	return Spec{
+		Name:    "!=",
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsNotEqualTo"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {

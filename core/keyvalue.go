@@ -16,6 +16,7 @@ type KeyValue struct {
 // retrieves a value from the key value store
 func kvGet() Spec {
 	return Spec{
+		Name: "kvGet",
 		Inputs: []Pin{
 			Pin{"key"},
 		},
@@ -45,6 +46,7 @@ func kvGet() Spec {
 // if the entry is new, emits true
 func kvSet() Spec {
 	return Spec{
+		Name: "kvSet",
 		Inputs: []Pin{
 			Pin{"key"},
 			Pin{"value"},
@@ -78,6 +80,7 @@ func kvSet() Spec {
 // change interface{} to message
 func kvClear() Spec {
 	return Spec{
+		Name: "kvClear",
 		Inputs: []Pin{
 			Pin{"clear"},
 		},
@@ -100,6 +103,7 @@ func kvClear() Spec {
 // !! should probably double check this to ensure that we don't need a deep copy
 func kvDump() Spec {
 	return Spec{
+		Name: "kvDump",
 		Inputs: []Pin{
 			Pin{"dump"},
 		},
@@ -122,6 +126,7 @@ func kvDump() Spec {
 // deletes an entry in a key value store
 func kvDelete() Spec {
 	return Spec{
+		Name: "kvDelete",
 		Inputs: []Pin{
 			Pin{"key"},
 		},

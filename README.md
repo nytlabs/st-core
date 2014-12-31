@@ -1,6 +1,7 @@
-DESIGN
-======
+`st-core`
+=========
 
-For a bit this will primarily be a design document. Any spec-thoughts you have put in an issue, either as a new issue or as a comment to an existing spec-thought. Please write code in a fork and PR back in. 
+A flow control language for event streams.
 
-[![forthebadge](http://forthebadge.com/badges/gluten-free.svg)](http://forthebadge.com)
+http://godoc.org/github.com/nytlabs/st-core/core
+

@@ -126,7 +126,13 @@ func (b *Block) GetOutputs() []Output {
 	b.routing.RLock()
 	m := make([]Output, len(b.routing.Outputs), len(b.routing.Outputs))
 	for id, out := range b.routing.Outputs {
-		m[id] = out
+		m[id] = Output{
+			Name:        out.Name,
+			Connections: make(map[Connection]struct{}),
+		}
+		for k, _ := range out.Connections {
+			m[id].Connections[k] = struct{}{}
+		}
 	}
 	b.routing.RUnlock()
 	return m

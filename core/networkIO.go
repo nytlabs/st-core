@@ -11,8 +11,10 @@ import (
 
 // HTTPGET makes an HTTP GET request to the specified URL, emitting the response. If the response is JSON that can be unmarhsalled, then an interface containing the JSON is emitted. If not, then a string is emitted containing the response.
 //
-// * Pin 0: URL string
-// * Pin 1: header []string
+//Pin 0:
+//	URL string
+//Pin 1:
+//	header []string
 func HTTPGET() Spec {
 	return Spec{
 		Inputs:  []Pin{Pin{"URL"}, Pin{"header"}},

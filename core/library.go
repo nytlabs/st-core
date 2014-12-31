@@ -39,6 +39,14 @@ func GetLibrary() map[string]Spec {
 		Append(),
 		Tail(),
 		Head(),
+		// monads
+		Exp(),
+		Log10(),
+		Ln(),
+		Sqrt(),
+		Sin(),
+		Cos(),
+		Tan(),
 		// dyads
 		Addition(),
 		Subtraction(),
@@ -56,6 +64,12 @@ func GetLibrary() map[string]Spec {
 		ZipfRandom(),
 		PoissonRandom(),
 		BernoulliRandom(),
+		// membership
+		InArray(),
+		HasField(),
+		InString(),
+		HasPrefix(),
+		HasSuffix(),
 		// key value
 		kvGet(),
 		kvSet(),
@@ -64,6 +78,8 @@ func GetLibrary() map[string]Spec {
 		kvDelete(),
 		// stateful
 		First(),
+		// network IO
+		GET(),
 	}
 
 	library := make(map[string]Spec)
@@ -459,7 +475,7 @@ func LessThan() Spec {
 // EqualTo returns true if value[0] == value[1] or false otherwise
 func EqualTo() Spec {
 	return Spec{
-		Name:    "=",
+		Name:    "==",
 		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
 		Outputs: []Pin{Pin{"IsEqualTo"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {

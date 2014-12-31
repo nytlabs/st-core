@@ -4,8 +4,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"testing"
+	"time"
 )
+
+func TestDelay(t *testing.T) {
+	log.Println("testing delay")
+	spec := Delay()
+	in := MessageMap{
+		0: "test",
+		1: "1s",
+	}
+	ic := make(chan Interrupt)
+	out := MessageMap{}
+	expected := MessageMap{0: "test"}
+	tolerance, _ := time.ParseDuration("10ms")
+	timerDuration, _ := time.ParseDuration("1s")
+	timer := time.AfterFunc(timerDuration+tolerance, func() {
+		t.Error("delay took longer than specified duration +", tolerance)
+	})
+	interrupt := spec.Kernel(in, out, nil, nil, ic)
+	timer.Stop()
+	if out[0] != expected[0] {
+		t.Error("delay didn't pass the correct message")
+	}
+	if interrupt != nil {
+		t.Error("delay returns inappropriate interrupt")
+	}
+}
 
 func TestSingleBlock(t *testing.T) {
 	log.Println("testing single block")
@@ -195,4 +222,22 @@ func BenchmarkRandomMath(b *testing.B) {
 	for i := 0; i < 100000; i++ {
 		_ = <-sink
 	}
+}
+
+func TestGET(t *testing.T) {
+	log.Println("testing GET")
+	lib := GetLibrary()
+	block := NewBlock(lib["GET"])
+	go block.Serve()
+	headers := make(map[string]string)
+	block.SetRoute(1, headers)
+	urlRoute, _ := block.GetRoute(0)
+	out := make(chan Message)
+	block.Connect(0, out)
+	urlRoute.C <- "http://private-e92ba-stcoretest.apiary-mock.com/get"
+	m := <-out
+	if reflect.DeepEqual(m, `{"msg": "hello there!"}`) {
+		t.Error("didn't get expected output from GET")
+	}
+
 }

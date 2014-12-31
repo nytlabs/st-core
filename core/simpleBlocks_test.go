@@ -2,8 +2,8 @@ package core
 
 import (
 	"log"
+	"math"
 	"testing"
-	"time"
 )
 
 type blockTest struct {
@@ -11,7 +11,7 @@ type blockTest struct {
 	expected MessageMap
 }
 
-func TestSimpleDyads(t *testing.T) {
+func TestSimpleBlocks(t *testing.T) {
 	simpleBlockTests := map[string]blockTest{
 		"+": blockTest{
 			in:       MessageMap{0: 1.0, 1: 2.0},
@@ -53,6 +53,34 @@ func TestSimpleDyads(t *testing.T) {
 			in:       MessageMap{0: 3.0, 1: "hello"},
 			expected: MessageMap{0: true},
 		},
+		"exp": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Exp(3.0)},
+		},
+		"log10": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Log10(3.0)},
+		},
+		"ln": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Log(3.0)},
+		},
+		"sqrt": blockTest{
+			in:       MessageMap{0: 4.0},
+			expected: MessageMap{0: math.Sqrt(4.0)},
+		},
+		"sin": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Sin(3.0)},
+		},
+		"cos": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Cos(3.0)},
+		},
+		"tan": blockTest{
+			in:       MessageMap{0: 3.0},
+			expected: MessageMap{0: math.Tan(3.0)},
+		},
 	}
 	library := GetLibrary()
 	for blockType, test := range simpleBlockTests {
@@ -76,30 +104,5 @@ func TestSimpleDyads(t *testing.T) {
 		if interrupt != nil {
 			t.Error(blockType, "returns inappropriate interrupt")
 		}
-	}
-}
-
-func TestDelay(t *testing.T) {
-	log.Println("testing delay")
-	spec := Delay()
-	in := MessageMap{
-		0: "test",
-		1: "1s",
-	}
-	ic := make(chan Interrupt)
-	out := MessageMap{}
-	expected := MessageMap{0: "test"}
-	tolerance, _ := time.ParseDuration("10ms")
-	timerDuration, _ := time.ParseDuration("1s")
-	timer := time.AfterFunc(timerDuration+tolerance, func() {
-		t.Error("delay took longer than specified duration +", tolerance)
-	})
-	interrupt := spec.Kernel(in, out, nil, nil, ic)
-	timer.Stop()
-	if out[0] != expected[0] {
-		t.Error("delay didn't pass the correct message")
-	}
-	if interrupt != nil {
-		t.Error("delay returns inappropriate interrupt")
 	}
 }

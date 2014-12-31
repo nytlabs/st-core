@@ -70,6 +70,8 @@ func GetLibrary() map[string]Spec {
 		"kvDelete": kvDelete(),
 		// stateful
 		"first": First(),
+		// network IO
+		"GET": HTTPGET(),
 	}
 }
 

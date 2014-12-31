@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net"
@@ -9,7 +8,7 @@ import (
 	"time"
 )
 
-// HTTPGET makes an HTTP GET request to the specified URL, emitting the response. If the response is JSON that can be unmarhsalled, then an interface containing the JSON is emitted. If not, then a string is emitted containing the response.
+// HTTPGET makes an HTTP GET request to the specified URL, emitting the response as bytes. You will probably want to decode this using JSONUnmarshal or XMLUnmarshal or StringUnmarshal as required.
 //
 //Pin 0: URL string
 //
@@ -28,7 +27,7 @@ func HTTPGET() Spec {
 
 			// header should be provided as a map like {"Content-Type": "application/x-www-form-urlencoded"}
 			// TODO
-			header, ok := in[0].(map[string]string)
+			header, ok := in[1].(map[string]string)
 			if !ok {
 				out[0] = NewError("HTTPGET requres headers to be a map")
 				return nil
@@ -59,7 +58,7 @@ func HTTPGET() Spec {
 			if err != nil {
 				log.Fatal(err)
 			}
-			for key, value := range headers {
+			for key, value := range header {
 				if key == "Host" {
 					req.Host = value
 				} else {
@@ -79,12 +78,7 @@ func HTTPGET() Spec {
 				out[0] = err
 				return nil
 			}
-			var responseBody interface{}
-			err = json.Unmarshal(body, &responseBody)
-			if err != nil {
-				responseBody = string(body)
-			}
-			out[0] = responseBody
+			out[0] = body
 
 			return nil
 		},

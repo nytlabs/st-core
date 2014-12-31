@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -221,4 +222,26 @@ func BenchmarkRandomMath(b *testing.B) {
 	for i := 0; i < 100000; i++ {
 		_ = <-sink
 	}
+}
+
+func TestGETHTTP(t *testing.T) {
+	log.Println("testing GET")
+	lib := GetLibrary()
+	block := NewBlock(lib["GET"])
+	go block.Serve()
+	headers := make(map[string]string)
+	block.SetRoute(1, headers)
+	urlRoute, _ := block.GetRoute(0)
+	out := make(chan Message)
+	block.Connect(0, out)
+	urlRoute.C <- "http://private-e92ba-stcoretest.apiary-mock.com/get"
+	expected, err := json.Marshal(map[string]string{"msg": "hello there!"})
+	if err != nil {
+		log.Fatal("can't marshal expected JSON")
+	}
+	m := <-out
+	if !reflect.DeepEqual(expected, m) {
+		t.Error("didn't get expected output from GET")
+	}
+
 }

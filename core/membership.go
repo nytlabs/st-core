@@ -5,6 +5,7 @@ import "strings"
 // InArray returns true if the supplied element is in the supplied array
 func InArray() Spec {
 	return Spec{
+		Name:    "inArray",
 		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
 		Outputs: []Pin{Pin{"inArray"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -28,6 +29,7 @@ func InArray() Spec {
 // HasField returns true if the supplied string is a field of the supplied object
 func HasField() Spec {
 	return Spec{
+		Name:    "hasField",
 		Inputs:  []Pin{Pin{"field"}, Pin{"object"}},
 		Outputs: []Pin{Pin{"hasField"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -50,6 +52,7 @@ func HasField() Spec {
 // InString returns true if substring is contained within string
 func InString() Spec {
 	return Spec{
+		Name:    "inString",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -72,6 +75,7 @@ func InString() Spec {
 // HasPrefix returns true if substring is prefix of string
 func HasPrefix() Spec {
 	return Spec{
+		Name:    "hasPrefix",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -94,6 +98,7 @@ func HasPrefix() Spec {
 // HasSuffix returns true if substring is prefix of string
 func HasSuffix() Spec {
 	return Spec{
+		Name:    "hasSuffix",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {

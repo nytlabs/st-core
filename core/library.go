@@ -64,6 +64,12 @@ func GetLibrary() map[string]Spec {
 		ZipfRandom(),
 		PoissonRandom(),
 		BernoulliRandom(),
+		// membership
+		InArray(),
+		HasField(),
+		InString(),
+		HasPrefix(),
+		HasSuffix(),
 		// key value
 		kvGet(),
 		kvSet(),

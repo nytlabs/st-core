@@ -224,7 +224,7 @@ func BenchmarkRandomMath(b *testing.B) {
 	}
 }
 
-func TestGETHTTP(t *testing.T) {
+func TestGET(t *testing.T) {
 	log.Println("testing GET")
 	lib := GetLibrary()
 	block := NewBlock(lib["GET"])
@@ -235,12 +235,8 @@ func TestGETHTTP(t *testing.T) {
 	out := make(chan Message)
 	block.Connect(0, out)
 	urlRoute.C <- "http://private-e92ba-stcoretest.apiary-mock.com/get"
-	expected, err := json.Marshal(map[string]string{"msg": "hello there!"})
-	if err != nil {
-		log.Fatal("can't marshal expected JSON")
-	}
 	m := <-out
-	if !reflect.DeepEqual(expected, m) {
+	if reflect.DeepEqual(m, `{"msg": "hello there!"}`) {
 		t.Error("didn't get expected output from GET")
 	}
 

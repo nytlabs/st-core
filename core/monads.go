@@ -6,6 +6,7 @@ import "math"
 
 func Exp() Spec {
 	return Spec{
+		Name:    "exp",
 		Inputs:  []Pin{Pin{"power"}},
 		Outputs: []Pin{Pin{"product"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -22,6 +23,7 @@ func Exp() Spec {
 
 func Log10() Spec {
 	return Spec{
+		Name:    "log10",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"log10"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -37,6 +39,7 @@ func Log10() Spec {
 }
 func Ln() Spec {
 	return Spec{
+		Name:    "ln",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"ln"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -53,6 +56,7 @@ func Ln() Spec {
 
 func Sqrt() Spec {
 	return Spec{
+		Name:    "sqrt",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"squareRoot"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -69,6 +73,7 @@ func Sqrt() Spec {
 
 func Sin() Spec {
 	return Spec{
+		Name:    "sin",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"sin"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -85,6 +90,7 @@ func Sin() Spec {
 
 func Cos() Spec {
 	return Spec{
+		Name:    "cos",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"cos"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -101,6 +107,7 @@ func Cos() Spec {
 
 func Tan() Spec {
 	return Spec{
+		Name:    "tan",
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"tan"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {

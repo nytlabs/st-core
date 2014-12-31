@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-// HTTPGET makes an HTTP GET request to the specified URL, emitting the response as bytes. You will probably want to decode this using JSONUnmarshal or XMLUnmarshal or StringUnmarshal as required.
+// HTTPGET makes an HTTP GET request to the specified URL, emitting the response as a string.
 //
 //Pin 0: URL string
 //
 //Pin 1: header []string
-func HTTPGET() Spec {
+func GET() Spec {
 	return Spec{
+		Name:    "GET",
 		Inputs:  []Pin{Pin{"URL"}, Pin{"header"}},
 		Outputs: []Pin{Pin{"response"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -78,7 +79,7 @@ func HTTPGET() Spec {
 				out[0] = err
 				return nil
 			}
-			out[0] = body
+			out[0] = string(body)
 
 			return nil
 		},

@@ -31,6 +31,7 @@ type Pin struct {
 
 // A Spec defines a block's input and output Pins, and the block's Kernel.
 type Spec struct {
+	Name    string
 	Inputs  []Pin
 	Outputs []Pin
 	Shared  SharedType

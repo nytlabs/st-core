@@ -8,6 +8,7 @@ import (
 // UniformRandom emits a uniform random between 0 and 1
 func UniformRandom() Spec {
 	return Spec{
+		Name: "uniform",
 		Inputs:  []Pin{},
 		Outputs: []Pin{Pin{"draw"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -21,6 +22,7 @@ func UniformRandom() Spec {
 // supplied mean and variance
 func NormalRandom() Spec {
 	return Spec{
+		Name: "normal",
 		Inputs:  []Pin{Pin{"mean"}, Pin{"variance"}},
 		Outputs: []Pin{Pin{"draw"}},
 		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
@@ -47,6 +49,7 @@ var RAND *rand.Rand = rand.New(rand.NewSource(12345))
 // notation follows the wikipedia page http://en.wikipedia.org/wiki/Zipf%E2%80%93Mandelbrot_law not the golang Zipf parameters
 func ZipfRandom() Spec {
 	return Spec{
+		Name: "Zipf",
 		Inputs:  []Pin{Pin{"q"}, Pin{"s"}, Pin{"N"}},
 		Outputs: []Pin{Pin{"draw"}},
 		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
@@ -91,6 +94,7 @@ func poisson(λ float64) int {
 // PoissonRandom emits a Poisson distribtued random number
 func PoissonRandom() Spec {
 	return Spec{
+		Name: "Poisson",
 		Inputs:  []Pin{Pin{"rate"}},
 		Outputs: []Pin{Pin{"draw"}},
 		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
@@ -112,6 +116,7 @@ func PoissonRandom() Spec {
 // BernoulliRandom emits a draw from a Bernoulli distribution. This block returns a boolean
 func BernoulliRandom() Spec {
 	return Spec{
+		Name: "Bernoulli",
 		Inputs:  []Pin{Pin{"bias"}},
 		Outputs: []Pin{Pin{"draw"}},
 		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {

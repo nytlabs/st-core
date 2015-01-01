@@ -1,0 +1,15 @@
+<html>
+<head>
+	<title>st-core debug</title>
+</head>
+<body>
+<div id="state">
+</div>
+<script>
+	var c = new WebSocket("ws://localhost:7071/updates");
+	c.onmessage = function(m){
+		console.log(m.data)
+	}
+</script>
+</body>
+</html>

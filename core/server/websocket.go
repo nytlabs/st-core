@@ -32,6 +32,14 @@ func (c *socket) write(mt int, payload []byte) error {
 	return c.ws.WriteMessage(mt, payload)
 }
 
+func (s *Server) websocketBroadcast(v interface{}) {
+	out, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	s.broadcast <- out
+}
+
 func (s *Server) websocketRouter() {
 	hub := make(map[*socket]bool)
 	for {

@@ -89,10 +89,7 @@ func (s *Server) ConnectionCreate(w http.ResponseWriter, r *http.Request) {
 	newConn.Id = s.GetNextID()
 	s.connections[newConn.Id] = &newConn
 
-	out, _ := json.Marshal(newConn)
-	// broadcast state update
-	s.broadcast <- out
-
+	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: newConn})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -150,5 +147,6 @@ func (s *Server) ConnectionDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: c})
 	w.WriteHeader(http.StatusNoContent)
 }

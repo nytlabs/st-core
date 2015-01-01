@@ -8,6 +8,15 @@ import (
 	"github.com/thejerf/suture"
 )
 
+const (
+	DELETE     = "DELETE"
+	MODIFY     = "MODIFY"
+	CREATE     = "CREATE"
+	CONNECTION = "CONNECTION"
+	BLOCK      = "BLOCK"
+	GROUP      = "GROUP"
+)
+
 // The Server maintains a set of handlers that coordinate the creation of Nodes
 type Server struct {
 	groups      map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches

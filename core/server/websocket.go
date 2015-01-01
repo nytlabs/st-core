@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -21,23 +22,23 @@ const (
 	maxMessageSize = 512
 )
 
-type connection struct {
+type socket struct {
 	ws   *websocket.Conn
 	send chan []byte
 }
 
-func (c *connection) write(mt int, payload []byte) error {
+func (c *socket) write(mt int, payload []byte) error {
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.ws.WriteMessage(mt, payload)
 }
 
 func (s *Server) websocketRouter() {
-	hub := make(map[*connection]bool)
+	hub := make(map[*socket]bool)
 	for {
 		select {
-		case c := <-s.addConn:
+		case c := <-s.addSocket:
 			hub[c] = true
-		case c := <-s.delConn:
+		case c := <-s.delSocket:
 			delete(hub, c)
 		case m := <-s.broadcast:
 			for c := range hub {
@@ -46,9 +47,9 @@ func (s *Server) websocketRouter() {
 		}
 	}
 }
-func (s *Server) websocketReadPump(c *connection) {
+func (s *Server) websocketReadPump(c *socket) {
 	defer func() {
-		s.delConn <- c
+		s.delSocket <- c
 		c.ws.Close()
 	}()
 	c.ws.SetReadLimit(maxMessageSize)
@@ -56,6 +57,13 @@ func (s *Server) websocketReadPump(c *connection) {
 	c.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		_, message, err := c.ws.ReadMessage()
+		if string(message) == "list" {
+			blocks, _ := json.Marshal(s.ListBlocks())
+			connections, _ := json.Marshal(s.ListConnections())
+			c.send <- blocks
+			c.send <- connections
+		}
+
 		if err != nil {
 			break
 		}
@@ -63,7 +71,7 @@ func (s *Server) websocketReadPump(c *connection) {
 	}
 }
 
-func (s *Server) websocketWritePump(c *connection) {
+func (s *Server) websocketWritePump(c *socket) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -93,8 +101,8 @@ func (s *Server) UpdateSocket(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	c := &connection{send: make(chan []byte, 256), ws: ws}
-	s.addConn <- c
+	c := &socket{send: make(chan []byte, 256), ws: ws}
+	s.addSocket <- c
 	go s.websocketWritePump(c)
 	go s.websocketReadPump(c)
 }

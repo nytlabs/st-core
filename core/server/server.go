@@ -10,16 +10,17 @@ import (
 
 // The Server maintains a set of handlers that coordinate the creation of Nodes
 type Server struct {
-	groups     map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
-	blocks     map[int]*BlockLedger
-	stores     map[int]*core.Store
-	library    map[string]core.Spec
-	supervisor *suture.Supervisor
-	lastID     int
-	addConn    chan *connection
-	delConn    chan *connection
-	broadcast  chan []byte
-	emitChan   chan []byte
+	groups      map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
+	blocks      map[int]*BlockLedger
+	connections map[int]*ConnectionLedger
+	stores      map[int]*core.Store
+	library     map[string]core.Spec
+	supervisor  *suture.Supervisor
+	lastID      int
+	addSocket   chan *socket
+	delSocket   chan *socket
+	broadcast   chan []byte
+	emitChan    chan []byte
 	sync.Mutex
 }
 
@@ -30,19 +31,21 @@ func NewServer() *Server {
 	groups := make(map[int]*Group)
 	groups[0] = NewGroup(0, "root") // this is the top level group
 	blocks := make(map[int]*BlockLedger)
+	connections := make(map[int]*ConnectionLedger)
 	stores := make(map[int]*core.Store)
 	library := core.GetLibrary()
 	s := &Server{
-		supervisor: supervisor,
-		lastID:     0,
-		groups:     groups,
-		blocks:     blocks,
-		library:    library,
-		stores:     stores,
-		addConn:    make(chan *connection),
-		delConn:    make(chan *connection),
-		broadcast:  make(chan []byte),
-		emitChan:   make(chan []byte),
+		supervisor:  supervisor,
+		lastID:      0,
+		groups:      groups,
+		blocks:      blocks,
+		connections: connections,
+		library:     library,
+		stores:      stores,
+		addSocket:   make(chan *socket),
+		delSocket:   make(chan *socket),
+		broadcast:   make(chan []byte),
+		emitChan:    make(chan []byte),
 	}
 	// ws stuff
 	log.Println("starting websocker handler")

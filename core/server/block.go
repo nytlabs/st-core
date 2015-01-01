@@ -41,7 +41,22 @@ func (b BlockLedger) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+func (s *Server) ListBlocks() []BlockLedger {
+	var blocks []BlockLedger
+	s.Lock()
+	for _, b := range s.blocks {
+		blocks = append(blocks, *b)
+	}
+	s.Unlock()
+	return blocks
+}
+
 func (s *Server) BlockIndex(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(s.ListBlocks()); err != nil {
+		panic(err)
+	}
 }
 
 // CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
@@ -63,16 +78,14 @@ func (s *Server) BlockCreate(w http.ResponseWriter, r *http.Request) {
 	b := core.NewBlock(blockSpec)
 	m.ID = s.GetNextID()
 	m.Block = b
-	log.Println("adding", m.Name, "to group 0 with id", m.ID)
 	// we need to introduce the block to our running supervisor
 	m.Token = s.supervisor.Add(b)
 	// and we need to assign it to a group
 	s.groups[0].AddNode(&m)
 	s.blocks[m.ID] = &m
 	//broadcast for state update
-	log.Println("broadcasting")
-	s.broadcast <- body
-	log.Println("done")
+	out, _ := json.Marshal(m)
+	s.broadcast <- out
 	// write HTTP response
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))

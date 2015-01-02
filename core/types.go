@@ -5,6 +5,7 @@ import "sync"
 const (
 	NONE = iota
 	KEY_VALUE
+	STREAM
 	PRIORITY
 	ARRAY
 	VALUE

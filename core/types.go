@@ -72,11 +72,15 @@ type BlockState struct {
 	Processed      bool
 }
 
+// a Store is esssentially a lockable piece of memory that can be accessed safely by mulitple blocks.
+// The Lock and Unlock methods are usually implemented using a sync.Mutex
+// TODO Store -> Source
 type Store interface {
 	Lock()
 	Unlock()
 }
 
+// TODO collapse SharedStore into Store by blessing Store with a GetType() method
 type SharedStore struct {
 	Type  SharedType
 	Store Store

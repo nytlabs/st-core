@@ -26,16 +26,16 @@ type Kernel func(MessageMap, MessageMap, MessageMap, Store, chan Interrupt) Inte
 
 // A Pin is an inbound or outbound route to a block used in the Spec.
 type Pin struct {
-	Name string
+	Name string `json:"name"`
 }
 
 // A Spec defines a block's input and output Pins, and the block's Kernel.
 type Spec struct {
-	Name    string
-	Inputs  []Pin
-	Outputs []Pin
-	Shared  SharedType
-	Kernel  Kernel
+	Name    string     `json:"name"`
+	Inputs  []Pin      `json:"inputs"`
+	Outputs []Pin      `json:"outputs"`
+	Shared  SharedType `json:"-"`
+	Kernel  Kernel     `json:"-"`
 }
 
 // A Route is an inbound route to a block. A Route holds the channel that allows Messages

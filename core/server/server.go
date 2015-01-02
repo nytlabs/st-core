@@ -10,7 +10,7 @@ import (
 
 const (
 	DELETE     = "DELETE"
-	MODIFY     = "MODIFY"
+	UPDATE     = "UPDATE"
 	CREATE     = "CREATE"
 	CONNECTION = "CONNECTION"
 	BLOCK      = "BLOCK"

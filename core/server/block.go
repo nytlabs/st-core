@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -13,30 +14,28 @@ import (
 
 type BlockLedger struct {
 	Name        string              `json:"name"`
+	Type        string              `json:"type"`
 	Id          int                 `json:"id"`
 	Block       *core.Block         `json:"-"`
 	Token       suture.ServiceToken `json:"-"`
 	Parent      int                 `json:"parent"`
 	Composition int                 `json:"composition,omitempty"`
-	Spec        core.Spec           `json:"spec"`
-}
-
-type BlockValue struct {
-	Id    int                    `json:"id"`
-	Value map[string]interface{} `json:"value"`
+	Routes      []core.Route        `json:"routes"`
+	Outputs     []core.Output       `json:"outputs"`
 }
 
 func (s *Server) ListBlocks() []BlockLedger {
 	var blocks []BlockLedger
-	s.Lock()
 	for _, b := range s.blocks {
 		blocks = append(blocks, *b)
 	}
-	s.Unlock()
 	return blocks
 }
 
 func (s *Server) BlockIndex(w http.ResponseWriter, r *http.Request) {
+	s.Lock()
+	defer s.Unlock()
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(s.ListBlocks()); err != nil {
@@ -61,17 +60,21 @@ func (s *Server) BlockCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	blockSpec, ok := s.library[m.Spec.Name]
+	s.Lock()
+	defer s.Unlock()
+
+	blockSpec, ok := s.library[m.Type]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"block not found"})
+		writeJSON(w, Error{"spec not found"})
 		return
 	}
 
-	m.Spec = blockSpec
 	m.Id = s.GetNextID()
 	m.Block = core.NewBlock(blockSpec)
 	m.Token = s.supervisor.Add(m.Block)
+	m.Routes = m.Block.GetRoutes()
+	m.Outputs = m.Block.GetOutputs()
 	s.blocks[m.Id] = &m
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
@@ -100,7 +103,7 @@ func (s *Server) BlockDelete(w http.ResponseWriter, r *http.Request) {
 	b, ok := s.blocks[id]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"connection not found"})
+		writeJSON(w, Error{"block not found"})
 		return
 	}
 
@@ -149,5 +152,104 @@ func (s *Server) BlockDelete(w http.ResponseWriter, r *http.Request) {
 
 }
 func (s *Server) BlockModify(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
 
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	/*routes, ok := vars["route"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no route index supplied"})
+		return
+	}
+
+	route, err := strconv.Atoi(routes)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}*/
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	_, ok = s.blocks[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"block not found"})
+		return
+	}
+
+	var v BlockLedger
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+	fmt.Println(v.Routes[0])
+
+	/*var m interface{}
+	_, isFetch := v["fetch"]
+	if isFetch {
+		queryString, ok := v["fetch"].(string)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{"fetch is not string"})
+			return
+		}
+
+		fo, err := fetch.Parse(queryString)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{err.Error()})
+			return
+		}
+
+		m = fo
+	}
+
+	_, isJSON := v["json"]
+	if isJSON {
+		m = v["json"]
+	}
+
+	if !isJSON && !isFetch {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no value or query specified"})
+		return
+	}
+
+	if isJSON || isFetch {
+		err := b.Block.SetRoute(core.RouteID(route), m)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{err.Error()})
+			return
+		}
+	}
+
+	rs, _ := s.blocks[id].Block.GetRoute(core.RouteID(route))
+	s.blocks[id].Routes[route] = rs
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: s.blocks[id]})*/
+	w.WriteHeader(http.StatusNoContent)
 }

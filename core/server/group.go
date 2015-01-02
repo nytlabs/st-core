@@ -100,7 +100,7 @@ type createGroupRequest struct {
 	ChildIDs []int
 }
 
-func printGroups(g *Group, out string, tabs string) (string, string) {
+/*func printGroups(g *Group, out string, tabs string) (string, string) {
 	tabs += "  "
 	for _, child := range g.children {
 		switch child := child.(type) {
@@ -116,11 +116,11 @@ func printGroups(g *Group, out string, tabs string) (string, string) {
 	}
 	tabs = tabs[len(tabs)-2 : len(tabs)]
 	return out, tabs
-}
+}*/
 
 func (s *Server) String() string {
-	out, _ := printGroups(s.groups[0], "(root):\n", "")
-	return out
+	//out, _ := printGroups(s.groups[0], "(root):\n", "")
+	return "UGHHH"
 }
 
 // GetGroupHandler returns a string representation of the groups in the Server. This won't last!

@@ -66,8 +66,10 @@ func (s *Server) websocketReadPump(c *socket) {
 	for {
 		_, message, err := c.ws.ReadMessage()
 		if string(message) == "list" {
+			s.Lock()
 			blocks, _ := json.Marshal(s.ListBlocks())
 			connections, _ := json.Marshal(s.ListConnections())
+			s.Unlock()
 			c.send <- blocks
 			c.send <- connections
 		}

@@ -1,6 +1,11 @@
 package core
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+
+	"github.com/nikhan/go-fetch"
+)
 
 const (
 	NONE = iota
@@ -26,16 +31,16 @@ type Kernel func(MessageMap, MessageMap, MessageMap, Store, chan Interrupt) Inte
 
 // A Pin is an inbound or outbound route to a block used in the Spec.
 type Pin struct {
-	Name string `json:"name"`
+	Name string
 }
 
 // A Spec defines a block's input and output Pins, and the block's Kernel.
 type Spec struct {
-	Name    string     `json:"name"`
-	Inputs  []Pin      `json:"inputs"`
-	Outputs []Pin      `json:"outputs"`
-	Shared  SharedType `json:"-"`
-	Kernel  Kernel     `json:"-"`
+	Name    string
+	Inputs  []Pin
+	Outputs []Pin
+	Shared  SharedType
+	Kernel  Kernel
 }
 
 // A Route is an inbound route to a block. A Route holds the channel that allows Messages
@@ -47,11 +52,28 @@ type Route struct {
 	C     chan Message
 }
 
+func (r Route) MarshalJSON() ([]byte, error) {
+	out := make(map[string]interface{})
+	value := make(map[string]interface{})
+	out["name"] = r.Name
+
+	switch q := r.Value.(type) {
+	case *fetch.Query:
+		value["fetch"] = q.String()
+	default:
+		value["json"] = q
+	}
+
+	out["value"] = value
+
+	return json.Marshal(out)
+}
+
 // An Output holds a set of Connections. Each Connection refers to a Route.C. Every outbound
 // mesage is sent on every Connection in the Connections set.
 type Output struct {
-	Name        string
-	Connections map[Connection]struct{}
+	Name        string                  `json:"name"`
+	Connections map[Connection]struct{} `json:"-"`
 }
 
 // A ManifestPair is a unique reference to an Output/Connection pair

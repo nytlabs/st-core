@@ -13,10 +13,12 @@ type Stream struct {
 	quit chan bool
 }
 
+// Stop causes the stream to close. No more messages will show up, and no more messages can be sent
 func (s *Stream) Stop() {
 	s.quit <- true
 }
 
+// NewStream returns a new stream Store.
 func NewStream() Store {
 	stream := &Stream{
 		Out:  make(chan interface{}),
@@ -39,7 +41,10 @@ func NewStream() Store {
 	return stream
 }
 
-func streamReceive() Spec {
+// StreamRecieve receives messages from the Stream store.
+//
+// OutPin 0: received message
+func StreamReceive() Spec {
 	return Spec{
 		Name: "streamReceive",
 		Outputs: []Pin{
@@ -58,7 +63,10 @@ func streamReceive() Spec {
 	}
 }
 
-func streamSend() Spec {
+// StreamSend publishes the inbound message to the Stream store.
+//
+// InPin 0: message to send
+func StreamSend() Spec {
 	return Spec{
 		Name: "streamSend",
 		Inputs: []Pin{

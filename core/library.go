@@ -83,8 +83,8 @@ func GetLibrary() map[string]Spec {
 		kvDelete(),
 
 		// stream
-		streamReceive(),
-		streamSend(),
+		StreamReceive(),
+		StreamSend(),
 
 		// stateful
 

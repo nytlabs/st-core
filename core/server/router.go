@@ -58,10 +58,22 @@ func (s *Server) NewRouter() *mux.Router {
 			s.BlockDelete,
 		},
 		Route{
-			"BlockModify",
-			"/blocks/{id}",
+			"BlockModifyName",
+			"/blocks/{id}/name",
 			"PUT",
-			s.BlockModify,
+			s.BlockModifyName,
+		},
+		Route{
+			"BlockModifyRoute",
+			"/blocks/{id}/routes/{index}",
+			"PUT",
+			s.BlockModifyRoute,
+		},
+		Route{
+			"BlockModifyGroup",
+			"/blocks/{id}/group",
+			"PUT",
+			s.BlockModifyGroup,
 		},
 		Route{
 			"ConnectionIndex",

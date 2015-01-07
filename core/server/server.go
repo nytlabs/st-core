@@ -22,6 +22,7 @@ type Server struct {
 	groups      map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
 	blocks      map[int]*BlockLedger
 	connections map[int]*ConnectionLedger
+	routes      map[RoutePair]RoutePair
 	stores      map[int]*core.Store
 	library     map[string]core.Spec
 	supervisor  *suture.Supervisor
@@ -43,6 +44,7 @@ func NewServer() *Server {
 	connections := make(map[int]*ConnectionLedger)
 	stores := make(map[int]*core.Store)
 	library := core.GetLibrary()
+	routes := make(map[RoutePair]RoutePair)
 	s := &Server{
 		supervisor:  supervisor,
 		lastID:      0,
@@ -51,6 +53,7 @@ func NewServer() *Server {
 		connections: connections,
 		library:     library,
 		stores:      stores,
+		routes:      routes,
 		addSocket:   make(chan *socket),
 		delSocket:   make(chan *socket),
 		broadcast:   make(chan []byte),

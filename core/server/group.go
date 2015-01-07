@@ -11,6 +11,17 @@ import (
 	"sync"
 )
 
+type RoutePair struct {
+	Id    int
+	Route int
+}
+
+/*type Group struct {
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Parent int    `json:"parent"`
+}*/
+
 // A Node has an ID and a Name
 type Node interface {
 	GetID() int
@@ -99,24 +110,6 @@ type createGroupRequest struct {
 	Name     string
 	ChildIDs []int
 }
-
-/*func printGroups(g *Group, out string, tabs string) (string, string) {
-	tabs += "  "
-	for _, child := range g.children {
-		switch child := child.(type) {
-		case *Group:
-			out += tabs + "(" + strconv.Itoa(child.GetID()) + ") " + child.GetName() + ":\n"
-			out, tabs = printGroups(child, out, tabs)
-		case *BlockLedger:
-			out += tabs + "(" + strconv.Itoa(child.GetID()) + ") " + child.GetName() + "\n"
-		default:
-			log.Printf("%T", child)
-			log.Fatal("trying to print some shit")
-		}
-	}
-	tabs = tabs[len(tabs)-2 : len(tabs)]
-	return out, tabs
-}*/
 
 func (s *Server) String() string {
 	//out, _ := printGroups(s.groups[0], "(root):\n", "")

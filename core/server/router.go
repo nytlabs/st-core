@@ -123,6 +123,12 @@ func (s *Server) NewRouter() *mux.Router {
 			"DELETE",
 			s.SourceDeleteHandler,
 		},
+		Route{
+			"Library",
+			"/library",
+			"GET",
+			s.LibraryHandler,
+		},
 	}
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {

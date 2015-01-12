@@ -93,6 +93,36 @@ func (s *Server) NewRouter() *mux.Router {
 			"DELETE",
 			s.ConnectionDelete,
 		},
+		Route{
+			"SourceCreate",
+			"/sources",
+			"POST",
+			s.SourceCreate,
+		},
+		Route{
+			"SourceIndex",
+			"/sources",
+			"GET",
+			s.SourceIndex,
+		},
+		Route{
+			"SourceModify",
+			"/sources/{id}",
+			"/PUT",
+			s.SourceModify,
+		},
+		Route{
+			"Source",
+			"/sources/{id}",
+			"GET",
+			s.Source,
+		},
+		Route{
+			"Source",
+			"/sources/{id}",
+			"DELETE",
+			s.SourceDelete,
+		},
 	}
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {

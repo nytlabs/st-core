@@ -105,7 +105,7 @@ func (s *Server) websocketWritePump(c *socket) {
 	}
 }
 
-func (s *Server) UpdateSocket(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

@@ -117,12 +117,12 @@ func (s *Server) String() string {
 }
 
 // GetGroupHandler returns a string representation of the groups in the Server. This won't last!
-func (s *Server) GetGroupHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetGroupHandlerHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte(fmt.Sprint(s)))
 }
 
-func (s *Server) GroupIndex(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GroupIndexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(struct{}{}); err != nil {
@@ -132,7 +132,7 @@ func (s *Server) GroupIndex(w http.ResponseWriter, r *http.Request) {
 
 // CreateGroupHandler responds to a POST request to instantiate a new group and add it to the Server.
 // Moves all of the specified children out of the parent's group and into the new group.
-func (s *Server) GroupCreate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Fatal(body)
@@ -174,5 +174,5 @@ func (s *Server) GroupCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))
 }
-func (s *Server) GroupDelete(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }

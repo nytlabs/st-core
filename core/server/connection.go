@@ -29,7 +29,7 @@ func (s *Server) ListConnections() []ConnectionLedger {
 	return connections
 }
 
-func (s *Server) ConnectionIndex(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ConnectionIndexHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -43,7 +43,7 @@ func (s *Server) ConnectionIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateConnectionHandler responds to a POST request to instantiate a new connection
-func (s *Server) ConnectionCreate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -93,7 +93,7 @@ func (s *Server) ConnectionCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) ConnectionDelete(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ConnectionDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
 	if !ok {

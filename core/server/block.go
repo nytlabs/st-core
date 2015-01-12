@@ -51,7 +51,7 @@ func (s *Server) ListBlocks() []BlockLedger {
 	return blocks
 }
 
-func (s *Server) BlockIndex(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockIndexHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -63,7 +63,7 @@ func (s *Server) BlockIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
-func (s *Server) BlockCreate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -99,7 +99,7 @@ func (s *Server) BlockCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) BlockModifyRoute(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
 	if !ok {
@@ -211,7 +211,7 @@ func (s *Server) BlockModifyRoute(w http.ResponseWriter, r *http.Request) {
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
 	w.WriteHeader(http.StatusNoContent)
 }
-func (s *Server) BlockModifyName(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
 	if !ok {
@@ -262,10 +262,10 @@ func (s *Server) BlockModifyName(w http.ResponseWriter, r *http.Request) {
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
 	w.WriteHeader(http.StatusNoContent)
 }
-func (s *Server) BlockModifyGroup(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockModifyGroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func (s *Server) BlockDelete(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
 	if !ok {

@@ -4,13 +4,23 @@ import "sync"
 
 func NewKeyValue() Store {
 	return &KeyValue{
-		kv: make(map[string]Message),
+		kv:   make(map[string]Message),
+		quit: make(chan bool),
 	}
 }
 
 type KeyValue struct {
-	kv map[string]Message
+	kv   map[string]Message
+	quit chan bool
 	sync.Mutex
+}
+
+func (k *KeyValue) Serve() {
+	<-k.quit
+}
+
+func (k *KeyValue) Stop() {
+	k.quit <- true
 }
 
 // retrieves a value from the key value store

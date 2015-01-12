@@ -87,7 +87,6 @@ func GetLibrary() map[string]Spec {
 		StreamSend(),
 
 		// stateful
-
 		First(),
 
 		// network IO

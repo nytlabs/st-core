@@ -93,6 +93,8 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) ConnectionModifyCoordinates(w http.ResponseWriter, r *http.Request) {
+}
 func (s *Server) ConnectionDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]

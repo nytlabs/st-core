@@ -5,8 +5,9 @@ import (
 	"net/http"
 )
 
+// naming confusion between "name" and "type" ~_~
 type LibraryEntry struct {
-	Name   string `json:"name"`
+	Type   string `json:"type"`
 	Source int    `json:"source"`
 	// type if we need that later
 }

@@ -176,3 +176,17 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
+func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupModifyAllChildrenHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
+}

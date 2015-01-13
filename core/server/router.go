@@ -28,10 +28,52 @@ func (s *Server) NewRouter() *mux.Router {
 			s.GroupIndexHandler,
 		},
 		Route{
+			"Group",
+			"/groups/{id}",
+			"GET",
+			s.GroupHandler,
+		},
+		Route{
 			"GroupCreate",
 			"/groups",
 			"POST",
 			s.GroupCreateHandler,
+		},
+		Route{
+			"GroupExport",
+			"/groups/{id}/export",
+			"GET",
+			s.GroupExportHandler,
+		},
+		Route{
+			"GroupImport",
+			"/groups/{id}/import",
+			"POST",
+			s.GroupImportHandler,
+		},
+		Route{
+			"GroupModifyLabel",
+			"/groups/{id}/label",
+			"PUT",
+			s.GroupModifyLabelHandler,
+		},
+		Route{
+			"GroupModifyAllChildren",
+			"/groups/{id}/children",
+			"PUT",
+			s.GroupModifyAllChildrenHandler,
+		},
+		Route{
+			"GroupModifyChild",
+			"/groups/{id}/children/{block_id}",
+			"PUT",
+			s.GroupModifyChildHandler,
+		},
+		Route{
+			"GroupPosition",
+			"/groups/{id}/position",
+			"PUT",
+			s.GroupPositionHandler,
 		},
 		Route{
 			"GroupDelete",
@@ -44,6 +86,12 @@ func (s *Server) NewRouter() *mux.Router {
 			"/blocks",
 			"GET",
 			s.BlockIndexHandler,
+		},
+		Route{
+			"Block",
+			"/blocks/{id}",
+			"GET",
+			s.BlockHandler,
 		},
 		Route{
 			"BlockCreate",
@@ -59,7 +107,7 @@ func (s *Server) NewRouter() *mux.Router {
 		},
 		Route{
 			"BlockModifyName",
-			"/blocks/{id}/name",
+			"/blocks/{id}/label",
 			"PUT",
 			s.BlockModifyNameHandler,
 		},
@@ -70,10 +118,10 @@ func (s *Server) NewRouter() *mux.Router {
 			s.BlockModifyRouteHandler,
 		},
 		Route{
-			"BlockModifyGroup",
-			"/blocks/{id}/group",
+			"BlockModifyPosition",
+			"/blocks/{id}/position",
 			"PUT",
-			s.BlockModifyGroupHandler,
+			s.BlockModifyPositionHandler,
 		},
 		Route{
 			"ConnectionIndex",
@@ -86,6 +134,12 @@ func (s *Server) NewRouter() *mux.Router {
 			"/connections",
 			"POST",
 			s.ConnectionCreateHandler,
+		},
+		Route{
+			"ConnectionModifyCoordinates",
+			"/connections/{id}/coordinates",
+			"PUT",
+			s.ConnectionModifyCoordinates,
 		},
 		Route{
 			"ConnectionDelete",

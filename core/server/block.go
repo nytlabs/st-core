@@ -13,34 +13,22 @@ import (
 )
 
 type BlockLedger struct {
-	Name        string              `json:"name"`
+	Label       string              `json:"label"`
 	Type        string              `json:"type"`
 	Id          int                 `json:"id"`
 	Block       *core.Block         `json:"-"`
 	Token       suture.ServiceToken `json:"-"`
-	Parent      int                 `json:"parent"`
+	Parent      *Group              `json:"-"`
 	Composition int                 `json:"composition,omitempty"`
-	Routes      []core.Route        `json:"routes"`
+	Inputs      []BlockLedgerInput  `json:"inputs"`
 	Outputs     []core.Output       `json:"outputs"`
 }
 
-type BlockUpdateRoute struct {
-	Value struct {
-		Fetch interface{} `json:"fetch,omitempty"`
-		Json  interface{} `json:"json,omitempty"`
-	} `json:"value"`
-	Id    int `json:"id"`
-	Route int `json:"route"`
-}
-
-type BlockUpdateName struct {
-	Name string `json:"name"`
-	Id   int    `json:"id"`
-}
-
-type BlockUpdateGroup struct {
-	Group int `json:"group"`
-	Id    int `json:"id"`
+type BlockLedgerInput struct {
+	Name  string            `json:"name"`
+	Type  string            `json:"type"`
+	Value interface{}       `json:"value"`
+	C     chan core.Message `json:"-"`
 }
 
 func (s *Server) ListBlocks() []BlockLedger {
@@ -60,6 +48,11 @@ func (s *Server) BlockIndexHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(s.ListBlocks()); err != nil {
 		panic(err)
 	}
+}
+
+func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
+}
+func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
@@ -92,7 +85,29 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 	m.Id = s.GetNextID()
 	m.Block = core.NewBlock(blockSpec)
 	m.Token = s.supervisor.Add(m.Block)
-	m.Routes = m.Block.GetRoutes()
+	is := m.Block.GetRoutes()
+
+	// may want to move this into actual block someday
+	inputs := make([]BlockLedgerInput, len(is), len(is))
+	for i, v := range is {
+		if q, ok := v.Value.(*fetch.Query); ok {
+			inputs[i] = BlockLedgerInput{
+				Name:  v.Name,
+				Type:  "fetch",
+				Value: q.String(),
+				C:     v.C,
+			}
+		} else {
+			inputs[i] = BlockLedgerInput{
+				Name:  v.Name,
+				Type:  "const",
+				Value: v.Value,
+				C:     v.C,
+			}
+		}
+	}
+
+	m.Inputs = inputs
 	m.Outputs = m.Block.GetOutputs()
 	s.blocks[m.Id] = &m
 	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
@@ -146,7 +161,7 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var v map[string]interface{}
+	var v BlockLedgerInput
 	err = json.Unmarshal(body, &v)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -154,10 +169,10 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// again maybe this type should be native to block under core.
 	var m interface{}
-	_, isFetch := v["fetch"]
-	if isFetch {
-		queryString, ok := v["fetch"].(string)
+	if v.Type == "fetch" {
+		queryString, ok := v.Value.(string)
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			writeJSON(w, Error{"fetch is not string"})
@@ -172,40 +187,30 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		m = fo
-	}
-
-	_, isJSON := v["json"]
-	if isJSON {
-		m = v["json"]
-	}
-
-	if !isJSON && !isFetch {
+	} else if v.Type == "const" {
+		m = v.Value
+	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"no value or query specified"})
 		return
 	}
 
-	if isJSON || isFetch {
-		err := b.Block.SetRoute(core.RouteID(route), m)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{err.Error()})
-			return
-		}
+	err = b.Block.SetRoute(core.RouteID(route), m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
 	}
 
-	rs, _ := s.blocks[id].Block.GetRoute(core.RouteID(route))
-	s.blocks[id].Routes[route] = rs
+	s.blocks[id].Inputs[route].Type = v.Type
+	s.blocks[id].Inputs[route].Value = m
 
-	update := BlockUpdateRoute{
-		Id:    id,
-		Route: route,
-	}
-
-	if isFetch {
-		update.Value.Fetch = m.(*fetch.Query).String()
-	} else {
-		update.Value.Json = m
+	update := struct {
+		BlockLedgerInput
+		Id    int `json:"id"`
+		input int `json:"input"`
+	}{
+		v, id, route,
 	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
@@ -244,25 +249,25 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var name string
-	err = json.Unmarshal(body, &name)
+	var label string
+	err = json.Unmarshal(body, &label)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"could not unmarshal value"})
 		return
 	}
 
-	s.blocks[id].Name = name
+	s.blocks[id].Label = label
 
-	update := BlockUpdateName{
-		Id:   id,
-		Name: name,
+	update := struct {
+		Id    int    `json:"id"`
+		Label string `json:"label"`
+	}{
+		id, label,
 	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
 	w.WriteHeader(http.StatusNoContent)
-}
-func (s *Server) BlockModifyGroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {

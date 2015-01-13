@@ -2,130 +2,31 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"strconv"
-	"sync"
 )
 
-type RoutePair struct {
-	Id    int
-	Route int
-}
-
-/*type Group struct {
-	Id     int    `json:"id"`
-	Name   string `json:"name"`
-	Parent int    `json:"parent"`
-}*/
-
-// A Node has an ID and a Name
-type Node interface {
-	GetID() int
-	GetName() string
-	json.Marshaler
-}
-
-// A Group is contained by a node and contains nodes
 type Group struct {
-	children map[int]Node
-	id       int
-	name     string
-	sync.Mutex
+	Id       int    `json:"id"`
+	Label    string `json:"label"`
+	Children []int  `json:"children"`
+	Parent   int    `json:"group"`
 }
 
-// GetID returns the id of the Group
-func (g *Group) GetID() int {
-	return g.id
-}
+func (g *Group) GetID()
 
-// GetName returns the group's Name
-func (g *Group) GetName() string {
-	return g.name
-}
-
-// MarshalJSON returns the JSON representation of the group
-func (g *Group) MarshalJSON() ([]byte, error) {
-	children := make([]Node, len(g.children))
-	i := 0
-	for _, v := range g.children {
-		children[i] = v
-		i++
+func (s *Server) ListGroups() []Group {
+	group := []Group{}
+	for _, g := range s.groups {
+		groups = append(groups, *g)
 	}
-	out := map[string]interface{}{
-		"children": children,
-		"id":       strconv.Itoa(g.id),
-		"name":     g.name,
-	}
-	return json.Marshal(out)
-}
-
-// NewGroup returns a group with no children
-func NewGroup(id int, name string) *Group {
-	return &Group{
-		children: make(map[int]Node),
-		id:       id,
-		name:     name,
-	}
-}
-
-// NewGroupFromNodes returns a group containing existing nodes
-func NewGroupFromNodes(id int, name string, nodes []Node) *Group {
-	g := NewGroup(id, name)
-	for _, n := range nodes {
-		g.AddNode(n)
-	}
-	return g
-}
-
-// GetNode returns the specified Node, erroring if the node does not exist
-func (g *Group) GetNode(id int) (Node, error) {
-	out, ok := g.children[id]
-	if !ok {
-		return nil, errors.New("could not find node with id " + strconv.Itoa(id))
-	}
-	return out, nil
-}
-
-// AddNode adds a node to a group
-func (g *Group) AddNode(n Node) {
-	g.Lock()
-	defer g.Unlock()
-	g.children[n.GetID()] = n
-}
-
-// RemoveNode removes a node from a group
-func (g *Group) RemoveNode(n Node) {
-	g.Lock()
-	defer g.Unlock()
-	delete(g.children, n.GetID())
-}
-
-// when creating a new group you must specify the parent of the new group and the children (blocks and other groups) of the new group.
-type createGroupRequest struct {
-	ParentID int
-	Name     string
-	ChildIDs []int
-}
-
-func (s *Server) String() string {
-	//out, _ := printGroups(s.groups[0], "(root):\n", "")
-	return "UGHHH"
-}
-
-// GetGroupHandler returns a string representation of the groups in the Server. This won't last!
-func (s *Server) GetGroupHandlerHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte(fmt.Sprint(s)))
+	return groups
 }
 
 func (s *Server) GroupIndexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(struct{}{}); err != nil {
+	if err := json.NewEncoder(w).Encode(s.GroupList()); err != nil {
 		panic(err)
 	}
 }
@@ -135,44 +36,36 @@ func (s *Server) GroupIndexHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(body)
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
 	}
-	var groupReq createGroupRequest
-	json.Unmarshal(body, &groupReq)
 
-	g := NewGroup(s.GetNextID(), groupReq.Name)
+	var g struct {
+		Group    int    `json:"group"`
+		Children []int  `json:"children"`
+		Label    string `json:"label"`
+	}
+
+	err = json.Unmarshal(body, &g)
 	if err != nil {
-		log.Panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
 	}
 
-	// move over the children into the new group
-	parent := s.groups[groupReq.ParentID]
-	for _, childid := range groupReq.ChildIDs {
-		child, err := parent.GetNode(childid)
-		if err != nil {
-			log.Panic(err)
-		}
-		log.Println("removing node", child.GetID(), "from group", parent.GetID())
-		parent.RemoveNode(child)
-		log.Println("adding node", child.GetID(), "to group", g.GetID())
-		g.AddNode(child)
+	s.Lock()
+	defer s.Unlock()
+
+	g = &Group{
+		Children: g.Children,
+		Label:    g.Label,
+		Id:       s.GetNextId(),
 	}
 
-	log.Println("adding new group", g.GetName(), "as child of", groupReq.ParentID, "with ID", g.GetID())
-	parent.AddNode(g)
-	s.groups[g.id] = g
+	s.AddChildToGroup(g.Group, g.Id)
+	s.Groups[g.Id] = g
 
-	// broadcast state update
-	log.Println(g)
-	stateUpdate, err := json.Marshal(g)
-	if err != nil {
-		log.Fatal(err)
-	}
-	s.broadcast <- stateUpdate
-
-	// reassurance
-	w.WriteHeader(200)
-	w.Write([]byte("OK"))
 }
 func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }

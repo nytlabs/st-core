@@ -18,7 +18,6 @@ type BlockLedger struct {
 	Id          int                 `json:"id"`
 	Block       *core.Block         `json:"-"`
 	Token       suture.ServiceToken `json:"-"`
-	Parent      *Group              `json:"-"`
 	Composition int                 `json:"composition,omitempty"`
 	Inputs      []BlockLedgerInput  `json:"inputs"`
 	Outputs     []core.Output       `json:"outputs"`
@@ -32,7 +31,7 @@ type BlockLedgerInput struct {
 }
 
 func (s *Server) ListBlocks() []BlockLedger {
-	var blocks []BlockLedger
+	blocks := []BlockLedger{}
 	for _, b := range s.blocks {
 		blocks = append(blocks, *b)
 	}

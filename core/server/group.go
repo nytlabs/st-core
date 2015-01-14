@@ -51,6 +51,29 @@ func (s *Server) GroupIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) DetachChild(g Node) error {
+	parent := g.GetParent()
+	if parent == nil {
+		return errors.New("no parent to detach from")
+	}
+
+	id := g.GetID()
+
+	child := -1
+	for i, v := range parent.Children {
+		if v == id {
+			child = i
+		}
+	}
+
+	if child == -1 {
+		return errors.New("could not remove child from group: child does not exist")
+	}
+
+	parent.Children = append(parent.Children[:child], parent.Children[child+1:]...)
+	return nil
+}
+
 func (s *Server) AddChildToGroup(id int, n Node) error {
 	newParent, ok := s.groups[id]
 	if !ok {
@@ -65,22 +88,11 @@ func (s *Server) AddChildToGroup(id int, n Node) error {
 	}
 
 	newParent.Children = append(newParent.Children, nid)
-	oldParent := n.GetParent()
-
-	// if this node had a previous parent assigned
-	if oldParent != nil {
-		child := -1
-		for i, v := range oldParent.Children {
-			if v == nid {
-				child = i
-			}
+	if n.GetParent() != nil {
+		err := s.DetachChild(n)
+		if err != nil {
+			return err
 		}
-
-		if child == -1 {
-			return errors.New("could not remove child from group: child does not exist")
-		}
-
-		oldParent.Children = append(oldParent.Children[:child], oldParent.Children[child+1:]...)
 	}
 
 	n.SetParent(newParent)
@@ -117,6 +129,10 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		Children: g.Children,
 		Label:    g.Label,
 		Id:       s.GetNextID(),
+	}
+
+	if newGroup.Children == nil {
+		newGroup.Children = []int{}
 	}
 
 	s.groups[newGroup.Id] = newGroup
@@ -156,7 +172,7 @@ func (s *Server) DeleteGroup(id int) error {
 	}{
 		id,
 	}
-
+	s.DetachChild(group)
 	delete(s.groups, id)
 	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP, Data: update})
 	return nil

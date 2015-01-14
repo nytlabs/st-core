@@ -82,7 +82,6 @@ func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
-
 	blockSpec, ok := s.library[p.Type]
 	if !ok {
 		return nil, errors.New("spec not found")
@@ -94,9 +93,8 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		Label:    p.Label,
 		Position: p.Position,
 		Type:     p.Type,
-		Id:       s.GetNextID(),
 		Block:    block,
-		Token:    s.supervisor.Add(block),
+		Id:       s.GetNextID(),
 	}
 
 	is := m.Block.GetRoutes()
@@ -121,14 +119,18 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		}
 	}
 
+	err := s.AddChildToGroup(p.Parent, m)
+	if err != nil {
+		return nil, err
+
+	}
+
+	m.Token = s.supervisor.Add(block)
 	m.Inputs = inputs
 	m.Outputs = block.GetOutputs()
-
 	s.blocks[m.Id] = m
-	s.AddChildToGroup(p.Parent, m)
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
-
 	return m, nil
 }
 
@@ -335,36 +337,15 @@ func (s *Server) DeleteBlock(id int) error {
 		if c.Target.Id == id || c.Source.Id == id {
 			deleteSet[c.Id] = struct{}{}
 		}
-		/*if c.Target.Id == id {
-			route, err := b.Block.GetRoute(core.RouteID(c.Target.Route))
-			if err != nil {
-				panic(err)
-			}
-			err = s.blocks[c.Source.Id].Block.Disconnect(core.RouteID(c.Source.Route), route.C)
-			if err != nil {
-				panic(err)
-			}
-			deleteSet[c.Id] = struct{}{}
-		}
-		if c.Source.Id == id {
-			route, err := s.blocks[c.Target.Id].Block.GetRoute(core.RouteID(c.Target.Route))
-			if err != nil {
-				panic(err)
-			}
-			err = b.Block.Disconnect(core.RouteID(c.Source.Route), route.C)
-			if err != nil {
-				panic(err)
-			}
-			deleteSet[c.Id] = struct{}{}
-		}*/
 	}
 
 	// delete the connections that involve this block
 	for k, _ := range deleteSet {
 		s.DeleteConnection(k)
-		//s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: s.connections[k]})
-		//delete(s.connections, k)
 	}
+
+	// remove from group
+	s.DetachChild(b)
 
 	// stop and delete the block
 	s.supervisor.Remove(b.Token)

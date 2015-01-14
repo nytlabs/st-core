@@ -13,6 +13,18 @@ import (
 	"github.com/thejerf/suture"
 )
 
+type Position struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type ProtoBlock struct {
+	Label    string   `json:"label"`
+	Parent   int      `json:"group"`
+	Type     string   `json:"type"`
+	Position Position `json:"position"`
+}
+
 type BlockLedger struct {
 	Label       string              `json:"label"`
 	Type        string              `json:"type"`
@@ -23,6 +35,7 @@ type BlockLedger struct {
 	Composition int                 `json:"composition,omitempty"`
 	Inputs      []BlockLedgerInput  `json:"inputs"`
 	Outputs     []core.Output       `json:"outputs"`
+	Position    Position            `json:"position"`
 }
 
 func (bl *BlockLedger) GetID() int {
@@ -68,36 +81,24 @@ func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-// CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
-func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not read request body"})
-		return
-	}
+func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
-	var m BlockLedger
-	err = json.Unmarshal(body, &m)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
-	blockSpec, ok := s.library[m.Type]
+	blockSpec, ok := s.library[p.Type]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"spec not found"})
-		return
+		return nil, errors.New("spec not found")
 	}
 
-	m.Id = s.GetNextID()
-	m.Block = core.NewBlock(blockSpec)
-	m.Token = s.supervisor.Add(m.Block)
+	block := core.NewBlock(blockSpec)
+
+	m := &BlockLedger{
+		Label:    p.Label,
+		Position: p.Position,
+		Type:     p.Type,
+		Id:       s.GetNextID(),
+		Block:    block,
+		Token:    s.supervisor.Add(block),
+	}
+
 	is := m.Block.GetRoutes()
 
 	// may want to move this into actual block someday
@@ -121,10 +122,45 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.Inputs = inputs
-	m.Outputs = m.Block.GetOutputs()
-	s.blocks[m.Id] = &m
+	m.Outputs = block.GetOutputs()
+
+	s.blocks[m.Id] = m
+	s.AddChildToGroup(p.Parent, m)
+
 	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
-	w.WriteHeader(http.StatusNoContent)
+
+	return m, nil
+}
+
+// CreateBlockHandler responds to a POST request to instantiate a new block and add it to the Server.
+func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var m ProtoBlock
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	b, err := s.CreateBlock(m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, b)
 }
 
 func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request) {

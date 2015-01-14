@@ -40,7 +40,14 @@ func NewServer() *Server {
 	supervisor := suture.NewSimple("st-core")
 	supervisor.ServeBackground()
 	groups := make(map[int]*Group)
-	groups[0] = NewGroup(0, "root") // this is the top level group
+	//groups[0] = NewGroup(0, "root") // this is the top level group
+	groups[0] = &Group{
+		Label:    "root",
+		Id:       0,
+		Children: []int{},
+		Parent:   nil,
+	}
+
 	blocks := make(map[int]*BlockLedger)
 	connections := make(map[int]*ConnectionLedger)
 	stores := make(map[int]*core.Store)

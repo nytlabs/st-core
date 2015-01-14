@@ -17,10 +17,23 @@ type BlockLedger struct {
 	Type        string              `json:"type"`
 	Id          int                 `json:"id"`
 	Block       *core.Block         `json:"-"`
+	Parent      *Group              `json:"-"`
 	Token       suture.ServiceToken `json:"-"`
 	Composition int                 `json:"composition,omitempty"`
 	Inputs      []BlockLedgerInput  `json:"inputs"`
 	Outputs     []core.Output       `json:"outputs"`
+}
+
+func (bl *BlockLedger) GetID() int {
+	return bl.Id
+}
+
+func (bl *BlockLedger) GetParent() *Group {
+	return bl.Parent
+}
+
+func (bl *BlockLedger) SetParent(group *Group) {
+	bl.Parent = group
 }
 
 type BlockLedgerInput struct {
@@ -170,7 +183,8 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 
 	// again maybe this type should be native to block under core.
 	var m interface{}
-	if v.Type == "fetch" {
+	switch v.Type {
+	case "fetch":
 		queryString, ok := v.Value.(string)
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -186,9 +200,9 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		m = fo
-	} else if v.Type == "const" {
+	case "const":
 		m = v.Value
-	} else {
+	default:
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"no value or query specified"})
 		return

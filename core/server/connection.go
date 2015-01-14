@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -95,6 +96,39 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) ConnectionModifyCoordinates(w http.ResponseWriter, r *http.Request) {
 }
+
+func (s *Server) DeleteConnection(id int) error {
+	c, ok := s.connections[id]
+	if !ok {
+		return errors.New("could not find connection")
+	}
+
+	source, ok := s.blocks[c.Source.Id]
+	if !ok {
+		return errors.New("could not find source block")
+	}
+
+	target, ok := s.blocks[c.Target.Id]
+	if !ok {
+		return errors.New("could not find target block")
+	}
+
+	route, err := target.Block.GetRoute(core.RouteID(c.Target.Route))
+	if err != nil {
+		return err
+	}
+
+	err = source.Block.Disconnect(core.RouteID(c.Source.Route), route.C)
+	if err != nil {
+		return err
+	}
+
+	delete(s.connections, id)
+
+	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: c})
+	return nil
+}
+
 func (s *Server) ConnectionDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
@@ -114,41 +148,12 @@ func (s *Server) ConnectionDeleteHandler(w http.ResponseWriter, r *http.Request)
 	s.Lock()
 	defer s.Unlock()
 
-	c, ok := s.connections[id]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"connection not found"})
-		return
-	}
-
-	source, ok := s.blocks[c.Source.Id]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"source block does not exist"})
-		return
-	}
-
-	target, ok := s.blocks[c.Target.Id]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"target block does not exist"})
-		return
-	}
-
-	route, err := target.Block.GetRoute(core.RouteID(c.Target.Route))
+	err = s.DeleteConnection(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
 
-	err = source.Block.Disconnect(core.RouteID(c.Source.Route), route.C)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
-	}
-
-	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: c})
 	w.WriteHeader(http.StatusNoContent)
 }

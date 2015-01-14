@@ -5,6 +5,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Node interface {
@@ -121,13 +124,71 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
+		return
 	}
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) DeleteGroup(id int) error {
+	group, ok := s.groups[id]
+	if !ok {
+		return errors.New("could not find group to delete")
+	}
+
+	for _, c := range group.Children {
+		if _, ok := s.blocks[c]; ok {
+			err := s.DeleteBlock(c)
+			if err != nil {
+				return err
+			}
+		} else if _, ok := s.groups[c]; ok {
+			err := s.DeleteGroup(c)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	update := struct {
+		Id int `json:"Id"`
+	}{
+		id,
+	}
+
+	delete(s.groups, id)
+	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP, Data: update})
+	return nil
+}
+
 func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.DeleteGroup(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
 }
@@ -140,6 +201,56 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 func (s *Server) GroupModifyAllChildrenHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	var n Node
+
+	if b, ok := s.blocks[id]; ok {
+		n = b
+	}
+	if g, ok := s.groups[id]; ok {
+		n = g
+	}
+
+	if n == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find id"})
+		return
+	}
+
+	err = s.AddChildToGroup(id, n)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	update := struct {
+		Id    int `json:"id"`
+		Child int `json:"child"`
+	}{
+		id, n.GetID(),
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	w.WriteHeader(http.StatusNoContent)
 }
+
 func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
 }

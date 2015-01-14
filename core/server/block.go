@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -283,30 +284,10 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
+func (s *Server) DeleteBlock(id int) error {
 	b, ok := s.blocks[id]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"block not found"})
-		return
+		return errors.New("block not found")
 	}
 
 	deleteSet := make(map[int]struct{})
@@ -315,7 +296,10 @@ func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	// we need to panic here because if any error is thrown we are in huge trouble
 	// any panic indicates that our server connection ledger is no longer true
 	for _, c := range s.connections {
-		if c.Target.Id == id {
+		if c.Target.Id == id || c.Source.Id == id {
+			deleteSet[c.Id] = struct{}{}
+		}
+		/*if c.Target.Id == id {
 			route, err := b.Block.GetRoute(core.RouteID(c.Target.Route))
 			if err != nil {
 				panic(err)
@@ -336,19 +320,48 @@ func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
 				panic(err)
 			}
 			deleteSet[c.Id] = struct{}{}
-		}
+		}*/
 	}
 
 	// delete the connections that involve this block
 	for k, _ := range deleteSet {
-		s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: s.connections[k]})
-		delete(s.connections, k)
+		s.DeleteConnection(k)
+		//s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: s.connections[k]})
+		//delete(s.connections, k)
 	}
 
 	// stop and delete the block
 	s.supervisor.Remove(b.Token)
 	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: s.blocks[id]})
 	delete(s.blocks, id)
+	return nil
+}
+
+func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.DeleteBlock(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 

@@ -79,7 +79,7 @@ func (s *Server) DetachChild(g Node) error {
 		parent.GetID(), g.GetID(),
 	}
 
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
+	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP_CHILD, Data: update})
 	return nil
 }
 
@@ -113,7 +113,7 @@ func (s *Server) AddChildToGroup(id int, n Node) error {
 		id, nid,
 	}
 
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (s *Server) DeleteGroup(id int) error {
 	}
 
 	update := struct {
-		Id int `json:"Id"`
+		Id int `json:"id"`
 	}{
 		id,
 	}
@@ -275,15 +275,41 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	childs, ok := vars["node_id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	child, err := strconv.Atoi(childs)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	if id == child {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"cannot add group as member of itself"})
+		return
+	}
+
 	s.Lock()
 	defer s.Unlock()
 
 	var n Node
 
-	if b, ok := s.blocks[id]; ok {
+	if _, ok := s.groups[id]; !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find id"})
+		return
+	}
+
+	if b, ok := s.blocks[child]; ok {
 		n = b
 	}
-	if g, ok := s.groups[id]; ok {
+	if g, ok := s.groups[child]; ok {
 		n = g
 	}
 
@@ -300,14 +326,6 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	update := struct {
-		Id    int `json:"id"`
-		Child int `json:"child"`
-	}{
-		id, n.GetID(),
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
 	w.WriteHeader(http.StatusNoContent)
 }
 

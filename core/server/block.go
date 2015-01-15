@@ -51,7 +51,7 @@ func (bl *BlockLedger) SetParent(group *Group) {
 }
 
 type BlockLedgerInput struct {
-	Name  string            `json:"name"`
+	Name  string            `json:"name,omitempty"`
 	Type  string            `json:"type"`
 	Value interface{}       `json:"value"`
 	C     chan core.Message `json:"-"`
@@ -119,10 +119,8 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		}
 	}
 
-	err := s.AddChildToGroup(p.Parent, m)
-	if err != nil {
-		return nil, err
-
+	if _, ok := s.groups[p.Parent]; !ok {
+		return nil, errors.New("invalid group, could not create block")
 	}
 
 	m.Token = s.supervisor.Add(block)
@@ -131,6 +129,13 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	s.blocks[m.Id] = m
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
+
+	err := s.AddChildToGroup(p.Parent, m)
+	if err != nil {
+		return nil, err
+
+	}
+
 	return m, nil
 }
 

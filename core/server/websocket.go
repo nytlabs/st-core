@@ -69,9 +69,11 @@ func (s *Server) websocketReadPump(c *socket) {
 			s.Lock()
 			blocks, _ := json.Marshal(s.ListBlocks())
 			connections, _ := json.Marshal(s.ListConnections())
+			groups, _ := json.Marshal(s.ListGroups())
 			s.Unlock()
 			c.send <- blocks
 			c.send <- connections
+			c.send <- groups
 		}
 
 		if err != nil {

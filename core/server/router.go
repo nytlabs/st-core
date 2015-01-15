@@ -65,7 +65,7 @@ func (s *Server) NewRouter() *mux.Router {
 		},
 		Route{
 			"GroupModifyChild",
-			"/groups/{id}/children/{block_id}",
+			"/groups/{id}/children/{node_id}",
 			"PUT",
 			s.GroupModifyChildHandler,
 		},

@@ -23,7 +23,7 @@ type ConnectionLedger struct {
 }
 
 func (s *Server) ListConnections() []ConnectionLedger {
-	var connections []ConnectionLedger
+	connections := []ConnectionLedger{}
 	for _, c := range s.connections {
 		connections = append(connections, *c)
 	}

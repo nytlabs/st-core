@@ -241,3 +241,41 @@ func TestGET(t *testing.T) {
 	}
 
 }
+
+func TestParseJSON(t *testing.T) {
+	log.Println("testing ParseJSON")
+	lib := GetLibrary()
+	spec, ok := lib["parseJSON"]
+	if !ok {
+		log.Fatal("shit head")
+	}
+	block := NewBlock(spec)
+	go block.Serve()
+	testJsonGood := "{\"foo\":\"bar\", \"weight\":2.3, \"someArray\":[1,2,3]}"
+	out := make(chan Message)
+	block.Connect(0, out)
+	in, _ := block.GetRoute(0)
+	in.C <- testJsonGood
+	m := <-out
+	msg, ok := m.(map[string]interface{})
+	if !ok {
+		t.Error("expected map from ParseJSON")
+		return
+	}
+	foo, ok := msg["foo"]
+	if !ok {
+		t.Error("missing expected key")
+	}
+	_, ok = foo.(string)
+	if !ok {
+		t.Error("expected string")
+	}
+	// now check it fails nicely
+	testJsonBad := "{\"foo\":bar, \"weight\":2.3, \"someArray\":[1,2,3]}"
+	in.C <- testJsonBad
+	m = <-out
+	_, ok = m.(error)
+	if !ok {
+		t.Error("expected error")
+	}
+}

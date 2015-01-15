@@ -15,12 +15,19 @@ type KeyValue struct {
 	sync.Mutex
 }
 
-func (k *KeyValue) Serve() {
+func (k KeyValue) Serve() {
 	<-k.quit
 }
 
-func (k *KeyValue) Stop() {
+func (k KeyValue) Stop() {
 	k.quit <- true
+}
+
+func (k KeyValue) SetSourceParameter(key, value string) {
+}
+
+func (k *KeyValue) Describe() map[string]string {
+	return map[string]string{}
 }
 
 // retrieves a value from the key value store

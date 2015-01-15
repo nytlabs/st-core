@@ -82,9 +82,11 @@ func GetLibrary() map[string]Spec {
 		kvDump(),
 		kvDelete(),
 
+		// parsers
+		ParseJSON(),
+
 		// stream
 		StreamReceive(),
-		StreamSend(),
 
 		// stateful
 		First(),

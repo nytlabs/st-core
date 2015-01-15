@@ -79,6 +79,10 @@ type BlockState struct {
 type Store interface {
 	Lock()
 	Unlock()
+	Describe() map[string]string
+	Serve()
+	Stop()
+	SetSourceParameter(key, value string)
 }
 
 // TODO collapse SharedStore into Store by blessing Store with a GetType() method

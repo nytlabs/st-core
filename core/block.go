@@ -104,18 +104,19 @@ func (b *Block) exportRoute(id RouteID) (*Route, error) {
 }
 
 // Input returns the specfied Route
-func (b *Block) GetRoute(id RouteID) (*Route, error) {
+func (b *Block) GetRoute(id RouteID) (Route, error) {
 	b.routing.RLock()
 	r, err := b.exportRoute(id)
 	b.routing.RUnlock()
-	return r, err
+	return *r, err
 }
 
-func (b *Block) GetRoutes() []*Route {
+func (b *Block) GetRoutes() []Route {
 	b.routing.RLock()
-	re := make([]*Route, len(b.routing.Inputs), len(b.routing.Inputs))
+	re := make([]Route, len(b.routing.Inputs), len(b.routing.Inputs))
 	for i, _ := range b.routing.Inputs {
-		re[i], _ = b.exportRoute(RouteID(i))
+		r, _ := b.exportRoute(RouteID(i))
+		re[i] = *r
 	}
 	b.routing.RUnlock()
 	return re

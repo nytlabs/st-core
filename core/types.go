@@ -10,6 +10,7 @@ import (
 const (
 	NONE = iota
 	KEY_VALUE
+	STREAM
 	PRIORITY
 	ARRAY
 	VALUE
@@ -94,11 +95,19 @@ type BlockState struct {
 	Processed      bool
 }
 
+// a Store is esssentially a lockable piece of memory that can be accessed safely by mulitple blocks.
+// The Lock and Unlock methods are usually implemented using a sync.Mutex
+// TODO Store -> Source
 type Store interface {
 	Lock()
 	Unlock()
+	Describe() map[string]string
+	Serve()
+	Stop()
+	SetSourceParameter(key, value string)
 }
 
+// TODO collapse SharedStore into Store by blessing Store with a GetType() method
 type SharedStore struct {
 	Type  SharedType
 	Store Store

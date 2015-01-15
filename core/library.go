@@ -39,6 +39,7 @@ func GetLibrary() map[string]Spec {
 		Append(),
 		Tail(),
 		Head(),
+
 		// monads
 		Exp(),
 		Log10(),
@@ -47,6 +48,7 @@ func GetLibrary() map[string]Spec {
 		Sin(),
 		Cos(),
 		Tan(),
+
 		// dyads
 		Addition(),
 		Subtraction(),
@@ -58,26 +60,37 @@ func GetLibrary() map[string]Spec {
 		LessThan(),
 		EqualTo(),
 		NotEqualTo(),
+
 		// random sources
 		UniformRandom(),
 		NormalRandom(),
 		ZipfRandom(),
 		PoissonRandom(),
 		BernoulliRandom(),
+
 		// membership
 		InArray(),
 		HasField(),
 		InString(),
 		HasPrefix(),
 		HasSuffix(),
+
 		// key value
 		kvGet(),
 		kvSet(),
 		kvClear(),
 		kvDump(),
 		kvDelete(),
+
+		// parsers
+		ParseJSON(),
+
+		// stream
+		StreamReceive(),
+
 		// stateful
 		First(),
+
 		// network IO
 		GET(),
 	}

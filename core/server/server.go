@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	DELETE     = "DELETE"
-	UPDATE     = "UPDATE"
-	CREATE     = "CREATE"
-	CONNECTION = "CONNECTION"
-	BLOCK      = "BLOCK"
-	GROUP      = "GROUP"
+	DELETE      = "delete"
+	UPDATE      = "update"
+	CREATE      = "create"
+	CONNECTION  = "connection"
+	BLOCK       = "block"
+	GROUP       = "group"
+	GROUP_CHILD = "group_child"
 )
 
 // The Server maintains a set of handlers that coordinate the creation of Nodes

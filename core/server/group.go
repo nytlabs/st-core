@@ -71,6 +71,15 @@ func (s *Server) DetachChild(g Node) error {
 	}
 
 	parent.Children = append(parent.Children[:child], parent.Children[child+1:]...)
+
+	update := struct {
+		Id    int `json:"id"`
+		Child int `json:"child"`
+	}{
+		parent.GetID(), g.GetID(),
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
 	return nil
 }
 
@@ -96,6 +105,15 @@ func (s *Server) AddChildToGroup(id int, n Node) error {
 	}
 
 	n.SetParent(newParent)
+
+	update := struct {
+		Id    int `json:"id"`
+		Child int `json:"child"`
+	}{
+		id, nid,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
 	return nil
 }
 
@@ -135,7 +153,19 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		newGroup.Children = []int{}
 	}
 
+	for _, c := range newGroup.Children {
+		_, okb := s.blocks[c]
+		_, okg := s.groups[c]
+		if !okb && !okg {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{"could not create group: invalid children"})
+			return
+		}
+	}
+
 	s.groups[newGroup.Id] = newGroup
+	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
+
 	err = s.AddChildToGroup(g.Group, newGroup)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -143,7 +173,20 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
+	for _, c := range newGroup.Children {
+		if cb, ok := s.blocks[c]; ok {
+			err = s.AddChildToGroup(newGroup.Id, cb)
+		}
+		if cg, ok := s.groups[c]; ok {
+			err = s.AddChildToGroup(newGroup.Id, cg)
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{err.Error()})
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -264,7 +307,7 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 		id, n.GetID(),
 	}
 
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
 	w.WriteHeader(http.StatusNoContent)
 }
 

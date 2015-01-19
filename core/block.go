@@ -29,6 +29,13 @@ func NewBlock(s Spec) *Block {
 		})
 	}
 
+	var sourceType SourceType
+	if s.Source != 0 {
+		sourceType = s.Source
+	} else {
+		sourceType = NONE
+	}
+
 	return &Block{
 		state: BlockState{
 			make(MessageMap),
@@ -42,7 +49,8 @@ func NewBlock(s Spec) *Block {
 			Outputs:       out,
 			InterruptChan: make(chan Interrupt),
 		},
-		kernel: s.Kernel,
+		kernel:     s.Kernel,
+		sourceType: sourceType,
 	}
 }
 
@@ -255,7 +263,8 @@ func (b *Block) process() Interrupt {
 
 	// if this kernel relies on an external shared state then we need to
 	// block until an interrupt connects us to a shared external state.
-	if b.routing.Source.GetType() != NONE && b.routing.Source == nil {
+
+	if b.sourceType != NONE && b.routing.Source == nil {
 		select {
 		case f := <-b.routing.InterruptChan:
 			return f
@@ -265,7 +274,7 @@ func (b *Block) process() Interrupt {
 	// we should only be able to get here if
 	// - we don't need an shared state
 	// - we have an external shared state and it has been attached
-	if b.routing.Source.GetType() != NONE {
+	if b.sourceType != NONE {
 		b.routing.Source.Lock()
 	}
 
@@ -277,13 +286,13 @@ func (b *Block) process() Interrupt {
 		b.routing.InterruptChan)
 
 	if interrupt != nil {
-		if b.routing.Source.GetType() != NONE {
+		if b.sourceType != NONE {
 			b.routing.Source.Unlock()
 		}
 		return interrupt
 	}
 
-	if b.routing.Source.GetType() != NONE {
+	if b.sourceType != NONE {
 		b.routing.Source.Unlock()
 	}
 

@@ -130,7 +130,8 @@ type BlockRouting struct {
 
 // A Block is comprised of a state, a set of routes, and a kernel
 type Block struct {
-	state   BlockState
-	routing BlockRouting
-	kernel  Kernel
+	state      BlockState
+	routing    BlockRouting
+	kernel     Kernel
+	sourceType SourceType
 }

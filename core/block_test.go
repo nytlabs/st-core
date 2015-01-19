@@ -43,9 +43,9 @@ func TestSingleBlock(t *testing.T) {
 
 	set.Connect(0, out)
 
-	sr1, _ := set.GetRoute(0)
+	sr1, _ := set.GetInput(0)
 	sr1.C <- "testing"
-	sr2, _ := set.GetRoute(1)
+	sr2, _ := set.GetInput(1)
 	sr2.C <- "success"
 
 	p, err := json.Marshal(<-out)
@@ -82,17 +82,17 @@ func TestKeyValue(t *testing.T) {
 	kvset := NewBlock(GetLibrary()["kvSet"])
 	kv := NewKeyValue()
 	go kvset.Serve()
-	kvset.SetStore(kv)
+	kvset.SetSource(kv)
 
 	kvset.Connect(0, sink)
 	kvdump := NewBlock(GetLibrary()["kvDump"])
 	go kvdump.Serve()
-	kvdump.SetStore(kv)
+	kvdump.SetSource(kv)
 
 	kvdump.Connect(0, output)
 
-	kv1, _ := kvset.GetRoute(0)
-	kv2, _ := kvset.GetRoute(1)
+	kv1, _ := kvset.GetInput(0)
+	kv2, _ := kvset.GetInput(1)
 
 	for k, v := range testValues {
 		kv1.C <- k
@@ -100,7 +100,7 @@ func TestKeyValue(t *testing.T) {
 		_ = <-sink
 	}
 
-	kvd, _ := kvdump.GetRoute(0)
+	kvd, _ := kvdump.GetInput(0)
 	kvd.C <- "bang"
 
 	dump := <-output
@@ -135,7 +135,7 @@ func TestRouteRace(t *testing.T) {
 	f := map[string]interface{}{
 		"lol": "lol",
 	}
-	identity.SetRoute(0, f)
+	identity.SetInput(0, f)
 
 	z := <-sink
 
@@ -152,7 +152,7 @@ func TestFirst(t *testing.T) {
 	f.Connect(0, sink)
 
 	expected := []interface{}{true, false, false, false, false}
-	in, _ := f.GetRoute(0)
+	in, _ := f.GetInput(0)
 
 	for i, v := range expected {
 		in.C <- i
@@ -166,7 +166,7 @@ func TestNull(t *testing.T) {
 	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
 	go null.Serve()
-	null.SetRoute(0, nil)
+	null.SetInput(0, nil)
 	out := make(chan Message)
 	null.Connect(0, out)
 	o, err := json.Marshal(<-out)
@@ -183,8 +183,8 @@ func BenchmarkAddition(b *testing.B) {
 	add := NewBlock(GetLibrary()["+"])
 	go add.Serve()
 	add.Connect(0, sink)
-	addend1, _ := add.GetRoute(0)
-	addend2, _ := add.GetRoute(1)
+	addend1, _ := add.GetInput(0)
+	addend2, _ := add.GetInput(1)
 
 	b.ResetTimer()
 	for i := 0; i < 100000; i++ {
@@ -207,10 +207,10 @@ func BenchmarkRandomMath(b *testing.B) {
 	go add.Serve()
 	go mul.Serve()
 
-	a1, _ := add.GetRoute(0)
-	a2, _ := add.GetRoute(1)
-	m1, _ := mul.GetRoute(0)
-	m2, _ := mul.GetRoute(1)
+	a1, _ := add.GetInput(0)
+	a2, _ := add.GetInput(1)
+	m1, _ := mul.GetInput(0)
+	m2, _ := mul.GetInput(1)
 
 	u1.Connect(0, a1.C)
 	u2.Connect(0, a2.C)
@@ -230,8 +230,8 @@ func TestGET(t *testing.T) {
 	block := NewBlock(lib["GET"])
 	go block.Serve()
 	headers := make(map[string]string)
-	block.SetRoute(1, headers)
-	urlRoute, _ := block.GetRoute(0)
+	block.SetInput(1, headers)
+	urlRoute, _ := block.GetInput(0)
 	out := make(chan Message)
 	block.Connect(0, out)
 	urlRoute.C <- "http://private-e92ba-stcoretest.apiary-mock.com/get"
@@ -254,7 +254,7 @@ func TestParseJSON(t *testing.T) {
 	testJsonGood := "{\"foo\":\"bar\", \"weight\":2.3, \"someArray\":[1,2,3]}"
 	out := make(chan Message)
 	block.Connect(0, out)
-	in, _ := block.GetRoute(0)
+	in, _ := block.GetInput(0)
 	in.C <- testJsonGood
 	m := <-out
 	msg, ok := m.(map[string]interface{})

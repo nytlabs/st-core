@@ -8,7 +8,7 @@ func InArray() Spec {
 		Name:    "inArray",
 		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
 		Outputs: []Pin{Pin{"inArray"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			arr, ok := in[1].([]interface{})
 			if !ok {
 				out[0] = NewError("inArray requries array")
@@ -32,7 +32,7 @@ func HasField() Spec {
 		Name:    "hasField",
 		Inputs:  []Pin{Pin{"field"}, Pin{"object"}},
 		Outputs: []Pin{Pin{"hasField"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			obj, ok := in[1].(map[string]interface{})
 			if !ok {
 				out[0] = NewError("HasField requries map for object")
@@ -55,7 +55,7 @@ func InString() Spec {
 		Name:    "inString",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("HasField requires strings")
@@ -78,7 +78,7 @@ func HasPrefix() Spec {
 		Name:    "hasPrefix",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("HasPrefix requires strings")
@@ -101,7 +101,7 @@ func HasSuffix() Spec {
 		Name:    "hasSuffix",
 		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
 		Outputs: []Pin{Pin{"inString"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("HasSuffix requires strings")

@@ -2,11 +2,15 @@ package core
 
 import "sync"
 
-func NewKeyValue() Store {
+func NewKeyValue() Source {
 	return &KeyValue{
 		kv:   make(map[string]Message),
 		quit: make(chan bool),
 	}
+}
+
+func (k KeyValue) GetType() SourceType {
+	return KEY_VALUE
 }
 
 type KeyValue struct {
@@ -40,8 +44,8 @@ func kvGet() Spec {
 		Outputs: []Pin{
 			Pin{"value"},
 		},
-		Shared: KEY_VALUE,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {
@@ -71,8 +75,8 @@ func kvSet() Spec {
 		Outputs: []Pin{
 			Pin{"new"},
 		},
-		Shared: KEY_VALUE,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {
@@ -104,8 +108,8 @@ func kvClear() Spec {
 		Outputs: []Pin{
 			Pin{"cleared"},
 		},
-		Shared: KEY_VALUE,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			kv.kv = make(map[string]Message)
 			out[0] = true
@@ -127,8 +131,8 @@ func kvDump() Spec {
 		Outputs: []Pin{
 			Pin{"object"},
 		},
-		Shared: KEY_VALUE,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			outMap := make(map[string]Message)
 			for k, v := range kv.kv {
@@ -150,8 +154,8 @@ func kvDelete() Spec {
 		Outputs: []Pin{
 			Pin{"deleted"},
 		},
-		Shared: KEY_VALUE,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: KEY_VALUE,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
 			key, ok := in[0].(string)
 			if !ok {

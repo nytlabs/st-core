@@ -18,6 +18,10 @@ type Stream struct {
 	sync.Mutex
 }
 
+func (s Stream) GetType() SourceType {
+	return STREAM
+}
+
 func (s *Stream) SetSourceParameter(name, value string) {
 	switch name {
 	case "topic":
@@ -107,8 +111,8 @@ func StreamReceive() Spec {
 		Outputs: []Pin{
 			Pin{"out"},
 		},
-		Shared: STREAM,
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Source: STREAM,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			stream := s.(*Stream)
 			select {
 			case out[0] = <-stream.Out:

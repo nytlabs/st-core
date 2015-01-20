@@ -29,13 +29,6 @@ func NewBlock(s Spec) *Block {
 		})
 	}
 
-	var sourceType SourceType
-	if s.Source != 0 {
-		sourceType = s.Source
-	} else {
-		sourceType = NONE
-	}
-
 	return &Block{
 		state: BlockState{
 			make(MessageMap),
@@ -50,7 +43,7 @@ func NewBlock(s Spec) *Block {
 			InterruptChan: make(chan Interrupt),
 		},
 		kernel:     s.Kernel,
-		sourceType: sourceType,
+		sourceType: s.Source,
 	}
 }
 

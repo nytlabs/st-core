@@ -25,7 +25,7 @@ type Server struct {
 	blocks      map[int]*BlockLedger
 	connections map[int]*ConnectionLedger
 	//routes      map[RoutePair]RoutePair
-	stores     map[int]*core.Store
+	stores     map[int]*core.Source
 	library    map[string]core.Spec
 	supervisor *suture.Supervisor
 	lastID     int
@@ -51,7 +51,7 @@ func NewServer() *Server {
 
 	blocks := make(map[int]*BlockLedger)
 	connections := make(map[int]*ConnectionLedger)
-	stores := make(map[int]*core.Store)
+	stores := make(map[int]*core.Source)
 	library := core.GetLibrary()
 	parents := make(map[int]int)
 	//routes := make(map[RoutePair]RoutePair)

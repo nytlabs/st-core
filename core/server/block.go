@@ -97,7 +97,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		Id:       s.GetNextID(),
 	}
 
-	is := m.Block.GetRoutes()
+	is := m.Block.GetInputs()
 
 	// may want to move this into actual block someday
 	inputs := make([]BlockLedgerInput, len(is), len(is))
@@ -252,7 +252,7 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = b.Block.SetRoute(core.RouteID(route), m)
+	err = b.Block.SetInput(core.RouteIndex(route), m)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})

@@ -8,10 +8,10 @@ import (
 // UniformRandom emits a uniform random between 0 and 1
 func UniformRandom() Spec {
 	return Spec{
-		Name: "uniform",
+		Name:    "uniform",
 		Inputs:  []Pin{},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = rand.Float64()
 			return nil
 		},
@@ -22,10 +22,10 @@ func UniformRandom() Spec {
 // supplied mean and variance
 func NormalRandom() Spec {
 	return Spec{
-		Name: "normal",
+		Name:    "normal",
 		Inputs:  []Pin{Pin{"mean"}, Pin{"variance"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out, internal MessageMap, s Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			variance, ok := in[1].(float64)
 			if !ok {
 				out[0] = NewError("variance must be a float")
@@ -49,10 +49,10 @@ var RAND *rand.Rand = rand.New(rand.NewSource(12345))
 // notation follows the wikipedia page http://en.wikipedia.org/wiki/Zipf%E2%80%93Mandelbrot_law not the golang Zipf parameters
 func ZipfRandom() Spec {
 	return Spec{
-		Name: "Zipf",
+		Name:    "Zipf",
 		Inputs:  []Pin{Pin{"q"}, Pin{"s"}, Pin{"N"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
 
 			q, ok := in[0].(float64)
 			if !ok {
@@ -94,10 +94,10 @@ func poisson(λ float64) int {
 // PoissonRandom emits a Poisson distribtued random number
 func PoissonRandom() Spec {
 	return Spec{
-		Name: "Poisson",
+		Name:    "Poisson",
 		Inputs:  []Pin{Pin{"rate"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
 			λ, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("rate must be a float")
@@ -116,10 +116,10 @@ func PoissonRandom() Spec {
 // BernoulliRandom emits a draw from a Bernoulli distribution. This block returns a boolean
 func BernoulliRandom() Spec {
 	return Spec{
-		Name: "Bernoulli",
+		Name:    "Bernoulli",
 		Inputs:  []Pin{Pin{"bias"}},
 		Outputs: []Pin{Pin{"draw"}},
-		Kernel: func(in, out, internal MessageMap, ss Store, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			r := RAND.Float64()
 			p, ok := in[0].(float64)
 			if !ok {

@@ -21,7 +21,7 @@ func (s *Server) LibraryHandler(w http.ResponseWriter, r *http.Request) {
 	for _, v := range s.library {
 		l = append(l, LibraryEntry{
 			v.Name,
-			int(v.Shared),
+			int(v.Source),
 		})
 	}
 

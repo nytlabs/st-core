@@ -1,3 +1,5 @@
+// Package core provides Blocks, Sources and the means to connect them together. Blocks communicate with
+// one another by passing Messages.
 package core
 
 import (
@@ -16,21 +18,30 @@ const (
 	VALUE
 )
 
-type RouteID int
-type SharedType int
+// MessageMap maps a block's inbound routes onto the Messages they contain
+type MessageMap map[RouteIndex]Message
+
+// Message is the container for data sent between blocks
 type Message interface{}
+
+// RouteIndex is the index into a MessageMap. The 0th index corresponds to that block's 0th Input or Output
+type RouteIndex int
+
+// SourceType is used to indicate what kind of source a block can connect to
+type SourceType int
+
+// Connections are used to connect blocks together
 type Connection chan Message
-type MessageMap map[RouteID]Message
 
 // Interrupt is a function that interrupts a running block in order to change its state.
 // If the interrupt returns false, the block will quit.
 type Interrupt func() bool
 
-// Kernel is the core function that operates on an inbound message. It works by populating
+// Kernel is a block's core function that operates on an inbound message. It works by populating
 // the outbound MessageMap, and can be interrupted on its Interrupt channel.
-type Kernel func(MessageMap, MessageMap, MessageMap, Store, chan Interrupt) Interrupt
+type Kernel func(MessageMap, MessageMap, MessageMap, Source, chan Interrupt) Interrupt
 
-// A Pin is an inbound or outbound route to a block used in the Spec.
+// A Pin contains information about a particular input or output
 type Pin struct {
 	Name string
 }
@@ -40,20 +51,20 @@ type Spec struct {
 	Name    string
 	Inputs  []Pin
 	Outputs []Pin
-	Shared  SharedType
+	Source  SourceType
 	Kernel  Kernel
 }
 
-// A Route is an inbound route to a block. A Route holds the channel that allows Messages
-// to be passed into the block. A Route's Path is applied to the inbound Message before populating the
-// MessageMap and calling the Kernel. A Route can be set to a Value, instead of waiting for an inbound message.
-type Route struct {
+// Input is an inbound route to a block. A Input holds the channel that allows Messages
+// to be passed into the block. A Input's Path is applied to the inbound Message before populating the
+// MessageMap and calling the Kernel. A Input can be set to a Value, instead of waiting for an inbound message.
+type Input struct {
 	Name  string
 	Value interface{}
 	C     chan Message
 }
 
-func (r Route) MarshalJSON() ([]byte, error) {
+func (r Input) MarshalJSON() ([]byte, error) {
 	out := make(map[string]interface{})
 	value := make(map[string]interface{})
 	out["name"] = r.Name
@@ -70,7 +81,7 @@ func (r Route) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// An Output holds a set of Connections. Each Connection refers to a Route.C. Every outbound
+// An Output holds a set of Connections. Each Connection refers to a Input.C. Every outbound
 // mesage is sent on every Connection in the Connections set.
 type Output struct {
 	Name        string                  `json:"name"`
@@ -95,36 +106,32 @@ type BlockState struct {
 	Processed      bool
 }
 
-// a Store is esssentially a lockable piece of memory that can be accessed safely by mulitple blocks.
+// a Source is esssentially a lockable piece of memory that can be accessed safely by mulitple blocks.
 // The Lock and Unlock methods are usually implemented using a sync.Mutex
-// TODO Store -> Source
-type Store interface {
+// TODO Source -> Source
+type Source interface {
 	Lock()
 	Unlock()
 	Describe() map[string]string
 	Serve()
 	Stop()
 	SetSourceParameter(key, value string)
-}
-
-// TODO collapse SharedStore into Store by blessing Store with a GetType() method
-type SharedStore struct {
-	Type  SharedType
-	Store Store
+	GetType() SourceType
 }
 
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel
 type BlockRouting struct {
-	Inputs        []Route
+	Inputs        []Input
 	Outputs       []Output
-	Shared        SharedStore
+	Source        Source
 	InterruptChan chan Interrupt
 	sync.RWMutex
 }
 
 // A Block is comprised of a state, a set of routes, and a kernel
 type Block struct {
-	state   BlockState
-	routing BlockRouting
-	kernel  Kernel
+	state      BlockState
+	routing    BlockRouting
+	kernel     Kernel
+	sourceType SourceType
 }

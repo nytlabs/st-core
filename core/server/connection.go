@@ -72,8 +72,8 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	sourceRoute := core.RouteID(newConn.Source.Route)
-	targetRoute, err := target.Block.GetRoute(core.RouteID(newConn.Target.Route))
+	sourceRoute := core.RouteIndex(newConn.Source.Route)
+	targetRoute, err := target.Block.GetInput(core.RouteIndex(newConn.Target.Route))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
@@ -113,12 +113,12 @@ func (s *Server) DeleteConnection(id int) error {
 		return errors.New("could not find target block")
 	}
 
-	route, err := target.Block.GetRoute(core.RouteID(c.Target.Route))
+	route, err := target.Block.GetInput(core.RouteIndex(c.Target.Route))
 	if err != nil {
 		return err
 	}
 
-	err = source.Block.Disconnect(core.RouteID(c.Source.Route), route.C)
+	err = source.Block.Disconnect(core.RouteIndex(c.Source.Route), route.C)
 	if err != nil {
 		return err
 	}

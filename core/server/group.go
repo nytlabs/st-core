@@ -256,6 +256,58 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	var l string
+	err = json.Unmarshal(body, &l)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	g, ok := s.groups[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no block found"})
+		return
+	}
+
+	g.Label = l
+
+	update := struct {
+		Label string `json:"label"`
+		Id    int    `json:"id"`
+	}{
+		l, id,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+
+	w.WriteHeader(http.StatusNoContent)
 }
 func (s *Server) GroupModifyAllChildrenHandler(w http.ResponseWriter, r *http.Request) {
 }

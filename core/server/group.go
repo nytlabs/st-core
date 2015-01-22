@@ -10,6 +10,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Pattern struct {
+	Blocks      []BlockLedger      `json:"blocks"`
+	Connections []ConnectionLedger `json:"connections"`
+	Groups      []Group            `json:"groups"`
+}
+
 type Node interface {
 	GetID() int
 	GetParent() *Group
@@ -252,8 +258,46 @@ func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	writeJSON(w, s.ExportGroup(id))
 }
+
+func (s *Server) ExportGroup(id int) Pattern {
+	p := Pattern{}
+	p.Groups = append(p.Groups, *s.groups[id])
+	for _, c := range s.groups[id].Children {
+		b, ok := s.blocks[c]
+		if !ok {
+			g := s.ExportGroup(c)
+			p.Blocks = append(p.Blocks, g.Blocks...)
+			p.Groups = append(p.Groups, g.Groups...)
+			p.Connections = append(p.Connections, g.Connections...)
+			continue
+		}
+		p.Blocks = append(p.Blocks, *b)
+	}
+	return p
+}
+
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)

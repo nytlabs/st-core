@@ -334,8 +334,81 @@ func (s *Server) ExportGroup(id int) (*Pattern, error) {
 }
 
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	var p Pattern
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err := s.ImportGroup(p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+}
+
+func (s *Server) ImportGroup(p Pattern) error {
+	ids := make(map[int]int)
+	for _, b := range p.Blocks() {
+		ids[b.Id] = s.GetNextID()
+	}
+	for _, g := range p.Groups() {
+		ids[g.Id] = s.GetNextID()
+	}
+	for _, c := range p.Connections() {
+		ids[c.Id] = s.GetNextID()
+	}
+
+	childNodes := make(map[int]struct{})
+	for _, g := range p.Groups() {
+		for _, c := range g.Children {
+			childNodes[c] = struct{}{}
+		}
+	}
+
+	parent := -1
+	for _, c := range p.Groups() {
+		_, ok := childNodes[c.Id]
+		if !ok {
+			parent = c.Id
+			break
+		}
+	}
+
+	if parent == -1 {
+		return errors.New("there is no parent group in this pattern")
+	}
 
 }
+
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

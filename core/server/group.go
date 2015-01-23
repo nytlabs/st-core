@@ -294,6 +294,26 @@ func (s *Server) ExportGroup(id int) (*Pattern, error) {
 	}
 
 	p.Groups = append(p.Groups, *g)
+	for _, c := range s.connections {
+		in := false
+		out := false
+		for _, bid := range g.Children {
+			b, ok := s.blocks[bid]
+			if !ok {
+				continue
+			}
+			if b.Id == c.Source.Id {
+				in = true
+			}
+			if b.Id == c.Target.Id {
+				out = true
+			}
+		}
+		if in && out {
+			p.Connections = append(p.Connections, *c)
+		}
+	}
+
 	for _, c := range g.Children {
 		b, ok := s.blocks[c]
 		if !ok {

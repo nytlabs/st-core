@@ -275,17 +275,33 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.Lock()
 	defer s.Unlock()
+	p, err := s.ExportGroup(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	writeJSON(w, s.ExportGroup(id))
+	writeJSON(w, p)
 }
 
-func (s *Server) ExportGroup(id int) Pattern {
-	p := Pattern{}
-	p.Groups = append(p.Groups, *s.groups[id])
-	for _, c := range s.groups[id].Children {
+func (s *Server) ExportGroup(id int) (*Pattern, error) {
+	p := &Pattern{}
+	g, ok := s.groups[id]
+	if !ok {
+		return nil, errors.New("could not find group to export")
+	}
+
+	p.Groups = append(p.Groups, *g)
+	for _, c := range g.Children {
 		b, ok := s.blocks[c]
 		if !ok {
-			g := s.ExportGroup(c)
+			g, err := s.ExportGroup(c)
+			if err != nil {
+				return nil, err
+			}
+
 			p.Blocks = append(p.Blocks, g.Blocks...)
 			p.Groups = append(p.Groups, g.Groups...)
 			p.Connections = append(p.Connections, g.Connections...)
@@ -293,7 +309,8 @@ func (s *Server) ExportGroup(id int) Pattern {
 		}
 		p.Blocks = append(p.Blocks, *b)
 	}
-	return p
+
+	return p, nil
 }
 
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {

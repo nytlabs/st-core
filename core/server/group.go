@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -23,10 +24,18 @@ type Node interface {
 }
 
 type Group struct {
-	Id       int    `json:"id"`
-	Label    string `json:"label"`
-	Children []int  `json:"children"`
-	Parent   *Group `json:"-"`
+	Id       int      `json:"id"`
+	Label    string   `json:"label"`
+	Children []int    `json:"children"`
+	Parent   *Group   `json:"-"`
+	Position Position `json:"position"`
+}
+
+type ProtoGroup struct {
+	Group    int      `json:"group"`
+	Children []int    `json:"children"`
+	Label    string   `json:"label"`
+	Position Position `json:"position"`
 }
 
 func (g *Group) GetID() int {
@@ -133,12 +142,7 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var g struct {
-		Group    int    `json:"group"`
-		Children []int  `json:"children"`
-		Label    string `json:"label"`
-	}
-
+	var g ProtoGroup
 	err = json.Unmarshal(body, &g)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -149,6 +153,18 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
+	newGroup, err := s.CreateGroup(g)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, newGroup)
+}
+
+func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	newGroup := &Group{
 		Children: g.Children,
 		Label:    g.Label,
@@ -163,20 +179,16 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		_, okb := s.blocks[c]
 		_, okg := s.groups[c]
 		if !okb && !okg {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{"could not create group: invalid children"})
-			return
+			return nil, errors.New("could not create group: invalid children")
 		}
 	}
 
 	s.groups[newGroup.Id] = newGroup
 	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
 
-	err = s.AddChildToGroup(g.Group, newGroup)
+	err := s.AddChildToGroup(g.Group, newGroup)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
+		return nil, err
 	}
 
 	for _, c := range newGroup.Children {
@@ -187,13 +199,11 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 			err = s.AddChildToGroup(newGroup.Id, cg)
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{err.Error()})
-			return
+			return nil, err
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return newGroup, nil
 }
 
 func (s *Server) DeleteGroup(id int) error {
@@ -367,7 +377,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
-	err := s.ImportGroup(p)
+	err = s.ImportGroup(id, p)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
@@ -375,38 +385,75 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) ImportGroup(p Pattern) error {
-	ids := make(map[int]int)
-	for _, b := range p.Blocks() {
-		ids[b.Id] = s.GetNextID()
-	}
-	for _, g := range p.Groups() {
-		ids[g.Id] = s.GetNextID()
-	}
-	for _, c := range p.Connections() {
-		ids[c.Id] = s.GetNextID()
+func (s *Server) ImportGroup(id int, p Pattern) error {
+	parents := make(map[int]int) // old child id / old parent id
+	newIds := make(map[int]int)  // old id / new id
+
+	if _, ok := s.groups[id]; !ok {
+		return errors.New("could not attach to group: does not exist")
 	}
 
-	childNodes := make(map[int]struct{})
-	for _, g := range p.Groups() {
+	for _, g := range p.Groups {
+		ng, err := s.CreateGroup(ProtoGroup{
+			Label:    g.Label,
+			Position: g.Position,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		newIds[g.Id] = ng.Id
+
 		for _, c := range g.Children {
-			childNodes[c] = struct{}{}
+			parents[c] = g.Id
 		}
 	}
 
-	parent := -1
-	for _, c := range p.Groups() {
-		_, ok := childNodes[c.Id]
-		if !ok {
-			parent = c.Id
-			break
+	for _, b := range p.Blocks {
+		nb, err := s.CreateBlock(ProtoBlock{
+			Label:    b.Label,
+			Position: b.Position,
+			Type:     b.Type,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		newIds[b.Id] = nb.Id
+	}
+
+	for _, c := range p.Connections {
+		c.Source.Id = newIds[c.Source.Id]
+		c.Target.Id = newIds[c.Target.Id]
+		_, err := s.CreateConnection(c)
+		if err != nil {
+			return err
 		}
 	}
 
-	if parent == -1 {
-		return errors.New("there is no parent group in this pattern")
+	for _, b := range p.Blocks {
+		for route, v := range b.Inputs {
+			err := s.ModifyBlockRoute(newIds[b.Id], route, v)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
+	for _, g := range p.Groups {
+		n := s.groups[newIds[g.Id]]
+		for _, c := range g.Children {
+			err := s.AddChildToGroup(c, n)
+			if err != nil {
+				fmt.Println(g, n)
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {

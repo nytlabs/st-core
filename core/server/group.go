@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -443,11 +442,17 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	}
 
 	for _, g := range p.Groups {
-		n := s.groups[newIds[g.Id]]
 		for _, c := range g.Children {
-			err := s.AddChildToGroup(c, n)
+			var n Node
+			if bn, ok := s.blocks[newIds[c]]; ok {
+				n = bn
+			}
+			if bg, ok := s.groups[newIds[c]]; ok {
+				n = bg
+			}
+
+			err := s.AddChildToGroup(newIds[g.Id], n)
 			if err != nil {
-				fmt.Println(g, n)
 				return err
 			}
 		}

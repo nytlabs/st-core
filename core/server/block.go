@@ -207,16 +207,6 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.Lock()
-	defer s.Unlock()
-
-	b, ok := s.blocks[id]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"block not found"})
-		return
-	}
-
 	var v BlockLedgerInput
 	err = json.Unmarshal(body, &v)
 	if err != nil {
@@ -225,38 +215,49 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.ModifyBlockRoute(id, route, v)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) ModifyBlockRoute(id int, route int, v BlockLedgerInput) error {
+	b, ok := s.blocks[id]
+	if !ok {
+		return errors.New("could not find block")
+	}
+
 	// again maybe this type should be native to block under core.
 	var m interface{}
 	switch v.Type {
 	case "fetch":
 		queryString, ok := v.Value.(string)
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{"fetch is not string"})
-			return
+			return errors.New("fetch is not string")
 		}
 
 		fo, err := fetch.Parse(queryString)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{err.Error()})
-			return
+			return err
 		}
 
 		m = fo
 	case "const":
 		m = v.Value
 	default:
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no value or query specified"})
-		return
+		return errors.New("no value or query specified")
 	}
 
-	err = b.Block.SetInput(core.RouteIndex(route), m)
+	err := b.Block.SetInput(core.RouteIndex(route), m)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
+		return err
 	}
 
 	s.blocks[id].Inputs[route].Type = v.Type
@@ -271,8 +272,9 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
+
 func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]

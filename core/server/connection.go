@@ -58,40 +58,44 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 	s.Lock()
 	defer s.Unlock()
 
+	nc, err := s.CreateConnection(newConn)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, nc)
+}
+
+func (s *Server) CreateConnection(newConn ConnectionLedger) (*ConnectionLedger, error) {
 	source, ok := s.blocks[newConn.Source.Id]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"source block does not exist"})
-		return
+		return nil, errors.New("source block does not exist")
 	}
 
 	target := s.blocks[newConn.Target.Id]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"target block does not exist"})
-		return
+		return nil, errors.New("target block does not exist")
 	}
 
 	sourceRoute := core.RouteIndex(newConn.Source.Route)
 	targetRoute, err := target.Block.GetInput(core.RouteIndex(newConn.Target.Route))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
+		return nil, err
 	}
 
 	err = source.Block.Connect(sourceRoute, targetRoute.C)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
+		return nil, err
 	}
 
 	newConn.Id = s.GetNextID()
 	s.connections[newConn.Id] = &newConn
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: newConn})
-	w.WriteHeader(http.StatusNoContent)
+	return &newConn, nil
 }
 
 func (s *Server) ConnectionModifyCoordinates(w http.ResponseWriter, r *http.Request) {

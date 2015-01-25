@@ -10,6 +10,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Pattern struct {
+	Blocks      []BlockLedger      `json:"blocks"`
+	Connections []ConnectionLedger `json:"connections"`
+	Groups      []Group            `json:"groups"`
+}
+
 type Node interface {
 	GetID() int
 	GetParent() *Group
@@ -17,10 +23,18 @@ type Node interface {
 }
 
 type Group struct {
-	Id       int    `json:"id"`
-	Label    string `json:"label"`
-	Children []int  `json:"children"`
-	Parent   *Group `json:"-"`
+	Id       int      `json:"id"`
+	Label    string   `json:"label"`
+	Children []int    `json:"children"`
+	Parent   *Group   `json:"-"`
+	Position Position `json:"position"`
+}
+
+type ProtoGroup struct {
+	Group    int      `json:"group"`
+	Children []int    `json:"children"`
+	Label    string   `json:"label"`
+	Position Position `json:"position"`
 }
 
 func (g *Group) GetID() int {
@@ -127,12 +141,7 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var g struct {
-		Group    int    `json:"group"`
-		Children []int  `json:"children"`
-		Label    string `json:"label"`
-	}
-
+	var g ProtoGroup
 	err = json.Unmarshal(body, &g)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -143,6 +152,18 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
+	newGroup, err := s.CreateGroup(g)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, newGroup)
+}
+
+func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	newGroup := &Group{
 		Children: g.Children,
 		Label:    g.Label,
@@ -157,20 +178,16 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		_, okb := s.blocks[c]
 		_, okg := s.groups[c]
 		if !okb && !okg {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{"could not create group: invalid children"})
-			return
+			return nil, errors.New("could not create group: invalid children")
 		}
 	}
 
 	s.groups[newGroup.Id] = newGroup
 	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
 
-	err = s.AddChildToGroup(g.Group, newGroup)
+	err := s.AddChildToGroup(g.Group, newGroup)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
+		return nil, err
 	}
 
 	for _, c := range newGroup.Children {
@@ -181,13 +198,11 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 			err = s.AddChildToGroup(newGroup.Id, cg)
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			writeJSON(w, Error{err.Error()})
-			return
+			return nil, err
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return newGroup, nil
 }
 
 func (s *Server) DeleteGroup(id int) error {
@@ -252,10 +267,253 @@ func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+	p, err := s.ExportGroup(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	writeJSON(w, p)
 }
+
+func (s *Server) ExportGroup(id int) (*Pattern, error) {
+	p := &Pattern{}
+	g, ok := s.groups[id]
+	if !ok {
+		return nil, errors.New("could not find group to export")
+	}
+
+	p.Groups = append(p.Groups, *g)
+	for _, c := range s.connections {
+		in := false
+		out := false
+		for _, bid := range g.Children {
+			b, ok := s.blocks[bid]
+			if !ok {
+				continue
+			}
+			if b.Id == c.Source.Id {
+				in = true
+			}
+			if b.Id == c.Target.Id {
+				out = true
+			}
+		}
+		if in && out {
+			p.Connections = append(p.Connections, *c)
+		}
+	}
+
+	for _, c := range g.Children {
+		b, ok := s.blocks[c]
+		if !ok {
+			g, err := s.ExportGroup(c)
+			if err != nil {
+				return nil, err
+			}
+
+			p.Blocks = append(p.Blocks, g.Blocks...)
+			p.Groups = append(p.Groups, g.Groups...)
+			p.Connections = append(p.Connections, g.Connections...)
+			continue
+		}
+		p.Blocks = append(p.Blocks, *b)
+	}
+
+	return p, nil
+}
+
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	var p Pattern
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.ImportGroup(id, p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
 }
+
+func (s *Server) ImportGroup(id int, p Pattern) error {
+	parents := make(map[int]int) // old child id / old parent id
+	newIds := make(map[int]int)  // old id / new id
+
+	if _, ok := s.groups[id]; !ok {
+		return errors.New("could not attach to group: does not exist")
+	}
+
+	for _, g := range p.Groups {
+		ng, err := s.CreateGroup(ProtoGroup{
+			Label:    g.Label,
+			Position: g.Position,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		newIds[g.Id] = ng.Id
+
+		for _, c := range g.Children {
+			parents[c] = g.Id
+		}
+	}
+
+	for _, b := range p.Blocks {
+		nb, err := s.CreateBlock(ProtoBlock{
+			Label:    b.Label,
+			Position: b.Position,
+			Type:     b.Type,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		newIds[b.Id] = nb.Id
+	}
+
+	for _, c := range p.Connections {
+		c.Source.Id = newIds[c.Source.Id]
+		c.Target.Id = newIds[c.Target.Id]
+		_, err := s.CreateConnection(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, b := range p.Blocks {
+		for route, v := range b.Inputs {
+			err := s.ModifyBlockRoute(newIds[b.Id], route, v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, g := range p.Groups {
+		for _, c := range g.Children {
+			var n Node
+			if bn, ok := s.blocks[newIds[c]]; ok {
+				n = bn
+			}
+			if bg, ok := s.groups[newIds[c]]; ok {
+				n = bg
+			}
+
+			err := s.AddChildToGroup(newIds[g.Id], n)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	var l string
+	err = json.Unmarshal(body, &l)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	g, ok := s.groups[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no block found"})
+		return
+	}
+
+	g.Label = l
+
+	update := struct {
+		Label string `json:"label"`
+		Id    int    `json:"id"`
+	}{
+		l, id,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+
+	w.WriteHeader(http.StatusNoContent)
 }
 func (s *Server) GroupModifyAllChildrenHandler(w http.ResponseWriter, r *http.Request) {
 }

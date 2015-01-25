@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nytlabs/st-core/core/server"
+	"github.com/nytlabs/st-core/server"
 )
 
 func main() {

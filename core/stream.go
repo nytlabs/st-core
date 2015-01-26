@@ -47,7 +47,7 @@ func (s *Stream) Describe() map[string]string {
 	}
 }
 
-func NewStream() *Stream {
+func NewStream() Source {
 	out := make(chan Message)
 	stream := Stream{
 		quit:        make(chan bool),

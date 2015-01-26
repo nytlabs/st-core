@@ -20,6 +20,7 @@ func TestEndpoints(t *testing.T) {
 	defer server.Close()
 
 	// a couple of closures to save time below
+	// TODO these have been shamefully copy and pasted. Tidy.
 	get := func(endpoint string) {
 		res, err := http.Get(server.URL + endpoint)
 		if err != nil {
@@ -98,13 +99,42 @@ func TestEndpoints(t *testing.T) {
 			t.Error("failed to Marshal")
 		}
 		fmt.Println(string(b) + "\n")
-
 	}
 
-	// set up a group
+	del := func(endpoint string) {
+		req, err := http.NewRequest("DELETE", server.URL+endpoint, nil)
+		if err != nil {
+			t.Error(err)
+		}
+		c := &http.Client{}
+		res, err := c.Do(req)
+		if err != nil {
+			t.Error(err)
+		}
+		if res.StatusCode == 204 {
+			return
+		}
+		body, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			t.Error(err)
+		}
+		var marsh interface{}
+		err = json.Unmarshal(body, &marsh)
+		if err != nil {
+			t.Error(errors.New("DELETE: failed to unmarshal response from " + endpoint + ". Response was: " + string(body)))
+		}
+		b, err := json.MarshalIndent(marsh, "", "  ")
+		if err != nil {
+			t.Error("failed to Marshal")
+		}
+		fmt.Println(string(b) + "\n")
+	}
+
+	// set up a group (1)
 	post("/groups", `{"group":0}`)
 
-	// set up a + block
+	// set up a + block (2)
 	post("/blocks", `{"type":"+","group":1}`)
 
 	// label group 1
@@ -125,20 +155,56 @@ func TestEndpoints(t *testing.T) {
 	// get the + block
 	get("/blocks/2")
 
-	// make a log block
+	// make a delay block (3)
+	post("/blocks", `{"type":"delay", "group":1}`)
+
+	// set the delay's value
+	put("/blocks/3/routes/1", `{"type":"const","value":"1s"}`)
+
+	/*
+		localhost:7071/blocks/1/routes/0 -X PUT '{"type":"const","value":1.0}'
+		curl localhost:7071/blocks/1/routes/1 -X PUT '{"type":"const","value":1.0}'
+	*/
+
+	// make a log block (4)
 	post("/blocks", `{"type":"log", "group":1}`)
 
-	// connect the + block to the log block
+	// connect the + block to the delay block (5)
 	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":3, "Route":0}}`)
+
+	// connect the delay block to the log block (6)
+	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":4, "Route":0}}`)
+
+	// set the value of the plus inputs
+	put("/blocks/2/routes/0", `{"type":"const","value":1}`)
+	put("/blocks/2/routes/1", `{"type":"const","value":1}`)
+
+	// make a set block (7)
+	post("/blocks", `{"type":"set", "group":1}`)
+
+	// disconnect the log block from the delay block
+	del("/connections/6")
+
+	// connect the set block to the log block and delay block (8) (9)
+	post("/connections", `{"source":{"id":7, "Route":0}, "target":{"id":4, "Route":0}}`)
+	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":7, "Route":1}}`)
+
+	// set the value of the set key
+	put("/blocks/7/routes/0", `{"type":"const","value":"myResult"}`)
+
+	// set the path on the log block
+	put("/blocks/4/routes/0", `{"type":"fetch","value":".myResult"}`)
 
 	// export the pattern
 	get("/groups/0/export")
 
 	// import a pattern
 
-	// delete the block
+	// delete the log block
+	del("/blocks/4")
 
-	// deelte group 1
+	// delete group 1
+	del("/groups/1")
 
 	//
 

@@ -110,6 +110,9 @@ func TestEndpoints(t *testing.T) {
 	// label group 1
 	put("/groups/1/label", "The Best Group Ever")
 
+	// label the plus block
+	put("/blocks/2/label", "my bestest adder")
+
 	// get all the groups
 	get("/groups")
 
@@ -122,7 +125,21 @@ func TestEndpoints(t *testing.T) {
 	// get the + block
 	get("/blocks/2")
 
+	// make a log block
+	post("/blocks", `{"type":"log", "group":1}`)
+
+	// connect the + block to the log block
+	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":3, "Route":0}}`)
+
 	// export the pattern
 	get("/groups/0/export")
+
+	// import a pattern
+
+	// delete the block
+
+	// deelte group 1
+
+	//
 
 }

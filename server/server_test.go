@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 )
 
@@ -24,6 +25,9 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		if res.StatusCode == 204 {
+			return
+		}
 		body, err := ioutil.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
@@ -32,7 +36,7 @@ func TestEndpoints(t *testing.T) {
 		var marsh interface{}
 		err = json.Unmarshal(body, &marsh)
 		if err != nil {
-			t.Error(errors.New("GET: failed to unmarshal response from " + endpoint + ". Response was: " + string(body)))
+			t.Error(errors.New("GET: failed to unmarshal response from " + endpoint + ". Status code was: " + strconv.Itoa(res.StatusCode)))
 		}
 		b, err := json.MarshalIndent(marsh, "", "  ")
 		if err != nil {
@@ -46,6 +50,9 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		if res.StatusCode == 204 {
+			return
+		}
 		body, err := ioutil.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
@@ -54,7 +61,7 @@ func TestEndpoints(t *testing.T) {
 		var marsh interface{}
 		err = json.Unmarshal(body, &marsh)
 		if err != nil {
-			t.Error(errors.New("POST: failed to unmarshal response from " + endpoint + ". Response was: " + string(body)))
+			t.Error(errors.New("POST: failed to unmarshal response from " + endpoint + ". Status code was: " + strconv.Itoa(res.StatusCode)))
 		}
 		b, err := json.MarshalIndent(marsh, "", "  ")
 		if err != nil {
@@ -72,6 +79,9 @@ func TestEndpoints(t *testing.T) {
 		res, err := c.Do(req)
 		if err != nil {
 			t.Error(err)
+		}
+		if res.StatusCode == 204 {
+			return
 		}
 		body, err := ioutil.ReadAll(res.Body)
 		res.Body.Close()

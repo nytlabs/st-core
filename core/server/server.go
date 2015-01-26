@@ -25,14 +25,15 @@ type Server struct {
 	blocks      map[int]*BlockLedger
 	connections map[int]*ConnectionLedger
 	//routes      map[RoutePair]RoutePair
-	stores     map[int]*core.Source
-	library    map[string]core.Spec
-	supervisor *suture.Supervisor
-	lastID     int
-	addSocket  chan *socket
-	delSocket  chan *socket
-	broadcast  chan []byte
-	emitChan   chan []byte
+	stores        map[int]*core.Source
+	library       map[string]core.Spec
+	sourceLibrary map[string]core.NewSource
+	supervisor    *suture.Supervisor
+	lastID        int
+	addSocket     chan *socket
+	delSocket     chan *socket
+	broadcast     chan []byte
+	emitChan      chan []byte
 	sync.Mutex
 }
 
@@ -53,17 +54,19 @@ func NewServer() *Server {
 	connections := make(map[int]*ConnectionLedger)
 	stores := make(map[int]*core.Source)
 	library := core.GetLibrary()
+	sourceLibrary := core.GetSources()
 	parents := make(map[int]int)
 	//routes := make(map[RoutePair]RoutePair)
 	s := &Server{
-		supervisor:  supervisor,
-		lastID:      0,
-		parents:     parents,
-		groups:      groups,
-		blocks:      blocks,
-		connections: connections,
-		library:     library,
-		stores:      stores,
+		supervisor:    supervisor,
+		lastID:        0,
+		parents:       parents,
+		groups:        groups,
+		blocks:        blocks,
+		sourceLibrary: sourceLibrary,
+		connections:   connections,
+		library:       library,
+		stores:        stores,
 		//routes:      routes,
 		addSocket: make(chan *socket),
 		delSocket: make(chan *socket),

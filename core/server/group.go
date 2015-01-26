@@ -639,5 +639,5 @@ func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
-
+	w.WriteHeader(http.StatusNoContent)
 }

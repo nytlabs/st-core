@@ -79,6 +79,58 @@ func (s *Server) BlockIndexHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var p Position
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	b, ok := s.blocks[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find block"})
+		return
+	}
+
+	b.Position = p
+
+	update := struct {
+		Position
+		Id int
+	}{
+		p,
+		id,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {

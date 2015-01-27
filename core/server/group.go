@@ -177,7 +177,8 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	for _, c := range newGroup.Children {
 		_, okb := s.blocks[c]
 		_, okg := s.groups[c]
-		if !okb && !okg {
+		_, oks := s.sources[c]
+		if !okb && !okg && !oks {
 			return nil, errors.New("could not create group: invalid children")
 		}
 	}
@@ -196,6 +197,9 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 		}
 		if cg, ok := s.groups[c]; ok {
 			err = s.AddChildToGroup(newGroup.Id, cg)
+		}
+		if cs, ok := s.sources[c]; ok {
+			err = s.AddChildToGroup(newGroup.Id, cs)
 		}
 		if err != nil {
 			return nil, err
@@ -426,7 +430,10 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	for _, c := range p.Connections {
 		c.Source.Id = newIds[c.Source.Id]
 		c.Target.Id = newIds[c.Target.Id]
-		_, err := s.CreateConnection(c)
+		_, err := s.CreateConnection(ProtoConnection{
+			Source: c.Source,
+			Target: c.Target,
+		})
 		if err != nil {
 			return err
 		}

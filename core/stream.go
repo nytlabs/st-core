@@ -49,12 +49,12 @@ func (s *Stream) Describe() map[string]string {
 
 func NewStream() Source {
 	out := make(chan Message)
-	stream := Stream{
+	stream := &Stream{
 		quit:        make(chan bool),
 		Out:         out,
 		maxInFlight: "10",
 	}
-	return &stream
+	return stream
 }
 
 func (s Stream) Serve() {

@@ -195,6 +195,27 @@ func TestEndpoints(t *testing.T) {
 	// set the path on the log block
 	put("/blocks/4/routes/0", `{"type":"fetch","value":".myResult"}`)
 
+	// move log block to root group
+	put("/groups/0/children/4", "")
+
+	// create a keyvalue source (10)
+	post("/sources", `{"type":"KeyValue"}`)
+
+	// get all the sources
+	get("/sources")
+
+	// get the keyvalue source
+	get("/sources/10")
+
+	// make a stream source (11)
+	post("/sources", `{"type":"Stream"}`)
+
+	// change a parameter in the stream
+	put("/sources/11", `{"topic":"test"}`)
+
+	// delete the keyvalue store
+	del("/sources/10")
+
 	// export the pattern
 	get("/groups/0/export")
 
@@ -206,6 +227,7 @@ func TestEndpoints(t *testing.T) {
 	// delete group 1
 	del("/groups/1")
 
-	//
+	// get the library
+	get("/library")
 
 }

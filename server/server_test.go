@@ -161,11 +161,6 @@ func TestEndpoints(t *testing.T) {
 	// set the delay's value
 	put("/blocks/3/routes/1", `{"type":"const","value":"1s"}`)
 
-	/*
-		localhost:7071/blocks/1/routes/0 -X PUT '{"type":"const","value":1.0}'
-		curl localhost:7071/blocks/1/routes/1 -X PUT '{"type":"const","value":1.0}'
-	*/
-
 	// make a log block (4)
 	post("/blocks", `{"type":"log", "group":1}`)
 
@@ -220,6 +215,8 @@ func TestEndpoints(t *testing.T) {
 	get("/groups/0/export")
 
 	// import a pattern
+	pattern := `{"blocks":[{"label":"","type":"+","id":2,"inputs":[{"name":"addend","type":"fetch","value":"."},{"name":"addend","type":"fetch","value":"."}],"outputs":[{"name":"sum"}],"position":{"x":0,"y":0}},{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","type":"fetch","value":"."},{"name":"duration","type":"const","value":"1s"}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}}],"connections":[{"source":{"id":2,"route":0},"target":{"id":3,"route":0},"id":4}],"groups":[{"id":1,"label":"","children":[2,3],"position":{"x":0,"y":0}}]}`
+	post("/groups/1/import", pattern)
 
 	// delete the log block
 	del("/blocks/4")

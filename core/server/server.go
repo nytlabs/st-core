@@ -16,6 +16,8 @@ const (
 	BLOCK       = "block"
 	GROUP       = "group"
 	GROUP_CHILD = "group_child"
+	SOURCE      = "source"
+	LINK        = "link"
 )
 
 // The Server maintains a set of handlers that coordinate the creation of Nodes
@@ -24,7 +26,8 @@ type Server struct {
 	parents       map[int]int
 	blocks        map[int]*BlockLedger
 	connections   map[int]*ConnectionLedger
-	sources       map[int]*core.Source
+	sources       map[int]*SourceLedger
+	links         map[int]*LinkLedger
 	library       map[string]core.Spec
 	sourceLibrary map[string]core.NewSource
 	supervisor    *suture.Supervisor
@@ -50,7 +53,8 @@ func NewServer() *Server {
 
 	blocks := make(map[int]*BlockLedger)
 	connections := make(map[int]*ConnectionLedger)
-	sources := make(map[int]*core.Source)
+	sources := make(map[int]*SourceLedger)
+	links := make(map[int]*LinkLedger)
 	library := core.GetLibrary()
 	sourceLibrary := core.GetSources()
 	parents := make(map[int]int)
@@ -63,12 +67,12 @@ func NewServer() *Server {
 		sourceLibrary: sourceLibrary,
 		connections:   connections,
 		library:       library,
+		links:         links,
 		sources:       sources,
-		//routes:      routes,
-		addSocket: make(chan *socket),
-		delSocket: make(chan *socket),
-		broadcast: make(chan []byte),
-		emitChan:  make(chan []byte),
+		addSocket:     make(chan *socket),
+		delSocket:     make(chan *socket),
+		broadcast:     make(chan []byte),
+		emitChan:      make(chan []byte),
 	}
 	// ws stuff
 	log.Println("starting websocker handler")

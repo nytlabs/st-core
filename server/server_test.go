@@ -192,6 +192,8 @@ func TestEndpoints(t *testing.T) {
 
 	// move log block to root group
 	put("/groups/0/children/4", "")
+	// move + block to root group (we will generate some errors with this later)
+	put("/groups/0/children/2", "")
 
 	// create a keyvalue source (10)
 	post("/sources", `{"type":"KeyValue"}`)
@@ -227,4 +229,29 @@ func TestEndpoints(t *testing.T) {
 	// get the library
 	get("/library")
 
+	// generate some errors
+	del("/groups/1")                                                                       // delete a group we've already deleted
+	del("/blocks/246")                                                                     // delete an unknown block
+	post("/groups/1/import", "{}")                                                         // import empty
+	post("/groups/1/import", "{bla}")                                                      // import malformed
+	get("/groups/6/export")                                                                // export an unknown group
+	post("/sources", `{"type":"GodHead"}`)                                                 // create an unknown source
+	put("/groups/8/children/4", "")                                                        // modify an unknown group
+	put("/groups/0/children/34", "")                                                       // move an unknown block to group 0
+	put("/blocks/2/routes/20", `{"type":"fetch","value":".myResult"}`)                     // set an unknown route
+	put("/blocks/240/routes/0", `{"type":"fetch","value":".myResult"}`)                    // set an unknown block's route
+	put("/blocks/2/routes/0", `{"type":"fetch","value":"invalid"}`)                        // set the + block's route to an invalid path
+	put("/blocks/2/routes/0", `{"type":"value","value":"bob"}`)                            // set the + block's route to an invalid value
+	put("/blocks/2/routes/0", `{bobo}`)                                                    // set the + block's route using malformed json
+	post("/groups", `{"group":10}`)                                                        // create a group with an unknown parent
+	post("/groups", `{"group"10}`)                                                         // create a group with malformed JSON
+	post("/blocks", `{"type":"invalid", "group":0}`)                                       // create a block of invalid type
+	post("/blocks", `{"type"lid", "group":1}`)                                             // create a block with malformed json
+	post("/blocks", `{"type":"latch", "group":10}`)                                        // create a block witha group that doesn't exist
+	post("/connections", `{"source":{"id":700, "Route":0}, "target":{"id":2, "Route":0}}`) //connect unknown source
+	//TODO this one panics
+	//	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":200, "Route":0}}`) //connect unknown target
+	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`) //connect with malformed json
+	post("/connections", `{}`)                                    //connect with empty json
+	post("/connections", "")                                      //connect with empty string
 }

@@ -38,6 +38,10 @@ func (s *Server) CreateLink(l ProtoLink) (*LinkLedger, error) {
 		Id:     s.GetNextID(),
 	}
 
+	if b.GetParent() != sl.GetParent() {
+		return nil, errors.new("block and source must be in the same group, cannot link")
+	}
+
 	err := b.Block.SetSource(*sl.Source)
 	if err != nil {
 		return nil, err

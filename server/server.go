@@ -29,7 +29,7 @@ type Server struct {
 	sources       map[int]*SourceLedger
 	links         map[int]*LinkLedger
 	library       map[string]core.Spec
-	sourceLibrary map[string]core.NewSource
+	sourceLibrary map[string]core.SourceSpec
 	supervisor    *suture.Supervisor
 	lastID        int
 	addSocket     chan *socket

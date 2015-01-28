@@ -12,7 +12,7 @@ type LibraryEntry struct {
 	// type if we need that later
 }
 
-func (s *Server) LibraryHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BlockLibraryHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -22,6 +22,26 @@ func (s *Server) LibraryHandler(w http.ResponseWriter, r *http.Request) {
 		l = append(l, LibraryEntry{
 			v.Name,
 			int(v.Source),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(l); err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) SourceLibraryHandler(w http.ResponseWriter, r *http.Request) {
+	s.Lock()
+	defer s.Unlock()
+
+	l := []LibraryEntry{}
+
+	for _, v := range s.sourceLibrary {
+		l = append(l, LibraryEntry{
+			v.Name,
+			v.Type,
 		})
 	}
 

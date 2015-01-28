@@ -2,6 +2,14 @@ package core
 
 import "sync"
 
+func KeyValueSource() SourceSpec {
+	return SourceSpec{
+		Name: "key-value",
+		Type: KEY_VALUE,
+		New:  NewKeyValue,
+	}
+}
+
 func NewKeyValue() Source {
 	return &KeyValue{
 		kv:   make(map[string]Message),

@@ -88,6 +88,16 @@ type Output struct {
 	Connections map[Connection]struct{} `json:"-"`
 }
 
+// A SourceSpec defines a source's name and type
+type SourceSpec struct {
+	Name string
+	Type int
+	New  SourceFunc
+}
+
+// A function that creates a source
+type SourceFunc func() Source
+
 // A ManifestPair is a unique reference to an Output/Connection pair
 type ManifestPair struct {
 	int

@@ -80,7 +80,7 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		return nil, errors.New("source block does not exist")
 	}
 
-	target := s.blocks[newConn.Target.Id]
+	target, ok := s.blocks[newConn.Target.Id]
 	if !ok {
 		return nil, errors.New("target block does not exist")
 	}

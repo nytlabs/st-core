@@ -4,13 +4,41 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/fatih/color"
 )
+
+var warn = color.New(color.FgYellow).Add(color.Bold).Println
+
+func procTestResponse(res *http.Response, t *testing.T) {
+	if res.StatusCode == 204 {
+		return
+	}
+	if res.StatusCode == 404 {
+		warn("WARNING! " + res.Request.Method + ": " + res.Request.URL.Path + " returned 404")
+		return
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		t.Error(err)
+	}
+	var marsh interface{}
+	err = json.Unmarshal(body, &marsh)
+	if err != nil {
+		t.Error(errors.New(res.Request.Method + ": failed to unmarshal response from " + res.Request.URL.Path + ". Status code was: " + strconv.Itoa(res.StatusCode)))
+	}
+	_, err = json.MarshalIndent(marsh, "", "  ")
+	if err != nil {
+		t.Error("failed to Marshal")
+	}
+	// fmt.Println(string(b) + "\n")
+}
 
 func TestEndpoints(t *testing.T) {
 
@@ -26,24 +54,7 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if res.StatusCode == 204 {
-			return
-		}
-		body, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-		var marsh interface{}
-		err = json.Unmarshal(body, &marsh)
-		if err != nil {
-			t.Error(errors.New("GET: failed to unmarshal response from " + endpoint + ". Status code was: " + strconv.Itoa(res.StatusCode)))
-		}
-		b, err := json.MarshalIndent(marsh, "", "  ")
-		if err != nil {
-			t.Error("failed to Marshal")
-		}
-		fmt.Println(string(b) + "\n")
+		procTestResponse(res, t)
 	}
 
 	post := func(endpoint, msg string) {
@@ -51,24 +62,7 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if res.StatusCode == 204 {
-			return
-		}
-		body, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-		var marsh interface{}
-		err = json.Unmarshal(body, &marsh)
-		if err != nil {
-			t.Error(errors.New("POST: failed to unmarshal response from " + endpoint + ". Status code was: " + strconv.Itoa(res.StatusCode)))
-		}
-		b, err := json.MarshalIndent(marsh, "", "  ")
-		if err != nil {
-			t.Error("failed to Marshal")
-		}
-		fmt.Println(string(b) + "\n")
+		procTestResponse(res, t)
 	}
 
 	put := func(endpoint, msg string) {
@@ -81,24 +75,7 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if res.StatusCode == 204 {
-			return
-		}
-		body, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-		var marsh interface{}
-		err = json.Unmarshal(body, &marsh)
-		if err != nil {
-			t.Error(errors.New("PUT: failed to unmarshal response from " + endpoint + ". Response was: " + string(body)))
-		}
-		b, err := json.MarshalIndent(marsh, "", "  ")
-		if err != nil {
-			t.Error("failed to Marshal")
-		}
-		fmt.Println(string(b) + "\n")
+		procTestResponse(res, t)
 	}
 
 	del := func(endpoint string) {
@@ -111,24 +88,7 @@ func TestEndpoints(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if res.StatusCode == 204 {
-			return
-		}
-		body, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-		var marsh interface{}
-		err = json.Unmarshal(body, &marsh)
-		if err != nil {
-			t.Error(errors.New("DELETE: failed to unmarshal response from " + endpoint + ". Response was: " + string(body)))
-		}
-		b, err := json.MarshalIndent(marsh, "", "  ")
-		if err != nil {
-			t.Error("failed to Marshal")
-		}
-		fmt.Println(string(b) + "\n")
+		procTestResponse(res, t)
 	}
 
 	// set up a group (1)
@@ -184,6 +144,11 @@ func TestEndpoints(t *testing.T) {
 	post("/connections", `{"source":{"id":7, "Route":0}, "target":{"id":4, "Route":0}}`)
 	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":7, "Route":1}}`)
 
+	// list connections
+	get("/connections")
+	// describe connection 8
+	get("/connections/8")
+
 	// set the value of the set key
 	put("/blocks/7/routes/0", `{"type":"const","value":"myResult"}`)
 
@@ -231,6 +196,7 @@ func TestEndpoints(t *testing.T) {
 
 	// generate some errors
 	del("/groups/1")                                                                       // delete a group we've already deleted
+	del("/groups/")                                                                        // delete unspecified group
 	del("/blocks/246")                                                                     // delete an unknown block
 	post("/groups/1/import", "{}")                                                         // import empty
 	post("/groups/1/import", "{bla}")                                                      // import malformed
@@ -254,4 +220,7 @@ func TestEndpoints(t *testing.T) {
 	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`) //connect with malformed json
 	post("/connections", `{}`)                                    //connect with empty json
 	post("/connections", "")                                      //connect with empty string
+	del("/connections/289")                                       //delete unknown connection
+	del("/connections/")                                          //delete unspecified connection
+	del("/connections/invalid")                                   //delete malformed connection
 }

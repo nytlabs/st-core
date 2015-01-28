@@ -42,19 +42,19 @@ func (s *Stream) Describe() map[string]string {
 	return map[string]string{
 		"topic":       s.topic,
 		"channel":     s.channel,
-		"lookupAddr":  s.lookupdAddr,
+		"lookupdAddr": s.lookupdAddr,
 		"maxInFlight": s.maxInFlight,
 	}
 }
 
-func NewStream() *Stream {
+func NewStream() Source {
 	out := make(chan Message)
-	stream := Stream{
+	stream := &Stream{
 		quit:        make(chan bool),
 		Out:         out,
 		maxInFlight: "10",
 	}
-	return &stream
+	return stream
 }
 
 func (s Stream) Serve() {

@@ -162,7 +162,7 @@ func (s *Server) NewRouter() *mux.Router {
 		Route{
 			"SourceModify",
 			"/sources/{id}",
-			"/PUT",
+			"PUT",
 			s.SourceModifyHandler,
 		},
 		Route{
@@ -182,6 +182,24 @@ func (s *Server) NewRouter() *mux.Router {
 			"/library",
 			"GET",
 			s.LibraryHandler,
+		},
+		Route{
+			"LinkIndex",
+			"/links",
+			"GET",
+			s.LinkIndexHandler,
+		},
+		Route{
+			"LinkCreate",
+			"/links",
+			"POST",
+			s.LinkCreateHandler,
+		},
+		Route{
+			"LinkDelete",
+			"/connections/{id}",
+			"DELETE",
+			s.ConnectionDeleteHandler,
 		},
 	}
 	router := mux.NewRouter().StrictSlash(true)

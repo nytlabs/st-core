@@ -14,6 +14,8 @@ type Pattern struct {
 	Blocks      []BlockLedger      `json:"blocks"`
 	Connections []ConnectionLedger `json:"connections"`
 	Groups      []Group            `json:"groups"`
+	Sources     []SourceLedger     `json:"sources"`
+	Links       []LinkLedger       `json:"links"`
 }
 
 type Node interface {
@@ -177,7 +179,8 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	for _, c := range newGroup.Children {
 		_, okb := s.blocks[c]
 		_, okg := s.groups[c]
-		if !okb && !okg {
+		_, oks := s.sources[c]
+		if !okb && !okg && !oks {
 			return nil, errors.New("could not create group: invalid children")
 		}
 	}
@@ -196,6 +199,9 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 		}
 		if cg, ok := s.groups[c]; ok {
 			err = s.AddChildToGroup(newGroup.Id, cg)
+		}
+		if cs, ok := s.sources[c]; ok {
+			err = s.AddChildToGroup(newGroup.Id, cs)
 		}
 		if err != nil {
 			return nil, err
@@ -284,7 +290,7 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.Lock()
 	defer s.Unlock()
-	p, err := s.ExportGroup(id)
+	p, err := s.Export(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
@@ -303,40 +309,63 @@ func (s *Server) ExportGroup(id int) (*Pattern, error) {
 	}
 
 	p.Groups = append(p.Groups, *g)
-	for _, c := range s.connections {
-		in := false
-		out := false
-		for _, bid := range g.Children {
-			b, ok := s.blocks[bid]
-			if !ok {
-				continue
-			}
-			if b.Id == c.Source.Id {
-				in = true
-			}
-			if b.Id == c.Target.Id {
-				out = true
-			}
-		}
-		if in && out {
-			p.Connections = append(p.Connections, *c)
-		}
-	}
-
 	for _, c := range g.Children {
-		b, ok := s.blocks[c]
-		if !ok {
-			g, err := s.ExportGroup(c)
+		if b, ok := s.blocks[c]; ok {
+			p.Blocks = append(p.Blocks, *b)
+			continue
+		}
+		if source, ok := s.sources[c]; ok {
+			p.Sources = append(p.Sources, *source)
+			continue
+		}
+		if group, ok := s.groups[c]; ok {
+			g, err := s.ExportGroup(group.Id)
 			if err != nil {
 				return nil, err
 			}
 
 			p.Blocks = append(p.Blocks, g.Blocks...)
 			p.Groups = append(p.Groups, g.Groups...)
-			p.Connections = append(p.Connections, g.Connections...)
+			p.Sources = append(p.Sources, g.Sources...)
 			continue
 		}
-		p.Blocks = append(p.Blocks, *b)
+	}
+	return p, nil
+}
+
+func (s *Server) Export(id int) (*Pattern, error) {
+	p, err := s.ExportGroup(id)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make(map[int]struct{})
+	for _, b := range p.Blocks {
+		ids[b.Id] = struct{}{}
+	}
+
+	for _, g := range p.Groups {
+		ids[g.Id] = struct{}{}
+	}
+
+	for _, source := range p.Sources {
+		ids[source.Id] = struct{}{}
+	}
+
+	for _, c := range s.connections {
+		_, sourceIncluded := ids[c.Source.Id]
+		_, targetIncluded := ids[c.Target.Id]
+		if sourceIncluded && targetIncluded {
+			p.Connections = append(p.Connections, *c)
+		}
+	}
+
+	for _, l := range s.links {
+		_, sourceIncluded := ids[l.Block]
+		_, targetIncluded := ids[l.Source]
+		if sourceIncluded && targetIncluded {
+			p.Links = append(p.Links, *l)
+		}
 	}
 
 	return p, nil
@@ -423,10 +452,46 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		newIds[b.Id] = nb.Id
 	}
 
+	for _, source := range p.Sources {
+		ns, err := s.CreateSource(ProtoSource{
+			Label:    source.Label,
+			Position: source.Position,
+			Type:     source.Type,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		newIds[source.Id] = ns.Id
+	}
+
 	for _, c := range p.Connections {
 		c.Source.Id = newIds[c.Source.Id]
 		c.Target.Id = newIds[c.Target.Id]
-		_, err := s.CreateConnection(c)
+		_, err := s.CreateConnection(ProtoConnection{
+			Source: c.Source,
+			Target: c.Target,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, l := range p.Links {
+		l.Block = newIds[l.Block]
+		l.Source = newIds[l.Source]
+		_, err := s.CreateLink(ProtoLink{
+			Source: l.Source,
+			Block:  l.Block,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, source := range p.Sources {
+		err := s.ModifySource(newIds[source.Id], source.Parameters)
 		if err != nil {
 			return err
 		}
@@ -449,6 +514,12 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			}
 			if bg, ok := s.groups[newIds[c]]; ok {
 				n = bg
+			}
+			if bs, ok := s.sources[newIds[c]]; ok {
+				n = bs
+			}
+			if n == nil {
+				return errors.New("could not add node, node does not exist")
 			}
 
 			err := s.AddChildToGroup(newIds[g.Id], n)
@@ -588,4 +659,56 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var p Position
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	g, ok := s.groups[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find group"})
+		return
+	}
+
+	g.Position = p
+
+	update := struct {
+		Position
+		Id int
+	}{
+		p,
+		id,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	w.WriteHeader(http.StatusNoContent)
 }

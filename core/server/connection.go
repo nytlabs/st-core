@@ -22,6 +22,11 @@ type ConnectionLedger struct {
 	Id     int            `json:"id"`
 }
 
+type ProtoConnection struct {
+	Source ConnectionNode `json:"source"`
+	Target ConnectionNode `json:"target"`
+}
+
 func (s *Server) ListConnections() []ConnectionLedger {
 	connections := []ConnectionLedger{}
 	for _, c := range s.connections {
@@ -52,7 +57,7 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var newConn ConnectionLedger
+	var newConn ProtoConnection
 	json.Unmarshal(body, &newConn)
 
 	s.Lock()
@@ -69,7 +74,7 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, nc)
 }
 
-func (s *Server) CreateConnection(newConn ConnectionLedger) (*ConnectionLedger, error) {
+func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, error) {
 	source, ok := s.blocks[newConn.Source.Id]
 	if !ok {
 		return nil, errors.New("source block does not exist")
@@ -91,11 +96,16 @@ func (s *Server) CreateConnection(newConn ConnectionLedger) (*ConnectionLedger, 
 		return nil, err
 	}
 
-	newConn.Id = s.GetNextID()
-	s.connections[newConn.Id] = &newConn
+	conn := &ConnectionLedger{
+		Source: newConn.Source,
+		Target: newConn.Target,
+		Id:     s.GetNextID(),
+	}
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: newConn})
-	return &newConn, nil
+	s.connections[conn.Id] = conn
+
+	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: conn})
+	return conn, nil
 }
 
 func (s *Server) ConnectionModifyCoordinates(w http.ResponseWriter, r *http.Request) {

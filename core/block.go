@@ -146,11 +146,18 @@ func (b *Block) GetSource() Source {
 }
 
 // sets a store for the block. can be set to nil
-func (b *Block) SetSource(s Source) {
+func (b *Block) SetSource(s Source) error {
+	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
+		if s.GetType() != b.sourceType {
+			returnVal <- errors.New("invalid source type for this block")
+			return true
+		}
 		b.routing.Source = s
+		returnVal <- nil
 		return true
 	}
+	return <-returnVal
 }
 
 // RouteValue sets the route to always be the specified value

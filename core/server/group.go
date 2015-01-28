@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -492,8 +491,6 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	}
 
 	for _, source := range p.Sources {
-		fmt.Println(source.Parameters)
-		fmt.Println("FUCK FUCK")
 		err := s.ModifySource(newIds[source.Id], source.Parameters)
 		if err != nil {
 			return err

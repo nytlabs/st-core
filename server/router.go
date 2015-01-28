@@ -22,6 +22,18 @@ func (s *Server) NewRouter() *mux.Router {
 			s.UpdateSocketHandler,
 		},
 		Route{
+			"BlockLibrary",
+			"/blocks/library",
+			"GET",
+			s.BlockLibraryHandler,
+		},
+		Route{
+			"SourceLibrary",
+			"/sources/library",
+			"GET",
+			s.SourceLibraryHandler,
+		},
+		Route{
 			"GroupIndex",
 			"/groups",
 			"GET",
@@ -176,12 +188,6 @@ func (s *Server) NewRouter() *mux.Router {
 			"/sources/{id}",
 			"DELETE",
 			s.SourceDeleteHandler,
-		},
-		Route{
-			"Library",
-			"/library",
-			"GET",
-			s.LibraryHandler,
 		},
 		Route{
 			"LinkIndex",

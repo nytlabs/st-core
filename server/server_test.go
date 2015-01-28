@@ -48,7 +48,6 @@ func TestEndpoints(t *testing.T) {
 	defer server.Close()
 
 	// a couple of closures to save time below
-	// TODO these have been shamefully copy and pasted. Tidy.
 	get := func(endpoint string) {
 		res, err := http.Get(server.URL + endpoint)
 		if err != nil {
@@ -216,11 +215,11 @@ func TestEndpoints(t *testing.T) {
 	post("/blocks", `{"type":"latch", "group":10}`)                                        // create a block witha group that doesn't exist
 	post("/connections", `{"source":{"id":700, "Route":0}, "target":{"id":2, "Route":0}}`) //connect unknown source
 	//TODO this one panics
-	//	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":200, "Route":0}}`) //connect unknown target
-	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`) //connect with malformed json
-	post("/connections", `{}`)                                    //connect with empty json
-	post("/connections", "")                                      //connect with empty string
-	del("/connections/289")                                       //delete unknown connection
-	del("/connections/")                                          //delete unspecified connection
-	del("/connections/invalid")                                   //delete malformed connection
+	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":200, "Route":0}}`) //connect unknown target
+	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`)                          //connect with malformed json
+	post("/connections", `{}`)                                                             //connect with empty json
+	post("/connections", "")                                                               //connect with empty string
+	del("/connections/289")                                                                //delete unknown connection
+	del("/connections/")                                                                   //delete unspecified connection
+	del("/connections/invalid")                                                            //delete malformed connection
 }

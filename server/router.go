@@ -203,9 +203,9 @@ func (s *Server) NewRouter() *mux.Router {
 		},
 		Route{
 			"LinkDelete",
-			"/connections/{id}",
+			"/links/{id}",
 			"DELETE",
-			s.ConnectionDeleteHandler,
+			s.LinkDeleteHandler,
 		},
 	}
 	router := mux.NewRouter().StrictSlash(true)

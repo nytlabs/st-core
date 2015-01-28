@@ -42,7 +42,7 @@ func (s *Stream) Describe() map[string]string {
 	return map[string]string{
 		"topic":       s.topic,
 		"channel":     s.channel,
-		"lookupAddr":  s.lookupdAddr,
+		"lookupdAddr": s.lookupdAddr,
 		"maxInFlight": s.maxInFlight,
 	}
 }

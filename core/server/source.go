@@ -16,7 +16,7 @@ type SourceLedger struct {
 	Label      string              `json:"label"`
 	Type       string              `json:"type"`
 	Id         int                 `json:"id"`
-	Source     *core.Source        `json:"-"`
+	Source     core.Source         `json:"-"`
 	Parent     *Group              `json:"-"`
 	Token      suture.ServiceToken `json:"-"`
 	Position   Position            `json:"position"`
@@ -74,11 +74,13 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	sl := &SourceLedger{
 		Label:    p.Label,
 		Position: p.Position,
-		Source:   &source,
+		Source:   source,
 		Type:     p.Type,
 		Id:       s.GetNextID(),
 	}
 
+	// Describe() is not thread-safe it must be put ahead of supervior...
+	sl.Parameters = source.Describe()
 	sl.Token = s.supervisor.Add(source)
 	s.sources[sl.Id] = sl
 	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: sl})
@@ -143,7 +145,74 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, b)
 }
+
+func (s *Server) ModifySource(id int, m map[string]string) error {
+	source, ok := s.sources[id]
+	if !ok {
+		return errors.New("no source found")
+	}
+
+	s.supervisor.Remove(source.Token)
+	for k, _ := range source.Parameters {
+		if v, ok := m[k]; ok {
+			s.sources[id].Source.SetSourceParameter(k, v)
+			source.Parameters[k] = v
+			update := struct {
+				Id    int    `json:"id"`
+				Key   string `json:"param"`
+				Value string `json:"value"`
+			}{
+				id, k, v,
+			}
+			s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+		}
+	}
+	source.Token = s.supervisor.Add(source.Source)
+	return nil
+}
+
 func (s *Server) SourceModifyHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var m map[string]string
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.ModifySource(id, m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 func (s *Server) SourceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

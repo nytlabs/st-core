@@ -149,7 +149,7 @@ func (b *Block) GetSource() Source {
 func (b *Block) SetSource(s Source) error {
 	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
-		if s.GetType() != b.sourceType {
+		if s != nil && s.GetType() != b.sourceType {
 			returnVal <- errors.New("invalid source type for this block")
 			return true
 		}

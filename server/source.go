@@ -69,7 +69,7 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 		return nil, errors.New("source type does not exist")
 	}
 
-	source := f()
+	source := f.New()
 
 	sl := &SourceLedger{
 		Label:    p.Label,

@@ -8,6 +8,14 @@ import (
 	"github.com/bitly/go-nsq"
 )
 
+func StreamSource() SourceSpec {
+	return SourceSpec{
+		Name: "stream",
+		Type: STREAM,
+		New:  NewStream,
+	}
+}
+
 type Stream struct {
 	quit        chan bool
 	Out         chan Message // this channel is used by any block that would like to receive messages

@@ -2,12 +2,7 @@
 // one another by passing Messages.
 package core
 
-import (
-	"encoding/json"
-	"sync"
-
-	"github.com/nikhan/go-fetch"
-)
+import "sync"
 
 const (
 	NONE = iota
@@ -64,29 +59,22 @@ type Input struct {
 	C     chan Message
 }
 
-func (r Input) MarshalJSON() ([]byte, error) {
-	out := make(map[string]interface{})
-	value := make(map[string]interface{})
-	out["name"] = r.Name
-
-	switch q := r.Value.(type) {
-	case *fetch.Query:
-		value["fetch"] = q.String()
-	default:
-		value["json"] = q
-	}
-
-	out["value"] = value
-
-	return json.Marshal(out)
-}
-
 // An Output holds a set of Connections. Each Connection refers to a Input.C. Every outbound
 // mesage is sent on every Connection in the Connections set.
 type Output struct {
 	Name        string                  `json:"name"`
 	Connections map[Connection]struct{} `json:"-"`
 }
+
+// A SourceSpec defines a source's name and type
+type SourceSpec struct {
+	Name string
+	Type int
+	New  SourceFunc
+}
+
+// A function that creates a source
+type SourceFunc func() Source
 
 // A ManifestPair is a unique reference to an Output/Connection pair
 type ManifestPair struct {

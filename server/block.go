@@ -77,7 +77,36 @@ func (s *Server) BlockIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	b, ok := s.blocks[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find block"})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, b)
+	return
 }
+
 func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]

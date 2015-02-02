@@ -62,7 +62,30 @@ func (s *Server) SourceIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) SourceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+	s.Lock()
+	defer s.Unlock()
+	source, ok := s.sources[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find source"})
+		return
+	}
+	writeJSON(w, source)
 }
+
 func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	f, ok := s.sourceLibrary[p.Type]
 	if !ok {

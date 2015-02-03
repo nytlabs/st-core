@@ -207,10 +207,8 @@ func Latch() Spec {
 			}
 			if controlSignal {
 				out[0] = in[0]
-				out[1] = nil
 			} else {
 				out[1] = in[0]
-				out[0] = nil
 			}
 			return nil
 		},

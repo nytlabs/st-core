@@ -11,7 +11,7 @@ func IsError() Spec {
 		Inputs:  []Pin{Pin{"in"}},
 		Outputs: []Pin{Pin{"out"}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
-			_, ok := in[0].(stcoreError)
+			_, ok := in[0].(*stcoreError)
 			if !ok {
 				out[0] = false
 				return nil

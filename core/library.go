@@ -93,6 +93,11 @@ func GetLibrary() map[string]Spec {
 
 		// network IO
 		GET(),
+
+		//logic
+		And(),
+		Or(),
+		Not(),
 	}
 
 	library := make(map[string]Spec)

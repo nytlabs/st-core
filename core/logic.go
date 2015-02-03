@@ -11,7 +11,7 @@ func And() Spec {
 				out[0] = NewError("need boolean")
 				return nil
 			}
-			y, ok = in[1].(bool)
+			y, ok := in[1].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
 				return nil
@@ -33,7 +33,7 @@ func Or() Spec {
 				out[0] = NewError("need boolean")
 				return nil
 			}
-			y, ok = in[1].(bool)
+			y, ok := in[1].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
 				return nil

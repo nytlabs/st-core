@@ -1,5 +1,10 @@
 package core
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 func IsError() Spec {
 	return Spec{
 		Name:    "isError",
@@ -97,6 +102,58 @@ func IsObject() Spec {
 				return nil
 			}
 			out[0] = true
+			return nil
+		},
+	}
+}
+
+func ToString() Spec {
+	return Spec{
+		Name:    "ToString",
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			switch t := in[0].(type) {
+			case float64:
+				out[0] = strconv.FormatFloat(t, 'f', -1, 64)
+			case bool:
+				out[0] = strconv.FormatBool(t)
+			default:
+				j, e := json.Marshal(t)
+				if e != nil {
+					out[0] = NewError(e.Error())
+				}
+				out[0] = string(j)
+			}
+			return nil
+		},
+	}
+}
+
+func ToNumber() Spec {
+	return Spec{
+		Name:    "ToNumber",
+		Inputs:  []Pin{Pin{"in"}},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			switch t := in[0].(type) {
+			case float64:
+				out[0] = t
+			case bool:
+				if t == true {
+					out[0] = 1.0
+				} else {
+					out[1] = 0.0
+				}
+			case string:
+				f, err := strconv.ParseFloat(t, 64)
+				if err != nil {
+					out[0] = NewError(err.Error())
+				}
+				out[0] = f
+			default:
+				out[0] = NewError("could not convert msg to float")
+			}
 			return nil
 		},
 	}

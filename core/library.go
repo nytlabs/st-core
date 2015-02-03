@@ -101,6 +101,8 @@ func GetLibrary() map[string]Spec {
 		IsArray(),
 		IsObject(),
 		IsError(),
+		ToString(),
+		ToNumber(),
 	}
 
 	library := make(map[string]Spec)

@@ -103,6 +103,11 @@ func GetLibrary() map[string]Spec {
 		IsError(),
 		ToString(),
 		ToNumber(),
+
+		//logic
+		And(),
+		Or(),
+		Not(),
 	}
 
 	library := make(map[string]Spec)
@@ -217,10 +222,8 @@ func Latch() Spec {
 			}
 			if controlSignal {
 				out[0] = in[0]
-				out[1] = nil
 			} else {
 				out[1] = in[0]
-				out[0] = nil
 			}
 			return nil
 		},

@@ -93,6 +93,14 @@ func GetLibrary() map[string]Spec {
 
 		// network IO
 		GET(),
+
+		//assertions
+		IsBoolean(),
+		IsNumber(),
+		IsString(),
+		IsArray(),
+		IsObject(),
+		IsError(),
 	}
 
 	library := make(map[string]Spec)

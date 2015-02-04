@@ -270,8 +270,34 @@ func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// returns a description of the group - its id and childreen
 func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+	s.Lock()
+	defer s.Unlock()
+	group, ok := s.groups[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find group"})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, group)
 }
+
 func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	ids, ok := vars["id"]
@@ -559,7 +585,7 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 	err = json.Unmarshal(body, &l)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarshal value"})
+		writeJSON(w, Error{"could not unmarshal: " + string(body) + ""})
 		return
 	}
 

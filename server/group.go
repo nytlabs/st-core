@@ -585,7 +585,7 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 	err = json.Unmarshal(body, &l)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarshal value"})
+		writeJSON(w, Error{"could not unmarshal: " + string(body) + ""})
 		return
 	}
 

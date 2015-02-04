@@ -108,6 +108,35 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 	return conn, nil
 }
 
+// returns a description of the connection
+func (s *Server) ConnectionHandler(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	ids, ok := vars["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no ID supplied"})
+		return
+	}
+
+	id, err := strconv.Atoi(ids)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	conn, ok := s.connections[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find connection" + ids})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, conn)
+}
+
 func (s *Server) ConnectionModifyCoordinates(w http.ResponseWriter, r *http.Request) {
 }
 

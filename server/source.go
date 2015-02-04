@@ -90,7 +90,7 @@ func (s *Server) SourceHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	f, ok := s.sourceLibrary[p.Type]
 	if !ok {
-		return nil, errors.New("source type does not exist")
+		return nil, errors.New("source type " + p.Type + " does not exist")
 	}
 
 	source := f.New()

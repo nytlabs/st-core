@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +17,12 @@ import (
 var warn = color.New(color.FgYellow).Add(color.Bold).Println
 
 func procTestResponse(res *http.Response, t *testing.T, expectedCode int) {
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(string(body) + "\n")
 	if res.StatusCode != expectedCode {
 		t.Error(res.Request.Method + ": " + res.Request.URL.Path + " returned " + strconv.Itoa(res.StatusCode) + ". Expected " + strconv.Itoa(expectedCode) + ".")
 		return
@@ -23,10 +30,8 @@ func procTestResponse(res *http.Response, t *testing.T, expectedCode int) {
 	if res.StatusCode == 204 {
 		return
 	}
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		t.Error(err)
+	if res.StatusCode == 404 {
+		return
 	}
 	var marsh interface{}
 	err = json.Unmarshal(body, &marsh)
@@ -37,7 +42,6 @@ func procTestResponse(res *http.Response, t *testing.T, expectedCode int) {
 	if err != nil {
 		t.Error("failed to Marshal")
 	}
-	// fmt.Println(string(b) + "\n")
 }
 
 func TestEndpoints(t *testing.T) {
@@ -52,6 +56,7 @@ func TestEndpoints(t *testing.T) {
 		res, err := http.Get(server.URL + endpoint)
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		procTestResponse(res, t, expectedCode)
 	}
@@ -60,6 +65,7 @@ func TestEndpoints(t *testing.T) {
 		res, err := http.Post(server.URL+endpoint, "application/json", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		procTestResponse(res, t, expectedCode)
 	}
@@ -68,11 +74,13 @@ func TestEndpoints(t *testing.T) {
 		req, err := http.NewRequest("PUT", server.URL+endpoint, bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		c := &http.Client{}
 		res, err := c.Do(req)
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		procTestResponse(res, t, expectedCode)
 	}
@@ -81,11 +89,13 @@ func TestEndpoints(t *testing.T) {
 		req, err := http.NewRequest("DELETE", server.URL+endpoint, nil)
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		c := &http.Client{}
 		res, err := c.Do(req)
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		procTestResponse(res, t, expectedCode)
 	}
@@ -97,10 +107,13 @@ func TestEndpoints(t *testing.T) {
 	post("/blocks", `{"type":"+","group":1}`, 200)
 
 	// label group 1
-	put("/groups/1/label", "The Best Group Ever", 200)
+	put("/groups/1/label", `"The Best Group Ever"`, 204)
 
 	// label the plus block
-	put("/blocks/2/label", "my bestest adder", 204)
+	put("/blocks/2/label", `"my bestest adder"`, 204)
+
+	// move the plus block
+	put("/blocks/2/position", `{"x":10,"y":10}`, 204)
 
 	// get all the groups
 	get("/groups", 200)
@@ -160,19 +173,34 @@ func TestEndpoints(t *testing.T) {
 	put("/groups/0/children/2", "", 204)
 
 	// create a keyvalue source (10)
-	post("/sources", `{"type":"KeyValue"}`, 200)
-
-	// get all the sources
-	get("/sources", 200)
+	post("/sources", `{"type":"key-value"}`, 200)
 
 	// get the keyvalue source
 	get("/sources/10", 200)
 
 	// make a stream source (11)
-	post("/sources", `{"type":"Stream"}`, 200)
+	post("/sources", `{"type":"stream"}`, 200)
 
 	// change a parameter in the stream
 	put("/sources/11", `{"topic":"test"}`, 204)
+
+	// get all the sources
+	get("/sources", 200)
+
+	// make a key value get block (12)
+	post("/blocks", `{"type":"kvGet"}`, 200)
+
+	// link the key value get block to the key value source (13)
+	post("/links", `{"source":10,"block":12}`, 200)
+
+	// list the links
+	get("/links", 200)
+
+	// get the link
+	get("/links/13", 200)
+
+	// delete the link
+	del("/links/13", 204)
 
 	// delete the keyvalue store
 	del("/sources/10", 204)
@@ -190,12 +218,15 @@ func TestEndpoints(t *testing.T) {
 	// delete group 1
 	del("/groups/1", 204)
 
-	// get the library
-	get("/library", 200)
+	// get the blocks library
+	get("/blocks/library", 200)
+
+	// get the blocks library
+	get("/sources/library", 200)
 
 	// generate some errors
 	del("/groups/1", 400)                                                                       // delete a group we've already deleted
-	del("/groups/", 400)                                                                        // delete unspecified group
+	del("/groups/", 404)                                                                        // delete unspecified group
 	del("/blocks/246", 400)                                                                     // delete an unknown block
 	post("/groups/1/import", "{}", 400)                                                         // import empty
 	post("/groups/1/import", "{bla}", 400)                                                      // import malformed
@@ -220,6 +251,6 @@ func TestEndpoints(t *testing.T) {
 	post("/connections", `{}`, 400)                                                             //connect with empty json
 	post("/connections", "", 400)                                                               //connect with empty string
 	del("/connections/289", 400)                                                                //delete unknown connection
-	del("/connections/", 400)                                                                   //delete unspecified connection
+	del("/connections/", 404)                                                                   //delete unspecified connection
 	del("/connections/invalid", 400)                                                            //delete malformed connection
 }

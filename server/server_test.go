@@ -121,6 +121,9 @@ func TestEndpoints(t *testing.T) {
 	// get group 1
 	get("/groups/1", 200)
 
+	// move group 1
+	put("/groups/1/position", `{"x":20,"y":20}`, 204)
+
 	// get all the blocks
 	get("/blocks", 200)
 

@@ -294,6 +294,7 @@ func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, Error{"could not find group"})
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	writeJSON(w, group)
 }
 

@@ -83,6 +83,7 @@ func (s *Server) SourceHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, Error{"could not find source"})
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	writeJSON(w, source)
 }
 

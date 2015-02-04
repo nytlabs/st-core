@@ -142,7 +142,7 @@ func (s *Server) NewRouter() *mux.Router {
 			s.ConnectionIndexHandler,
 		},
 		Route{
-			"ConnectionIndex",
+			"Connection",
 			"/connections/{id}",
 			"GET",
 			s.ConnectionHandler,

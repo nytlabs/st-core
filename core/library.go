@@ -9,17 +9,17 @@ import (
 )
 
 type stcoreError struct {
-	s string
+	S string `json:"core"`
 }
 
 func (e *stcoreError) Error() string {
-	log.Println(e.s)
-	return e.s
+	log.Println(e.S)
+	return e.S
 }
 
 func NewError(s string) *stcoreError {
 	return &stcoreError{
-		s: s,
+		S: s,
 	}
 }
 
@@ -93,6 +93,21 @@ func GetLibrary() map[string]Spec {
 
 		// network IO
 		GET(),
+
+		//assertions
+		IsBoolean(),
+		IsNumber(),
+		IsString(),
+		IsArray(),
+		IsObject(),
+		IsError(),
+		ToString(),
+		ToNumber(),
+
+		//logic
+		And(),
+		Or(),
+		Not(),
 	}
 
 	library := make(map[string]Spec)
@@ -207,10 +222,8 @@ func Latch() Spec {
 			}
 			if controlSignal {
 				out[0] = in[0]
-				out[1] = nil
 			} else {
 				out[1] = in[0]
-				out[0] = nil
 			}
 			return nil
 		},

@@ -304,6 +304,13 @@ func (b *Block) process() Interrupt {
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
+		// if the output key is not present in the output map, then we
+		// don't deliver any message
+		_, ok := b.state.outputValues[RouteIndex(id)]
+		if !ok {
+			continue
+		}
+
 		// if there no connection for this output then wait until there
 		// is one. that means we have to wait for an interrupt.
 		if len(out.Connections) == 0 {

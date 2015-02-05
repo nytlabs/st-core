@@ -121,6 +121,9 @@ func TestEndpoints(t *testing.T) {
 	// get group 1
 	get("/groups/1", 200)
 
+	// move group 1
+	put("/groups/1/position", `{"x":20,"y":20}`, 204)
+
 	// get all the blocks
 	get("/blocks", 200)
 
@@ -232,6 +235,10 @@ func TestEndpoints(t *testing.T) {
 	post("/groups/1/import", "{bla}", 400)                                                      // import malformed
 	get("/groups/6/export", 400)                                                                // export an unknown group
 	post("/sources", `{"type":"GodHead"}`, 400)                                                 // create an unknown source
+	get("/sources/45", 400)                                                                     // get an unknown source
+	post("/links", `{"source":100,"block":12}`, 400)                                            // link to an unknown source
+	post("/links", `{"source":10,"block":120}`, 400)                                            // link to an unknown block
+	get("/links/450", 404)                                                                      // get an unknown link
 	put("/groups/8/children/4", "", 400)                                                        // modify an unknown group
 	put("/groups/0/children/34", "", 400)                                                       // move an unknown block to group 0
 	put("/blocks/2/routes/20", `{"type":"fetch","value":".myResult"}`, 400)                     // set an unknown route
@@ -245,7 +252,6 @@ func TestEndpoints(t *testing.T) {
 	post("/blocks", `{"type"lid", "group":1}`, 400)                                             // create a block with malformed json
 	post("/blocks", `{"type":"latch", "group":10}`, 400)                                        // create a block witha group that doesn't exist
 	post("/connections", `{"source":{"id":700, "Route":0}, "target":{"id":2, "Route":0}}`, 400) //connect unknown source
-	//TODO this one panics
 	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":200, "Route":0}}`, 400) //connect unknown target
 	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`, 400)                          //connect with malformed json
 	post("/connections", `{}`, 400)                                                             //connect with empty json

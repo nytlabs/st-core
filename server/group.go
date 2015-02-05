@@ -243,18 +243,11 @@ func (s *Server) DeleteGroup(id int) error {
 }
 
 func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
 
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -273,17 +266,10 @@ func (s *Server) GroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 // returns a description of the group - its id and childreen
 func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 	s.Lock()
@@ -299,18 +285,10 @@ func (s *Server) GroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -405,18 +383,10 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -566,18 +536,10 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -615,18 +577,12 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 func (s *Server) GroupModifyAllChildrenHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
 
-	id, err := strconv.Atoi(ids)
+	vars := mux.Vars(r)
+	id, err := getIDFromMux(vars)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -685,18 +641,10 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 

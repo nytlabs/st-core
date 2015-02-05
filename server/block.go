@@ -77,18 +77,10 @@ func (s *Server) BlockIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -108,18 +100,10 @@ func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -253,17 +237,10 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(vars)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -357,18 +334,10 @@ func (s *Server) ModifyBlockRoute(id int, route int, v BlockLedgerInput) error {
 }
 
 func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
@@ -382,7 +351,7 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 	s.Lock()
 	defer s.Unlock()
 
-	_, ok = s.blocks[id]
+	_, ok := s.blocks[id]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"block not found"})
@@ -443,18 +412,10 @@ func (s *Server) DeleteBlock(id int) error {
 }
 
 func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 

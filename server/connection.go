@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/nytlabs/st-core/core"
@@ -111,25 +110,17 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 // returns a description of the connection
 func (s *Server) ConnectionHandler(w http.ResponseWriter, r *http.Request) {
 
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 
 	conn, ok := s.connections[id]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not find connection" + ids})
+		writeJSON(w, Error{"could not find connection" + string(id)})
 		return
 	}
 
@@ -173,18 +164,10 @@ func (s *Server) DeleteConnection(id int) error {
 }
 
 func (s *Server) ConnectionDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 

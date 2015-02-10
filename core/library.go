@@ -89,8 +89,8 @@ func GetLibrary() map[string]Spec {
 		StreamReceive(),
 
 		// primitive value
-		valueGet(),
-		valueSet(),
+		ValueGet(),
+		ValueSet(),
 
 		// list
 		listGet(),

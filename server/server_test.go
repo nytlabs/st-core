@@ -196,8 +196,9 @@ func TestEndpoints(t *testing.T) {
 	// list the links
 	get("/links", 200)
 
+	// this doesn't exist yet - TODO use case?
 	// get the link
-	get("/links/13", 200)
+	// get("/links/13", 200)
 
 	// delete the link
 	del("/links/13", 204)
@@ -210,7 +211,7 @@ func TestEndpoints(t *testing.T) {
 
 	// import a pattern
 	pattern := `{"blocks":[{"label":"","type":"+","id":2,"inputs":[{"name":"addend","type":"fetch","value":"."},{"name":"addend","type":"fetch","value":"."}],"outputs":[{"name":"sum"}],"position":{"x":0,"y":0}},{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","type":"fetch","value":"."},{"name":"duration","type":"const","value":"1s"}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}}],"connections":[{"source":{"id":2,"route":0},"target":{"id":3,"route":0},"id":4}],"groups":[{"id":1,"label":"","children":[2,3],"position":{"x":0,"y":0}}]}`
-	post("/groups/1/import", pattern, 200)
+	post("/groups/1/import", pattern, 204)
 
 	// delete the log block
 	del("/blocks/4", 204)
@@ -245,7 +246,6 @@ func TestEndpoints(t *testing.T) {
 	post("/blocks", `{"type"lid", "group":1}`, 400)                                             // create a block with malformed json
 	post("/blocks", `{"type":"latch", "group":10}`, 400)                                        // create a block witha group that doesn't exist
 	post("/connections", `{"source":{"id":700, "Route":0}, "target":{"id":2, "Route":0}}`, 400) //connect unknown source
-	//TODO this one panics
 	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":200, "Route":0}}`, 400) //connect unknown target
 	post("/connections", `{"source":{"i:0}, "ta200, "Route":0}}`, 400)                          //connect with malformed json
 	post("/connections", `{}`, 400)                                                             //connect with empty json

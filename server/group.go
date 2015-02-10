@@ -437,6 +437,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, Error{err.Error()})
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) ImportGroup(id int, p Pattern) error {

@@ -88,6 +88,18 @@ func GetLibrary() map[string]Spec {
 		// stream
 		StreamReceive(),
 
+		// primitive value
+		valueGet(),
+		valueSet(),
+
+		// list
+		listGet(),
+		listSet(),
+		listShift(),
+		listAppend(),
+		listPop(),
+		listDump(),
+
 		// stateful
 		First(),
 

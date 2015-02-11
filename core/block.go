@@ -151,7 +151,6 @@ func (b *Block) SetSource(s Source) error {
 	returnVal := make(chan error, 1)
 	b.routing.InterruptChan <- func() bool {
 		if s != nil && s.GetType() != b.sourceType {
-			log.Println(s.GetType())
 			returnVal <- errors.New("invalid source type (" + strconv.Itoa(int(s.GetType())) + ") for this block (needs " + strconv.Itoa(int(b.sourceType)) + ")")
 			return true
 		}

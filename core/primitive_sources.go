@@ -4,7 +4,7 @@ import "sync"
 
 func ValueSource() SourceSpec {
 	return SourceSpec{
-		Name: "key-value",
+		Name: "value",
 		Type: VALUE_PRIMITIVE,
 		New:  NewValue,
 	}

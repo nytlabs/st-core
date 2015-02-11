@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -114,18 +113,10 @@ func (s *Server) LinkCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LinkDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	ids, ok := vars["id"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
-		return
-	}
-
-	id, err := strconv.Atoi(ids)
+	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
+		writeJSON(w, err)
 		return
 	}
 

@@ -5,10 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/nikhan/go-fetch"
 	"github.com/nytlabs/st-core/core"
 	"github.com/thejerf/suture"
 )
@@ -51,10 +49,9 @@ func (bl *BlockLedger) SetParent(group *Group) {
 }
 
 type BlockLedgerInput struct {
-	Name  string            `json:"name,omitempty"`
-	Type  string            `json:"type"`
-	Value interface{}       `json:"value"`
-	C     chan core.Message `json:"-"`
+	Name string            `json:"name,omitempty"`
+	Type string            `json:"type"`
+	C    chan core.Message `json:"-"`
 }
 
 func (s *Server) ListBlocks() []BlockLedger {
@@ -164,23 +161,11 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	is := m.Block.GetInputs()
 
-	// may want to move this into actual block someday
 	inputs := make([]BlockLedgerInput, len(is), len(is))
 	for i, v := range is {
-		if q, ok := v.Value.(*fetch.Query); ok {
-			inputs[i] = BlockLedgerInput{
-				Name:  v.Name,
-				Type:  "fetch",
-				Value: q.String(),
-				C:     v.C,
-			}
-		} else {
-			inputs[i] = BlockLedgerInput{
-				Name:  v.Name,
-				Type:  "const",
-				Value: v.Value,
-				C:     v.C,
-			}
+		inputs[i] = BlockLedgerInput{
+			Name: v.Name,
+			C:    v.C,
 		}
 	}
 
@@ -233,104 +218,6 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, b)
-}
-
-func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := getIDFromMux(vars)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, err)
-		return
-	}
-
-	routes, ok := vars["index"]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no route index supplied"})
-		return
-	}
-
-	route, err := strconv.Atoi(routes)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not read request body"})
-		return
-	}
-
-	var v BlockLedgerInput
-	err = json.Unmarshal(body, &v)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarshal value"})
-		return
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
-	err = s.ModifyBlockRoute(id, route, v)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{err.Error()})
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) ModifyBlockRoute(id int, route int, v BlockLedgerInput) error {
-	b, ok := s.blocks[id]
-	if !ok {
-		return errors.New("could not find block")
-	}
-
-	// again maybe this type should be native to block under core.
-	var m interface{}
-	switch v.Type {
-	case "fetch":
-		queryString, ok := v.Value.(string)
-		if !ok {
-			return errors.New("fetch is not string")
-		}
-
-		fo, err := fetch.Parse(queryString)
-		if err != nil {
-			return err
-		}
-
-		m = fo
-	case "const":
-		m = v.Value
-	default:
-		return errors.New("no value or query specified")
-	}
-
-	err := b.Block.SetInput(core.RouteIndex(route), m)
-	if err != nil {
-		return err
-	}
-
-	s.blocks[id].Inputs[route].Type = v.Type
-	s.blocks[id].Inputs[route].Value = m
-
-	update := struct {
-		BlockLedgerInput
-		Id    int `json:"id"`
-		input int `json:"input"`
-	}{
-		v, id, route,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
-	return nil
 }
 
 func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) {

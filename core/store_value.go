@@ -2,7 +2,7 @@ package core
 
 import "sync"
 
-func ValueSource() SourceSpec {
+func ValueStore() SourceSpec {
 	return SourceSpec{
 		Name: "value",
 		Type: VALUE_PRIMITIVE,
@@ -25,21 +25,6 @@ func NewValue() Source {
 
 func (v Value) GetType() SourceType {
 	return VALUE_PRIMITIVE
-}
-
-func (k Value) Serve() {
-	<-k.quit
-}
-
-func (k Value) Stop() {
-	k.quit <- true
-}
-
-func (k Value) SetSourceParameter(key, value string) {
-}
-
-func (k *Value) Describe() map[string]string {
-	return map[string]string{}
 }
 
 // ValueGet emits the value stored

@@ -1,5 +1,7 @@
 package core
 
+import "sync"
+
 func ListStore() SourceSpec {
 	return SourceSpec{
 		Name: "list",
@@ -13,6 +15,12 @@ func NewList() Source {
 		list: make([]interface{}, 0),
 		quit: make(chan bool),
 	}
+}
+
+type List struct {
+	list []interface{}
+	quit chan bool
+	sync.Mutex
 }
 
 func (k List) GetType() SourceType {

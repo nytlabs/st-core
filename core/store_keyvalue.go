@@ -2,7 +2,7 @@ package core
 
 import "sync"
 
-func KeyValueSource() SourceSpec {
+func KeyValueStore() SourceSpec {
 	return SourceSpec{
 		Name: "key-value",
 		Type: KEY_VALUE,
@@ -25,21 +25,6 @@ type KeyValue struct {
 	kv   map[string]Message
 	quit chan bool
 	sync.Mutex
-}
-
-func (k KeyValue) Serve() {
-	<-k.quit
-}
-
-func (k KeyValue) Stop() {
-	k.quit <- true
-}
-
-func (k KeyValue) SetSourceParameter(key, value string) {
-}
-
-func (k *KeyValue) Describe() map[string]string {
-	return map[string]string{}
 }
 
 // retrieves a value from the key value store

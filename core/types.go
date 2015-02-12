@@ -99,11 +99,21 @@ type BlockState struct {
 type Source interface {
 	Lock()
 	Unlock()
+	GetType() SourceType
+}
+
+type Interface interface {
+	Source
 	Describe() map[string]string
 	Serve()
 	Stop()
 	SetSourceParameter(key, value string)
-	GetType() SourceType
+}
+
+type Store interface {
+	Source
+	Get() interface{}
+	Set() interface{}
 }
 
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel

@@ -39,7 +39,7 @@ func GetLibrary() map[string]Spec {
 		Append(),
 		Tail(),
 		Head(),
-
+		Pusher(),
 		// monads
 		Exp(),
 		Log10(),
@@ -144,6 +144,19 @@ func First() Spec {
 			} else {
 				out[0] = false
 			}
+			return nil
+		},
+	}
+}
+
+// pusher provides continous pressure
+func Pusher() Spec {
+	return Spec{
+		Name:    "pusher",
+		Inputs:  []Pin{},
+		Outputs: []Pin{Pin{"out"}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			out[0] = nil
 			return nil
 		},
 	}

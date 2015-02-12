@@ -4,6 +4,8 @@ func GetSources() map[string]SourceSpec {
 	sources := []SourceSpec{
 		StreamSource(),
 		KeyValueSource(),
+		ValueSource(),
+		ListSource(),
 	}
 
 	library := make(map[string]SourceSpec)

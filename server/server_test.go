@@ -51,7 +51,7 @@ func TestEndpoints(t *testing.T) {
 	server := httptest.NewServer(r)
 	defer server.Close()
 
-	// a couple of closures to save time below
+	// a few closures to save time below
 	get := func(endpoint string, expectedCode int) {
 		res, err := http.Get(server.URL + endpoint)
 		if err != nil {

@@ -54,8 +54,8 @@ type Spec struct {
 // to be passed into the block. A Input's Path is applied to the inbound Message before populating the
 // MessageMap and calling the Kernel. A Input can be set to a Value, instead of waiting for an inbound message.
 type Input struct {
-	Name string
-	C    chan Message
+	Name string       `json:"name"`
+	C    chan Message `json:"-"`
 }
 
 // An Output holds a set of Connections. Each Connection refers to a Input.C. Every outbound

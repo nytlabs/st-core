@@ -31,7 +31,7 @@ type BlockLedger struct {
 	Parent      *Group              `json:"-"`
 	Token       suture.ServiceToken `json:"-"`
 	Composition int                 `json:"composition,omitempty"`
-	Inputs      []BlockLedgerInput  `json:"inputs"`
+	Inputs      []core.Input        `json:"inputs"`
 	Outputs     []core.Output       `json:"outputs"`
 	Position    Position            `json:"position"`
 }
@@ -46,12 +46,6 @@ func (bl *BlockLedger) GetParent() *Group {
 
 func (bl *BlockLedger) SetParent(group *Group) {
 	bl.Parent = group
-}
-
-type BlockLedgerInput struct {
-	Name string            `json:"name,omitempty"`
-	Type string            `json:"type"`
-	C    chan core.Message `json:"-"`
 }
 
 func (s *Server) ListBlocks() []BlockLedger {
@@ -159,22 +153,12 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		Id:       s.GetNextID(),
 	}
 
-	is := m.Block.GetInputs()
-
-	inputs := make([]BlockLedgerInput, len(is), len(is))
-	for i, v := range is {
-		inputs[i] = BlockLedgerInput{
-			Name: v.Name,
-			C:    v.C,
-		}
-	}
-
 	if _, ok := s.groups[p.Parent]; !ok {
 		return nil, errors.New("invalid group, could not create block")
 	}
 
 	m.Token = s.supervisor.Add(block)
-	m.Inputs = inputs
+	m.Inputs = block.GetInputs()
 	m.Outputs = block.GetOutputs()
 	s.blocks[m.Id] = m
 

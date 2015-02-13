@@ -133,9 +133,6 @@ func TestEndpoints(t *testing.T) {
 	// make a delay block (3)
 	post("/blocks", `{"type":"delay", "group":1}`, 200)
 
-	// set the delay's value
-	put("/blocks/3/routes/1", `{"type":"const","value":"1s"}`, 204)
-
 	// make a log block (4)
 	post("/blocks", `{"type":"log", "group":1}`, 200)
 
@@ -144,10 +141,6 @@ func TestEndpoints(t *testing.T) {
 
 	// connect the delay block to the log block (6)
 	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":4, "Route":0}}`, 200)
-
-	// set the value of the plus inputs
-	put("/blocks/2/routes/0", `{"type":"const","value":1}`, 204)
-	put("/blocks/2/routes/1", `{"type":"const","value":1}`, 204)
 
 	// make a set block (7)
 	post("/blocks", `{"type":"set", "group":1}`, 200)
@@ -163,12 +156,6 @@ func TestEndpoints(t *testing.T) {
 	get("/connections", 200)
 	// describe connection 8
 	get("/connections/8", 200)
-
-	// set the value of the set key
-	put("/blocks/7/routes/0", `{"type":"const","value":"myResult"}`, 204)
-
-	// set the path on the log block
-	put("/blocks/4/routes/0", `{"type":"fetch","value":".myResult"}`, 204)
 
 	// move log block to root group
 	put("/groups/0/children/4", "", 204)
@@ -242,11 +229,6 @@ func TestEndpoints(t *testing.T) {
 	get("/links/450", 404)                                                                      // get an unknown link
 	put("/groups/8/children/4", "", 400)                                                        // modify an unknown group
 	put("/groups/0/children/34", "", 400)                                                       // move an unknown block to group 0
-	put("/blocks/2/routes/20", `{"type":"fetch","value":".myResult"}`, 400)                     // set an unknown route
-	put("/blocks/240/routes/0", `{"type":"fetch","value":".myResult"}`, 400)                    // set an unknown block's route
-	put("/blocks/2/routes/0", `{"type":"fetch","value":"invalid"}`, 400)                        // set the + block's route to an invalid path
-	put("/blocks/2/routes/0", `{"type":"value","value":"bob"}`, 400)                            // set the + block's route to an invalid value
-	put("/blocks/2/routes/0", `{bobo}`, 400)                                                    // set the + block's route using malformed json
 	post("/groups", `{"group":10}`, 400)                                                        // create a group with an unknown parent
 	post("/groups", `{"group"10}`, 400)                                                         // create a group with malformed JSON
 	post("/blocks", `{"type":"invalid", "group":0}`, 400)                                       // create a block of invalid type

@@ -19,7 +19,7 @@ type SourceLedger struct {
 	Parent     *Group              `json:"-"`
 	Token      suture.ServiceToken `json:"-"`
 	Position   Position            `json:"position"`
-	Parameters map[string]string   `json:"params"`
+	Parameters map[string]string   `json:"params,omitempty"`
 }
 
 type ProtoSource struct {
@@ -95,9 +95,12 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 		Id:       s.GetNextID(),
 	}
 
-	// Describe() is not thread-safe it must be put ahead of supervior...
-	sl.Parameters = source.Describe()
-	sl.Token = s.supervisor.Add(source)
+	if i, ok := source.(core.Interface); ok {
+		// Describe() is not thread-safe it must be put ahead of supervior...
+		sl.Parameters = i.Describe()
+		sl.Token = s.supervisor.Add(i)
+	}
+
 	s.sources[sl.Id] = sl
 	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: sl})
 
@@ -125,8 +128,12 @@ func (s *Server) DeleteSource(id int) error {
 		}
 	}
 
+	if _, ok := source.Source.(core.Interface); ok {
+		s.supervisor.Remove(source.Token)
+	}
+
 	s.DetachChild(source)
-	s.supervisor.Remove(source.Token)
+
 	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: s.sources[id]})
 	delete(s.sources, source.Id)
 	return nil
@@ -168,10 +175,15 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		return errors.New("no source found")
 	}
 
+	i, ok := source.Source.(core.Interface)
+	if !ok {
+		return errors.New("cannot modify store")
+	}
+
 	s.supervisor.Remove(source.Token)
 	for k, _ := range source.Parameters {
 		if v, ok := m[k]; ok {
-			s.sources[id].Source.SetSourceParameter(k, v)
+			i.SetSourceParameter(k, v)
 			source.Parameters[k] = v
 			update := struct {
 				Id    int    `json:"id"`
@@ -183,7 +195,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 			s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
 		}
 	}
-	source.Token = s.supervisor.Add(source.Source)
+	source.Token = s.supervisor.Add(i)
 	return nil
 }
 

@@ -8,9 +8,9 @@ const (
 	NONE = iota
 	KEY_VALUE
 	STREAM
+	LIST
+	VALUE_PRIMITIVE
 	PRIORITY
-	ARRAY
-	VALUE
 )
 
 // MessageMap maps a block's inbound routes onto the Messages they contain

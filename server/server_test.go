@@ -172,7 +172,7 @@ func TestEndpoints(t *testing.T) {
 	post("/sources", `{"type":"stream"}`, 200)
 
 	// change a parameter in the stream
-	put("/sources/11", `{"topic":"test"}`, 204)
+	put("/sources/11/params", `{"topic":"test"}`, 204)
 
 	// get all the sources
 	get("/sources", 200)

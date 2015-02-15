@@ -1,6 +1,9 @@
 package core
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 func ListStore() SourceSpec {
 	return SourceSpec{
@@ -25,6 +28,19 @@ type List struct {
 
 func (k List) GetType() SourceType {
 	return LIST
+}
+
+func (l *List) Get() interface{} {
+	return l.list
+}
+
+func (l *List) Set(v interface{}) error {
+	list, ok := v.([]interface{})
+	if !ok {
+		return errors.New("not a slice")
+	}
+	l.list = list
+	return nil
 }
 
 // retrieves an element from the list by index

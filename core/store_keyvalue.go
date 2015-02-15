@@ -1,6 +1,9 @@
 package core
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 func KeyValueStore() SourceSpec {
 	return SourceSpec{
@@ -12,7 +15,7 @@ func KeyValueStore() SourceSpec {
 
 func NewKeyValue() Source {
 	return &KeyValue{
-		kv:   make(map[string]Message),
+		kv:   make(map[string]interface{}),
 		quit: make(chan bool),
 	}
 }
@@ -22,9 +25,22 @@ func (k KeyValue) GetType() SourceType {
 }
 
 type KeyValue struct {
-	kv   map[string]Message
+	kv   map[string]interface{}
 	quit chan bool
 	sync.Mutex
+}
+
+func (k *KeyValue) Get() interface{} {
+	return k.kv
+}
+
+func (k *KeyValue) Set(v interface{}) error {
+	kv, ok := v.(map[string]interface{})
+	if !ok {
+		return errors.New("not a map")
+	}
+	k.kv = kv
+	return nil
 }
 
 // retrieves a value from the key value store
@@ -104,7 +120,7 @@ func kvClear() Spec {
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
-			kv.kv = make(map[string]Message)
+			kv.kv = make(map[string]interface{})
 			out[0] = true
 			return nil
 		},

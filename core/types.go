@@ -113,7 +113,7 @@ type Interface interface {
 type Store interface {
 	Source
 	Get() interface{}
-	Set() interface{}
+	Set(interface{}) error
 }
 
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel

@@ -65,3 +65,12 @@ func ValueSet() Spec {
 		},
 	}
 }
+
+func (v *Value) Get() interface{} {
+	return v.value
+}
+
+func (v *Value) Set(nv interface{}) error {
+	v.value = nv
+	return nil
+}

@@ -254,3 +254,100 @@ func (s *Server) SourceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+func (s *Server) SourceGetValueHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	val, err := s.GetSourceValue(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(val)
+}
+func (s *Server) SourceSetValueHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.SetSourceValue(id, body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) GetSourceValue(id int) ([]byte, error) {
+	source, ok := s.sources[id]
+	if !ok {
+		return nil, errors.New("source does not exist")
+	}
+
+	store, ok := source.Source.(core.Store)
+	if !ok {
+		return nil, errors.New("can only get values from stores")
+	}
+
+	store.Lock()
+	defer store.Unlock()
+	out, err := json.Marshal(store.Get())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Server) SetSourceValue(id int, body []byte) error {
+	source, ok := s.sources[id]
+	if !ok {
+		return errors.New("source does not exist")
+	}
+
+	store, ok := source.Source.(core.Store)
+	if !ok {
+		return errors.New("can only get values from stores")
+	}
+
+	var m interface{}
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+
+	store.Lock()
+	defer store.Unlock()
+	err = store.Set(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

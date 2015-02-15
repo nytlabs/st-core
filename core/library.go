@@ -149,7 +149,7 @@ func First() Spec {
 	}
 }
 
-// pusher provides continous pressure
+// pusher provides pressure
 func Pusher() Spec {
 	return Spec{
 		Name:    "pusher",

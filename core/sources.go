@@ -2,10 +2,10 @@ package core
 
 func GetSources() map[string]SourceSpec {
 	sources := []SourceSpec{
-		StreamSource(),
-		KeyValueSource(),
-		ValueSource(),
-		ListSource(),
+		StreamInterface(),
+		KeyValueStore(),
+		ValueStore(),
+		ListStore(),
 	}
 
 	library := make(map[string]SourceSpec)

@@ -1,11 +1,6 @@
 package core
 
-import (
-	"errors"
-	"log"
-
-	"github.com/nikhan/go-fetch"
-)
+import "errors"
 
 // NewBlock creates a new block from a spec
 func NewBlock(s Spec) *Block {
@@ -13,12 +8,9 @@ func NewBlock(s Spec) *Block {
 	var out []Output
 
 	for _, v := range s.Inputs {
-
-		q, _ := fetch.Parse(".")
 		in = append(in, Input{
-			Name:  v.Name,
-			Value: q,
-			C:     make(chan Message),
+			Name: v.Name,
+			C:    make(chan Message),
 		})
 	}
 
@@ -85,20 +77,7 @@ func (b *Block) exportInput(id RouteIndex) (*Input, error) {
 		return nil, errors.New("index out of range")
 	}
 
-	var v interface{}
-	switch n := b.routing.Inputs[id].Value.(type) {
-	case *fetch.Query:
-		// yuck copy
-		v, _ = fetch.Parse(n.String())
-	default:
-		v = Copy(n)
-	}
-
-	return &Input{
-		Value: v,
-		C:     b.routing.Inputs[id].C,
-		Name:  b.routing.Inputs[id].Name,
-	}, nil
+	return &b.routing.Inputs[id], nil
 }
 
 // GetInput returns the specified Input
@@ -160,22 +139,6 @@ func (b *Block) SetSource(s Source) error {
 	return <-returnVal
 }
 
-// RouteValue sets the route to always be the specified value
-func (b *Block) SetInput(id RouteIndex, v interface{}) error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		if int(id) < 0 || int(id) >= len(b.routing.Inputs) {
-			returnVal <- errors.New("input out of range")
-			return true
-		}
-
-		b.routing.Inputs[id].Value = v
-		returnVal <- nil
-		return true
-	}
-	return <-returnVal
-}
-
 // Connect connects a Route, specified by ID, to a connection
 func (b *Block) Connect(id RouteIndex, c Connection) error {
 	returnVal := make(chan error, 1)
@@ -227,27 +190,15 @@ func (b *Block) Stop() {
 
 // wait and listen for all kernel inputs to be filled.
 func (b *Block) receive() Interrupt {
-	var err error
 	for id, input := range b.routing.Inputs {
 		//if we have already received a value on this input, skip.
 		if _, ok := b.state.inputValues[RouteIndex(id)]; ok {
 			continue
 		}
 
-		// if there is a value set for this input, place value on
-		// buffer and set it in map.
-		query, ok := input.Value.(*fetch.Query)
-		if !ok {
-			b.state.inputValues[RouteIndex(id)] = Copy(input.Value)
-			continue
-		}
-
 		select {
 		case m := <-input.C:
-			b.state.inputValues[RouteIndex(id)], err = fetch.Run(query, m)
-			if err != nil {
-				log.Fatal(err)
-			}
+			b.state.inputValues[RouteIndex(id)] = m
 		case f := <-b.routing.InterruptChan:
 			return f
 		}

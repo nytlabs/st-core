@@ -1,8 +1,11 @@
 package core
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
-func ListSource() SourceSpec {
+func ListStore() SourceSpec {
 	return SourceSpec{
 		Name: "list",
 		Type: LIST,
@@ -17,29 +20,27 @@ func NewList() Source {
 	}
 }
 
-func (k List) GetType() SourceType {
-	return LIST
-}
-
 type List struct {
 	list []interface{}
 	quit chan bool
 	sync.Mutex
 }
 
-func (k List) Serve() {
-	<-k.quit
+func (k List) GetType() SourceType {
+	return LIST
 }
 
-func (k List) Stop() {
-	k.quit <- true
+func (l *List) Get() interface{} {
+	return l.list
 }
 
-func (k List) SetSourceParameter(key, value string) {
-}
-
-func (k *List) Describe() map[string]string {
-	return map[string]string{}
+func (l *List) Set(v interface{}) error {
+	list, ok := v.([]interface{})
+	if !ok {
+		return errors.New("not a slice")
+	}
+	l.list = list
+	return nil
 }
 
 // retrieves an element from the list by index

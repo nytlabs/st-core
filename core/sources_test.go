@@ -157,5 +157,32 @@ func TestValuePrimitive(t *testing.T) {
 		t.Error("block did not produce expected value")
 		return
 	}
+}
+
+func TestPriorityQueue(t *testing.T) {
+	log.Println("testing priority queue")
+	pq := NewPriorityQueue()
+	if pq.GetType() != PRIORITY {
+		t.Fatal("Priority Queue returns wrong type")
+	}
+	pq.Describe()
+	library := GetLibrary()
+	blocks := map[string]*Block{
+		"pqPush":         NewBlock(library["pqPush"]),
+		"pqPop":          NewBlock(library["pqPop"]),
+		"pqPeek":         NewBlock(library["pqPeek"]),
+		"pqPeekAndShift": NewBlock(library["pqPeekAndShift"]),
+	}
+
+	out := make(chan Message)
+	for name, b := range blocks {
+		log.Println("testing", name)
+		go b.Serve()
+		err := b.SetSource(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b.Connect(0, out)
+	}
 
 }

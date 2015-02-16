@@ -101,9 +101,9 @@ func (pq queue) Swap(i, j int) {
 
 func (pq *queue) Push(x interface{}) {
 	n := len(*pq)
-	item := x.(*PQMessage)
-	item.index = n
-	*pq = append(*pq, item)
+	msg := x.(*PQMessage)
+	msg.index = n
+	*pq = append(*pq, msg)
 }
 
 func (pq *queue) Pop() interface{} {
@@ -135,4 +135,139 @@ func (pq *queue) PeekAndShift(max time.Time, lag time.Duration) (interface{}, ti
 	}
 
 	return nil, lag - max.Sub(item.t)
+}
+
+func pqPush() Spec {
+	return Spec{
+		Name: "pqPush",
+		Inputs: []Pin{
+			Pin{"in"},
+			Pin{"timestamp"},
+		},
+		Outputs: []Pin{
+			Pin{"out"},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			timestamp, ok := in[1].(float64)
+			if !ok {
+				out[0] = NewError("pqPush needs a Number for a timestamp")
+				return nil
+			}
+			nsec := timestamp * 1000000
+			t := time.Unix(0, int64(nsec))
+			msg := PQMessage{
+				val: in[0],
+				t:   t,
+			}
+			pq.queue.Push(msg)
+			out[0] = true
+			return nil
+		},
+	}
+}
+
+func pqPop() Spec {
+	return Spec{
+		Name: "pqPop",
+		Inputs: []Pin{
+			Pin{"trigger"},
+		},
+		Outputs: []Pin{
+			Pin{"out"},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			msgI := pq.queue.Pop()
+			msg, ok := msgI.(*PQMessage)
+			if !ok {
+				out[0] = NewError("pulled something weird off the PriorityQueue")
+				return nil
+			}
+			out[0] = msg.val
+			return nil
+		},
+	}
+}
+
+func pqPeek() Spec {
+	return Spec{
+		Name: "pqPeek",
+		Inputs: []Pin{
+			Pin{"trigger"},
+		},
+		Outputs: []Pin{
+			Pin{"out"},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			msgI := pq.queue.Peek()
+			msg, ok := msgI.(*PQMessage)
+			if !ok {
+				out[0] = NewError("pulled something weird off the PriorityQueue")
+				return nil
+			}
+			out[0] = msg.val
+			return nil
+		},
+	}
+}
+
+func pqLen() Spec {
+	return Spec{
+		Name: "pqLen",
+		Inputs: []Pin{
+			Pin{"trigger"},
+		},
+		Outputs: []Pin{
+			Pin{"length"},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			out[0] = len(pq.queue)
+			return nil
+		},
+	}
+}
+
+// pqPeekAndShift blocks until a message is ready on the priority queue
+func pqPeekAndShift() Spec {
+	return Spec{
+		Name: "pqPeek",
+		Inputs: []Pin{
+			Pin{"window"}, // this is the time window of the priority queue
+		},
+		Outputs: []Pin{
+			Pin{"message"}, // this is the next message that's ready
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			waitTimer := time.NewTimer(100 * time.Millisecond)
+			window := in[0].(float64)
+			for {
+				select {
+				case <-waitTimer.C:
+				case interrupt := <-i:
+					return interrupt
+				}
+
+				pqMsg, diff := pq.queue.PeekAndShift(time.Now(), window)
+				if pqMsg == nil {
+					// either the queue is empty, or it"s not time to emit
+					if diff == 0 {
+						// then the queue is empty. Pause for 5 seconds before checking again
+						diff = time.Duration(500) * time.Millisecond
+					}
+					waitTimer.Reset(diff)
+					continue
+				}
+			}
+			out[0] = pqMsg
+		},
+	}
 }

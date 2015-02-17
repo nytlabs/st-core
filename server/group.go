@@ -494,15 +494,6 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		}
 	}
 
-	for _, b := range p.Blocks {
-		for route, v := range b.Inputs {
-			err := s.ModifyBlockRoute(newIds[b.Id], route, v)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	for _, g := range p.Groups {
 		for _, c := range g.Children {
 			var n Node

@@ -124,12 +124,6 @@ func (s *Server) NewRouter() *mux.Router {
 			s.BlockModifyNameHandler,
 		},
 		Route{
-			"BlockModifyRoute",
-			"/blocks/{id}/routes/{index}",
-			"PUT",
-			s.BlockModifyRouteHandler,
-		},
-		Route{
 			"BlockModifyPosition",
 			"/blocks/{id}/position",
 			"PUT",
@@ -179,9 +173,21 @@ func (s *Server) NewRouter() *mux.Router {
 		},
 		Route{
 			"SourceModify",
-			"/sources/{id}",
+			"/sources/{id}/params",
 			"PUT",
 			s.SourceModifyHandler,
+		},
+		Route{
+			"SourceGetValue",
+			"/sources/{id}/value",
+			"GET",
+			s.SourceGetValueHandler,
+		},
+		Route{
+			"SourceSetValue",
+			"/sources/{id}/value",
+			"PUT",
+			s.SourceSetValueHandler,
 		},
 		Route{
 			"Source",

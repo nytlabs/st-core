@@ -11,7 +11,6 @@ func TestList(t *testing.T) {
 	if l.GetType() != LIST {
 		t.Fatal("list returns inaccurate id")
 	}
-	l.Describe()
 
 	library := GetLibrary()
 	blocks := map[string]*Block{
@@ -118,7 +117,6 @@ func TestValuePrimitive(t *testing.T) {
 	if v.GetType() != VALUE_PRIMITIVE {
 		t.Fatal("Value source has wrong type")
 	}
-	v.Describe()
 	library := GetLibrary()
 	blocks := map[string]*Block{
 		"valueGet": NewBlock(library["valueGet"]),

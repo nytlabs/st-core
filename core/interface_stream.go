@@ -8,7 +8,7 @@ import (
 	"github.com/bitly/go-nsq"
 )
 
-func StreamSource() SourceSpec {
+func StreamInterface() SourceSpec {
 	return SourceSpec{
 		Name: "stream",
 		Type: STREAM,

@@ -54,9 +54,8 @@ type Spec struct {
 // to be passed into the block. A Input's Path is applied to the inbound Message before populating the
 // MessageMap and calling the Kernel. A Input can be set to a Value, instead of waiting for an inbound message.
 type Input struct {
-	Name  string
-	Value interface{}
-	C     chan Message
+	Name string       `json:"name"`
+	C    chan Message `json:"-"`
 }
 
 // An Output holds a set of Connections. Each Connection refers to a Input.C. Every outbound
@@ -100,11 +99,21 @@ type BlockState struct {
 type Source interface {
 	Lock()
 	Unlock()
+	GetType() SourceType
+}
+
+type Interface interface {
+	Source
 	Describe() map[string]string
 	Serve()
 	Stop()
 	SetSourceParameter(key, value string)
-	GetType() SourceType
+}
+
+type Store interface {
+	Source
+	Get() interface{}
+	Set(interface{}) error
 }
 
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel

@@ -19,7 +19,7 @@ type SourceLedger struct {
 	Parent     *Group              `json:"-"`
 	Token      suture.ServiceToken `json:"-"`
 	Position   Position            `json:"position"`
-	Parameters map[string]string   `json:"params"`
+	Parameters map[string]string   `json:"params,omitempty"`
 }
 
 type ProtoSource struct {
@@ -95,9 +95,12 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 		Id:       s.GetNextID(),
 	}
 
-	// Describe() is not thread-safe it must be put ahead of supervior...
-	sl.Parameters = source.Describe()
-	sl.Token = s.supervisor.Add(source)
+	if i, ok := source.(core.Interface); ok {
+		// Describe() is not thread-safe it must be put ahead of supervior...
+		sl.Parameters = i.Describe()
+		sl.Token = s.supervisor.Add(i)
+	}
+
 	s.sources[sl.Id] = sl
 	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: sl})
 
@@ -125,8 +128,12 @@ func (s *Server) DeleteSource(id int) error {
 		}
 	}
 
+	if _, ok := source.Source.(core.Interface); ok {
+		s.supervisor.Remove(source.Token)
+	}
+
 	s.DetachChild(source)
-	s.supervisor.Remove(source.Token)
+
 	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: s.sources[id]})
 	delete(s.sources, source.Id)
 	return nil
@@ -168,10 +175,15 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		return errors.New("no source found")
 	}
 
+	i, ok := source.Source.(core.Interface)
+	if !ok {
+		return errors.New("cannot modify store")
+	}
+
 	s.supervisor.Remove(source.Token)
 	for k, _ := range source.Parameters {
 		if v, ok := m[k]; ok {
-			s.sources[id].Source.SetSourceParameter(k, v)
+			i.SetSourceParameter(k, v)
 			source.Parameters[k] = v
 			update := struct {
 				Id    int    `json:"id"`
@@ -183,7 +195,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 			s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
 		}
 	}
-	source.Token = s.supervisor.Add(source.Source)
+	source.Token = s.supervisor.Add(i)
 	return nil
 }
 
@@ -241,4 +253,101 @@ func (s *Server) SourceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+func (s *Server) SourceGetValueHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	val, err := s.GetSourceValue(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(val)
+}
+func (s *Server) SourceSetValueHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.SetSourceValue(id, body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) GetSourceValue(id int) ([]byte, error) {
+	source, ok := s.sources[id]
+	if !ok {
+		return nil, errors.New("source does not exist")
+	}
+
+	store, ok := source.Source.(core.Store)
+	if !ok {
+		return nil, errors.New("can only get values from stores")
+	}
+
+	store.Lock()
+	defer store.Unlock()
+	out, err := json.Marshal(store.Get())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Server) SetSourceValue(id int, body []byte) error {
+	source, ok := s.sources[id]
+	if !ok {
+		return errors.New("source does not exist")
+	}
+
+	store, ok := source.Source.(core.Store)
+	if !ok {
+		return errors.New("can only get values from stores")
+	}
+
+	var m interface{}
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+
+	store.Lock()
+	defer store.Unlock()
+	err = store.Set(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

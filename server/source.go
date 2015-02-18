@@ -102,7 +102,7 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	}
 
 	s.sources[sl.Id] = sl
-	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: sl})
+	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: wsSource{*sl}})
 
 	err := s.AddChildToGroup(p.Parent, sl)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *Server) DeleteSource(id int) error {
 	}
 
 	for _, l := range s.links {
-		if l.Source == id {
+		if l.Source.Id == id {
 			err := s.DeleteLink(l.Id)
 			if err != nil {
 				return err
@@ -134,7 +134,7 @@ func (s *Server) DeleteSource(id int) error {
 
 	s.DetachChild(source)
 
-	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: s.sources[id]})
+	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: wsSource{wsId{id}}})
 	delete(s.sources, source.Id)
 	return nil
 }
@@ -185,14 +185,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		if v, ok := m[k]; ok {
 			i.SetSourceParameter(k, v)
 			source.Parameters[k] = v
-			update := struct {
-				Id    int    `json:"id"`
-				Key   string `json:"param"`
-				Value string `json:"value"`
-			}{
-				id, k, v,
-			}
-			s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+			s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, k, v}})
 		}
 	}
 	source.Token = s.supervisor.Add(i)
@@ -312,15 +305,7 @@ func (s *Server) SourceModifyPositionHandler(w http.ResponseWriter, r *http.Requ
 
 	b.Position = p
 
-	update := struct {
-		Position
-		Id int
-	}{
-		p,
-		id,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -359,14 +344,7 @@ func (s *Server) SourceModifyNameHandler(w http.ResponseWriter, r *http.Request)
 
 	s.sources[id].Label = label
 
-	update := struct {
-		Id    int    `json:"id"`
-		Label string `json:"label"`
-	}{
-		id, label,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)
 }
 

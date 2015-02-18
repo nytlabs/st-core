@@ -3,6 +3,7 @@ package core
 import (
 	"log"
 	"testing"
+	"time"
 )
 
 func TestList(t *testing.T) {
@@ -163,24 +164,76 @@ func TestPriorityQueue(t *testing.T) {
 	if pq.GetType() != PRIORITY {
 		t.Fatal("Priority Queue returns wrong type")
 	}
-	pq.Describe()
 	library := GetLibrary()
 	blocks := map[string]*Block{
-		"pqPush":         NewBlock(library["pqPush"]),
-		"pqPop":          NewBlock(library["pqPop"]),
-		"pqPeek":         NewBlock(library["pqPeek"]),
-		"pqPeekAndShift": NewBlock(library["pqPeekAndShift"]),
+		"pqPush": NewBlock(library["pqPush"]),
+		"pqPop":  NewBlock(library["pqPop"]),
+		"pqPeek": NewBlock(library["pqPeek"]),
+		"pqLen":  NewBlock(library["pqLen"]),
 	}
 
 	out := make(chan Message)
 	for name, b := range blocks {
 		log.Println("testing", name)
 		go b.Serve()
-		err := b.SetSource(v)
+		err := b.SetSource(pq)
 		if err != nil {
 			t.Fatal(err)
 		}
 		b.Connect(0, out)
+	}
+
+	// push a message with the current time as priority
+	p := float64(time.Now().Unix())
+	in, err := blocks["pqPush"].GetInput(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	priority, err := blocks["pqPush"].GetInput(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in.C <- "foo"
+	priority.C <- p
+	msg := <-out
+	if msg != true {
+		t.Fatal("pqPush did not generate expected output")
+	}
+
+	// peek at the message
+	trigger, err := blocks["pqPeek"].GetInput(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trigger.C <- true
+	if <-out != "foo" {
+		t.Fatal("pqPeek did not generate expected output")
+	}
+
+	// check the length of the queue
+	lenTrigger, err := blocks["pqLen"].GetInput(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lenTrigger.C <- true
+	if <-out != 1 {
+		t.Fatal("pqLen did not generate expected output")
+	}
+
+	// pop the message
+	trigger, err = blocks["pqPop"].GetInput(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trigger.C <- true
+	if <-out != "foo" {
+		t.Fatal("pqPop did not generate expected output")
+	}
+
+	// check the length of the queue again to make sure pop did its thing
+	lenTrigger.C <- true
+	if <-out != 0 {
+		t.Fatal("pqPop did not remove the message")
 	}
 
 }

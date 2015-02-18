@@ -5,6 +5,7 @@ func GetSources() map[string]SourceSpec {
 		StreamInterface(),
 		KeyValueStore(),
 		ValueStore(),
+		PriorityQueueStore(),
 		ListStore(),
 	}
 

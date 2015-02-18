@@ -100,6 +100,12 @@ func GetLibrary() map[string]Spec {
 		listPop(),
 		listDump(),
 
+		// priority queue
+		pqPush(),
+		pqPop(),
+		pqPeek(),
+		pqLen(),
+
 		// stateful
 		First(),
 

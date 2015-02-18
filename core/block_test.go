@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"log"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -143,12 +144,13 @@ func TestFirst(t *testing.T) {
 	}
 }
 
-// TODO: fix for removal of setinput
-/*func TestNull(t *testing.T) {
+func TestNull(t *testing.T) {
 	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
 	go null.Serve()
-	null.SetInput(0, nil)
+	null.SetInput(0, &InputValue{
+		Data: nil,
+	})
 	out := make(chan Message)
 	null.Connect(0, out)
 	o, err := json.Marshal(<-out)
@@ -158,7 +160,7 @@ func TestFirst(t *testing.T) {
 	if string(o) != "null" {
 		t.Error("null stream is not null!")
 	}
-}*/
+}
 
 func BenchmarkAddition(b *testing.B) {
 	sink := make(chan Message)
@@ -206,14 +208,15 @@ func BenchmarkRandomMath(b *testing.B) {
 	}
 }
 
-// TODO: fix for removal of set input
-/*func TestGET(t *testing.T) {
+func TestGET(t *testing.T) {
 	log.Println("testing GET")
 	lib := GetLibrary()
 	block := NewBlock(lib["GET"])
 	go block.Serve()
 	headers := make(map[string]string)
-	block.SetInput(1, headers)
+	block.SetInput(1, &InputValue{
+		Data: headers,
+	})
 	urlRoute, _ := block.GetInput(0)
 	out := make(chan Message)
 	block.Connect(0, out)
@@ -222,8 +225,7 @@ func BenchmarkRandomMath(b *testing.B) {
 	if reflect.DeepEqual(m, `{"msg": "hello there!"}`) {
 		t.Error("didn't get expected output from GET")
 	}
-
-}*/
+}
 
 func TestParseJSON(t *testing.T) {
 	log.Println("testing ParseJSON")

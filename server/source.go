@@ -276,6 +276,100 @@ func (s *Server) SourceGetValueHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(val)
 }
+
+func (s *Server) SourceModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var p Position
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	b, ok := s.sources[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find block"})
+		return
+	}
+
+	b.Position = p
+
+	update := struct {
+		Position
+		Id int
+	}{
+		p,
+		id,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) SourceModifyNameHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	_, ok := s.sources[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"block not found"})
+		return
+	}
+
+	var label string
+	err = json.Unmarshal(body, &label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.sources[id].Label = label
+
+	update := struct {
+		Id    int    `json:"id"`
+		Label string `json:"label"`
+	}{
+		id, label,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) SourceSetValueHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {

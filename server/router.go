@@ -124,6 +124,12 @@ func (s *Server) NewRouter() *mux.Router {
 			s.BlockModifyNameHandler,
 		},
 		Route{
+			"BlockModifyRoute",
+			"/blocks/{id}/routes/{index}",
+			"PUT",
+			s.BlockModifyRouteHandler,
+		},
+		Route{
 			"BlockModifyPosition",
 			"/blocks/{id}/position",
 			"PUT",

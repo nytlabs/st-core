@@ -111,8 +111,6 @@ type BroadcastGroupChild struct {
 
 // type ROUTE
 type BroadcastRouteModify struct {
-	Block struct {
-		ConnectionNode
-		Value *core.InputValue `json:"value"`
-	}
+	ConnectionNode
+	Value *core.InputValue `json:"value"`
 }

@@ -126,15 +126,7 @@ func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Reque
 
 	b.Position = p
 
-	update := struct {
-		Position
-		Id int
-	}{
-		p,
-		id,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -163,7 +155,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	m.Outputs = block.GetOutputs()
 	s.blocks[m.Id] = m
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: m})
+	s.websocketBroadcast(Update{Action: CREATE, Type: BLOCK, Data: wsBlock{*m}})
 
 	err := s.AddChildToGroup(p.Parent, m)
 	if err != nil {
@@ -240,14 +232,7 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 
 	s.blocks[id].Label = label
 
-	update := struct {
-		Id    int    `json:"id"`
-		Label string `json:"label"`
-	}{
-		id, label,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -278,7 +263,7 @@ func (s *Server) DeleteBlock(id int) error {
 
 	// stop and delete the block
 	s.supervisor.Remove(b.Token)
-	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: s.blocks[id]})
+	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: wsBlock{wsId{id}}})
 	delete(s.blocks, id)
 	return nil
 }
@@ -368,14 +353,6 @@ func (s *Server) ModifyBlockRoute(id int, route int, v *core.InputValue) error {
 
 	s.blocks[id].Inputs[route].Value = v
 
-	update := struct {
-		*core.InputValue
-		Id    int `json:"id"`
-		input int `json:"input"`
-	}{
-		v, id, route,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: ROUTE, Data: wsRouteModify{ConnectionNode{id, route}, v}})
 	return nil
 }

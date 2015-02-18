@@ -10,32 +10,39 @@ import (
 )
 
 type LinkLedger struct {
-	Source int `json:"source"` // the source id
-	Block  int `json:"block"`  // the block id
-	Id     int `json:"id"`     // link id
+	Source struct {
+		Id int `json:"id"`
+	} `json:"source"` // the soure id
+	Block struct {
+		Id int `json:"id"`
+	} `json:"block"` // the block id
+	Id int `json:"id"` // link id
 }
 
 type ProtoLink struct {
-	Source int `json:"source"` // the source id
-	Block  int `json:"block"`  // the block id
+	Source struct {
+		Id int `json:"id"`
+	} `json:"source"` // the soure id
+	Block struct {
+		Id int `json:"id"`
+	} `json:"block"` // the block id
 }
 
 func (s *Server) CreateLink(l ProtoLink) (*LinkLedger, error) {
-	b, ok := s.blocks[l.Block]
+	b, ok := s.blocks[l.Block.Id]
 	if !ok {
 		return nil, errors.New("could not find block")
 	}
 
-	sl, ok := s.sources[l.Source]
+	sl, ok := s.sources[l.Source.Id]
 	if !ok {
 		return nil, errors.New("could not find source")
 	}
 
-	link := &LinkLedger{
-		Source: l.Source,
-		Block:  l.Block,
-		Id:     s.GetNextID(),
-	}
+	link := &LinkLedger{}
+	link.Id = s.GetNextID()
+	link.Source.Id = l.Source.Id
+	link.Block.Id = l.Block.Id
 
 	if b.GetParent() != sl.GetParent() {
 		return nil, errors.New("block and source must be in the same group, cannot link")
@@ -48,7 +55,7 @@ func (s *Server) CreateLink(l ProtoLink) (*LinkLedger, error) {
 
 	s.links[link.Id] = link
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: LINK, Data: link})
+	s.websocketBroadcast(Update{Action: CREATE, Type: LINK, Data: wsLink{*link}})
 
 	return link, nil
 }
@@ -59,10 +66,10 @@ func (s *Server) DeleteLink(id int) error {
 		return errors.New("could not find link")
 	}
 
-	s.blocks[link.Block].Block.SetSource(nil)
+	s.blocks[link.Block.Id].Block.SetSource(nil)
 	delete(s.links, id)
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: link})
+	s.websocketBroadcast(Update{Action: DELETE, Type: LINK, Data: wsLink{wsId{id}}})
 	return nil
 }
 

@@ -1,5 +1,7 @@
 package server
 
+import "github.com/nytlabs/st-core/core"
+
 type Update struct {
 	Action string      `json:"action"`
 	Type   string      `json:"type"`
@@ -20,6 +22,7 @@ type BroadcastPosition struct {
 	Position Position `json:"position"`
 }
 
+// type BLOCK
 type BroadcastBlockCreate struct {
 	Block BlockLedger `json:"block"`
 }
@@ -36,6 +39,7 @@ type BroadcastBlockDelete struct {
 	Block BroadcastId `json:"block"`
 }
 
+// type GROUP
 type BroadcastGroupCreate struct {
 	Group Group `json:"group"`
 }
@@ -52,11 +56,7 @@ type BroadcastGroupDelete struct {
 	Group BroadcastId `json:"group"`
 }
 
-type BroadcastGroupChild struct {
-	Group BroadcastId `json:"group"`
-	Child BroadcastId `json:"child"`
-}
-
+// type SOURCE
 type BroadcastSourceCreate struct {
 	Source SourceLedger `json:"source"`
 }
@@ -81,6 +81,7 @@ type BroadcastSourceDelete struct {
 	Source BroadcastId `json:"source"`
 }
 
+// type LINK
 type BroadcastLinkCreate struct {
 	Link struct {
 		BroadcastId
@@ -93,10 +94,25 @@ type BroadcastLinkDelete struct {
 	Link BroadcastId `json:"link"`
 }
 
+// type CONNECTION
 type BroadcastConnectionCreate struct {
 	Connection ConnectionLedger `json:"connection"`
 }
 
 type BroadcastConnectionDelete struct {
 	Connection BroadcastId `json:"connection"`
+}
+
+// type CHILD
+type BroadcastGroupChild struct {
+	Group BroadcastId `json:"group"`
+	Child BroadcastId `json:"child"`
+}
+
+// type ROUTE
+type BroadcastRouteModify struct {
+	Block struct {
+		ConnectionNode
+		Value *core.InputValue `json:"value"`
+	}
 }

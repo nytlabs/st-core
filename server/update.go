@@ -8,108 +8,60 @@ type Update struct {
 	Data   interface{} `json:"data"`
 }
 
-type BroadcastId struct {
+type wsId struct {
 	Id int `json:"id"`
 }
 
-type BroadcastLabel struct {
-	BroadcastId
+type wsLabel struct {
+	wsId
 	Label string `json:"label"`
 }
 
-type BroadcastPosition struct {
-	BroadcastId
+type wsPosition struct {
+	wsId
 	Position Position `json:"position"`
 }
 
 // type BLOCK
-type BroadcastBlockCreate struct {
-	Block BlockLedger `json:"block"`
-}
-
-type BroadcastBlockLabel struct {
-	Block BroadcastLabel `json:"block"`
-}
-
-type BroadcastBlockPosition struct {
-	Block BroadcastPosition `json:"block"`
-}
-
-type BroadcastBlockDelete struct {
-	Block BroadcastId `json:"block"`
+type wsBlock struct {
+	Block interface{} `json:"block"`
 }
 
 // type GROUP
-type BroadcastGroupCreate struct {
-	Group Group `json:"group"`
-}
-
-type BroadcastGroupLabel struct {
-	Group BroadcastLabel `json:"group"`
-}
-
-type BroadcastGroupPosition struct {
-	Group BroadcastPosition `json:"group"`
-}
-
-type BroadcastGroupDelete struct {
-	Group BroadcastId `json:"group"`
+type wsGroup struct {
+	Group interface{} `json:"group"`
 }
 
 // type SOURCE
-type BroadcastSourceCreate struct {
-	Source SourceLedger `json:"source"`
-}
-
-type BroadcastSourceLabel struct {
-	Source BroadcastLabel `json:"source"`
-}
-
-type BroadcastSourcePosition struct {
-	Source BroadcastPosition `json:"source"`
-}
-
-type BroadcastSourceDelete struct {
-	Source BroadcastId `json:"source"`
+type wsSource struct {
+	Source interface{} `json:"source"`
 }
 
 // type LINK
-type BroadcastLinkCreate struct {
-	Link struct {
-		BroadcastId
-		Source BroadcastId `json:"source"`
-		Block  BroadcastId `json:"block"`
-	} `json:"link"`
-}
-
-type BroadcastLinkDelete struct {
-	Link BroadcastId `json:"link"`
+type wsLink struct {
+	Link interface{} `json:"link"`
 }
 
 // type CONNECTION
-type BroadcastConnectionCreate struct {
-	Connection ConnectionLedger `json:"connection"`
-}
-
-type BroadcastConnectionDelete struct {
-	Connection BroadcastId `json:"connection"`
+type wsConnection struct {
+	Connection interface{} `json:"connection"`
 }
 
 // type CHILD
-type BroadcastGroupChild struct {
-	Group BroadcastId `json:"group"`
-	Child BroadcastId `json:"child"`
+type wsGroupChild struct {
+	Group wsId `json:"group"`
+	Child wsId `json:"child"`
 }
 
 // type ROUTE
-type BroadcastRouteModify struct {
+type wsRouteModify struct {
 	ConnectionNode
 	Value *core.InputValue `json:"value"`
 }
 
 // type PARAM
-type BroadcastSourceModify struct {
-	BroadcastId
+type wsSourceModify struct {
+	wsId
 	Param string `json:"param"`
 	Value string `json:"value"`
 }

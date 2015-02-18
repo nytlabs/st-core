@@ -148,9 +148,7 @@ func TestNull(t *testing.T) {
 	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
 	go null.Serve()
-	null.SetInput(0, &InputValue{
-		Data: nil,
-	})
+	null.SetInput(0, &InputValue{nil})
 	out := make(chan Message)
 	null.Connect(0, out)
 	o, err := json.Marshal(<-out)
@@ -214,9 +212,7 @@ func TestGET(t *testing.T) {
 	block := NewBlock(lib["GET"])
 	go block.Serve()
 	headers := make(map[string]string)
-	block.SetInput(1, &InputValue{
-		Data: headers,
-	})
+	block.SetInput(1, &InputValue{headers})
 	urlRoute, _ := block.GetInput(0)
 	out := make(chan Message)
 	block.Connect(0, out)

@@ -69,14 +69,6 @@ type BroadcastSourcePosition struct {
 	Source BroadcastPosition `json:"source"`
 }
 
-type BroadcastSourceModify struct {
-	Source struct {
-		BroadcastId
-		Param string `json:"param"`
-		Value string `json:"value"`
-	} `json:"source"`
-}
-
 type BroadcastSourceDelete struct {
 	Source BroadcastId `json:"source"`
 }
@@ -113,4 +105,11 @@ type BroadcastGroupChild struct {
 type BroadcastRouteModify struct {
 	ConnectionNode
 	Value *core.InputValue `json:"value"`
+}
+
+// type PARAM
+type BroadcastSourceModify struct {
+	BroadcastId
+	Param string `json:"param"`
+	Value string `json:"value"`
 }

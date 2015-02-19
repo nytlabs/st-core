@@ -67,13 +67,32 @@ func (s *Server) websocketReadPump(c *socket) {
 		_, message, err := c.ws.ReadMessage()
 		if string(message) == "list" {
 			s.Lock()
-			blocks, _ := json.Marshal(s.ListBlocks())
-			connections, _ := json.Marshal(s.ListConnections())
-			groups, _ := json.Marshal(s.ListGroups())
+			blocks := s.ListBlocks()
+			groups := s.ListGroups()
+			sources := s.ListSources()
+			connections := s.ListConnections()
+			links := s.listLinks()
 			s.Unlock()
-			c.send <- blocks
-			c.send <- connections
-			c.send <- groups
+			for _, b := range blocks {
+				o, _ := json.Marshal(Update{Action: CREATE, Type: BLOCK, Data: wsBlock{b}})
+				c.send <- o
+			}
+			for _, g := range groups {
+				o, _ := json.Marshal(Update{Action: CREATE, Type: GROUP, Data: wsGroup{g}})
+				c.send <- o
+			}
+			for _, source := range sources {
+				o, _ := json.Marshal(Update{Action: CREATE, Type: SOURCE, Data: wsSource{source}})
+				c.send <- o
+			}
+			for _, connection := range connections {
+				o, _ := json.Marshal(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{connection}})
+				c.send <- o
+			}
+			for _, l := range links {
+				o, _ := json.Marshal(Update{Action: CREATE, Type: LINK, Data: wsLink{l}})
+				c.send <- o
+			}
 		}
 
 		if err != nil {

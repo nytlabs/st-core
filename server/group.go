@@ -33,7 +33,7 @@ type Group struct {
 }
 
 type ProtoGroup struct {
-	Group    int      `json:"group"`
+	Group    int      `json:"parent"`
 	Children []int    `json:"children"`
 	Label    string   `json:"label"`
 	Position Position `json:"position"`

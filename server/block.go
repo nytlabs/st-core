@@ -19,7 +19,7 @@ type Position struct {
 
 type ProtoBlock struct {
 	Label    string   `json:"label"`
-	Parent   int      `json:"group"`
+	Parent   int      `json:"parent"`
 	Type     string   `json:"type"`
 	Position Position `json:"position"`
 }

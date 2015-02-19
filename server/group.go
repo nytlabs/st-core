@@ -294,7 +294,14 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ExportGroup(id int) (*Pattern, error) {
-	p := &Pattern{}
+	p := &Pattern{
+		Blocks:      []BlockLedger{},
+		Sources:     []SourceLedger{},
+		Groups:      []Group{},
+		Connections: []ConnectionLedger{},
+		Links:       []LinkLedger{},
+	}
+
 	g, ok := s.groups[id]
 	if !ok {
 		return nil, errors.New("could not find group to export")

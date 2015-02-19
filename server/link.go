@@ -73,7 +73,7 @@ func (s *Server) DeleteLink(id int) error {
 	return nil
 }
 
-func (s *Server) ListLinks() []LinkLedger {
+func (s *Server) listLinks() []LinkLedger {
 	links := []LinkLedger{}
 	for _, l := range s.links {
 		links = append(links, *l)
@@ -85,7 +85,7 @@ func (s *Server) LinkIndexHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
-	c := s.ListLinks()
+	c := s.listLinks()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

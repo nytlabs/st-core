@@ -112,6 +112,7 @@ func pqPop() Spec {
 		},
 		Outputs: []Pin{
 			Pin{"out"},
+			Pin{"priority"},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -123,6 +124,7 @@ func pqPop() Spec {
 				return nil
 			}
 			out[0] = msg.val
+			out[1] = float64(msg.t)
 			return nil
 		},
 	}
@@ -136,6 +138,7 @@ func pqPeek() Spec {
 		},
 		Outputs: []Pin{
 			Pin{"out"},
+			Pin{"priority"},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -147,6 +150,7 @@ func pqPeek() Spec {
 				return nil
 			}
 			out[0] = msg.val
+			out[1] = float64(msg.t)
 			return nil
 		},
 	}

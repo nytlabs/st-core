@@ -178,6 +178,18 @@ func (s *Server) NewRouter() *mux.Router {
 			s.SourceIndexHandler,
 		},
 		Route{
+			"SourceModifyName",
+			"/sources/{id}/label",
+			"PUT",
+			s.SourceModifyNameHandler,
+		},
+		Route{
+			"SourceModifyPosition",
+			"/sources/{id}/position",
+			"PUT",
+			s.SourceModifyPositionHandler,
+		},
+		Route{
 			"SourceModify",
 			"/sources/{id}/params",
 			"PUT",

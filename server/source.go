@@ -26,7 +26,7 @@ type ProtoSource struct {
 	Label    string   `json:"label"`
 	Type     string   `json:"type"`
 	Position Position `json:"position"`
-	Parent   int      `json:"group"`
+	Parent   int      `json:"parent"`
 }
 
 func (sl *SourceLedger) GetID() int {
@@ -102,7 +102,7 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	}
 
 	s.sources[sl.Id] = sl
-	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: sl})
+	s.websocketBroadcast(Update{Action: CREATE, Type: SOURCE, Data: wsSource{*sl}})
 
 	err := s.AddChildToGroup(p.Parent, sl)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *Server) DeleteSource(id int) error {
 	}
 
 	for _, l := range s.links {
-		if l.Source == id {
+		if l.Source.Id == id {
 			err := s.DeleteLink(l.Id)
 			if err != nil {
 				return err
@@ -134,7 +134,7 @@ func (s *Server) DeleteSource(id int) error {
 
 	s.DetachChild(source)
 
-	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: s.sources[id]})
+	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: wsSource{wsId{id}}})
 	delete(s.sources, source.Id)
 	return nil
 }
@@ -185,14 +185,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		if v, ok := m[k]; ok {
 			i.SetSourceParameter(k, v)
 			source.Parameters[k] = v
-			update := struct {
-				Id    int    `json:"id"`
-				Key   string `json:"param"`
-				Value string `json:"value"`
-			}{
-				id, k, v,
-			}
-			s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: update})
+			s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, k, v}})
 		}
 	}
 	source.Token = s.supervisor.Add(i)
@@ -276,6 +269,85 @@ func (s *Server) SourceGetValueHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(val)
 }
+
+func (s *Server) SourceModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var p Position
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	b, ok := s.sources[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find block"})
+		return
+	}
+
+	b.Position = p
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsPosition{wsId{id}, p}}})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) SourceModifyNameHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	_, ok := s.sources[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"block not found"})
+		return
+	}
+
+	var label string
+	err = json.Unmarshal(body, &label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.sources[id].Label = label
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsLabel{wsId{id}, label}}})
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) SourceSetValueHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {

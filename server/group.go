@@ -33,7 +33,7 @@ type Group struct {
 }
 
 type ProtoGroup struct {
-	Group    int      `json:"group"`
+	Group    int      `json:"parent"`
 	Children []int    `json:"children"`
 	Label    string   `json:"label"`
 	Position Position `json:"position"`
@@ -88,14 +88,11 @@ func (s *Server) DetachChild(g Node) error {
 
 	parent.Children = append(parent.Children[:child], parent.Children[child+1:]...)
 
-	update := struct {
-		Id    int `json:"id"`
-		Child int `json:"child"`
-	}{
-		parent.GetID(), g.GetID(),
-	}
+	s.websocketBroadcast(Update{Action: DELETE, Type: CHILD, Data: wsGroupChild{
+		Group: wsId{parent.GetID()},
+		Child: wsId{g.GetID()},
+	}})
 
-	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP_CHILD, Data: update})
 	return nil
 }
 
@@ -122,14 +119,10 @@ func (s *Server) AddChildToGroup(id int, n Node) error {
 
 	n.SetParent(newParent)
 
-	update := struct {
-		Id    int `json:"id"`
-		Child int `json:"child"`
-	}{
-		id, nid,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP_CHILD, Data: update})
+	s.websocketBroadcast(Update{Action: CREATE, Type: CHILD, Data: wsGroupChild{
+		Group: wsId{id},
+		Child: wsId{nid},
+	}})
 	return nil
 }
 
@@ -186,7 +179,7 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	}
 
 	s.groups[newGroup.Id] = newGroup
-	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: newGroup})
+	s.websocketBroadcast(Update{Action: CREATE, Type: GROUP, Data: wsGroup{*newGroup}})
 
 	err := s.AddChildToGroup(g.Group, newGroup)
 	if err != nil {
@@ -231,14 +224,9 @@ func (s *Server) DeleteGroup(id int) error {
 		}
 	}
 
-	update := struct {
-		Id int `json:"id"`
-	}{
-		id,
-	}
 	s.DetachChild(group)
 	delete(s.groups, id)
-	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP, Data: update})
+	s.websocketBroadcast(Update{Action: DELETE, Type: GROUP, Data: wsGroup{wsId{id}}})
 	return nil
 }
 
@@ -306,7 +294,14 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ExportGroup(id int) (*Pattern, error) {
-	p := &Pattern{}
+	p := &Pattern{
+		Blocks:      []BlockLedger{},
+		Sources:     []SourceLedger{},
+		Groups:      []Group{},
+		Connections: []ConnectionLedger{},
+		Links:       []LinkLedger{},
+	}
+
 	g, ok := s.groups[id]
 	if !ok {
 		return nil, errors.New("could not find group to export")
@@ -365,8 +360,8 @@ func (s *Server) Export(id int) (*Pattern, error) {
 	}
 
 	for _, l := range s.links {
-		_, sourceIncluded := ids[l.Block]
-		_, targetIncluded := ids[l.Source]
+		_, sourceIncluded := ids[l.Block.Id]
+		_, targetIncluded := ids[l.Source.Id]
 		if sourceIncluded && targetIncluded {
 			p.Links = append(p.Links, *l)
 		}
@@ -476,12 +471,10 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	}
 
 	for _, l := range p.Links {
-		l.Block = newIds[l.Block]
-		l.Source = newIds[l.Source]
-		_, err := s.CreateLink(ProtoLink{
-			Source: l.Source,
-			Block:  l.Block,
-		})
+		pl := ProtoLink{}
+		pl.Source.Id = newIds[l.Block.Id]
+		pl.Block.Id = newIds[l.Source.Id]
+		_, err := s.CreateLink(pl)
 		if err != nil {
 			return err
 		}
@@ -564,14 +557,7 @@ func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request)
 
 	g.Label = l
 
-	update := struct {
-		Label string `json:"label"`
-		Id    int    `json:"id"`
-	}{
-		l, id,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: wsGroup{wsLabel{wsId{id}, l}}})
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -676,14 +662,6 @@ func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
 
 	g.Position = p
 
-	update := struct {
-		Position
-		Id int
-	}{
-		p,
-		id,
-	}
-
-	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: update})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: wsGroup{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
 }

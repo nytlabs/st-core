@@ -16,14 +16,14 @@ type ConnectionNode struct {
 }
 
 type ConnectionLedger struct {
-	Source ConnectionNode `json:"source"`
-	Target ConnectionNode `json:"target"`
+	Source ConnectionNode `json:"from"`
+	Target ConnectionNode `json:"to"`
 	Id     int            `json:"id"`
 }
 
 type ProtoConnection struct {
-	Source ConnectionNode `json:"source"`
-	Target ConnectionNode `json:"target"`
+	Source ConnectionNode `json:"from"`
+	Target ConnectionNode `json:"to"`
 }
 
 func (s *Server) ListConnections() []ConnectionLedger {
@@ -103,7 +103,7 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 
 	s.connections[conn.Id] = conn
 
-	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: conn})
+	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{*conn}})
 	return conn, nil
 }
 
@@ -159,7 +159,7 @@ func (s *Server) DeleteConnection(id int) error {
 
 	delete(s.connections, id)
 
-	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: c})
+	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: wsConnection{wsId{id}}})
 	return nil
 }
 

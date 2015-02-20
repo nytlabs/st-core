@@ -48,10 +48,10 @@ func kvGet() Spec {
 	return Spec{
 		Name: "kvGet",
 		Inputs: []Pin{
-			Pin{"key"},
+			Pin{"key", STRING},
 		},
 		Outputs: []Pin{
-			Pin{"value"},
+			Pin{"value", ANY},
 		},
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -78,11 +78,11 @@ func kvSet() Spec {
 	return Spec{
 		Name: "kvSet",
 		Inputs: []Pin{
-			Pin{"key"},
-			Pin{"value"},
+			Pin{"key", STRING},
+			Pin{"value", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"new"},
+			Pin{"new", BOOLEAN},
 		},
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -112,10 +112,10 @@ func kvClear() Spec {
 	return Spec{
 		Name: "kvClear",
 		Inputs: []Pin{
-			Pin{"clear"},
+			Pin{"clear", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"cleared"},
+			Pin{"cleared", BOOLEAN},
 		},
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -135,10 +135,10 @@ func kvDump() Spec {
 	return Spec{
 		Name: "kvDump",
 		Inputs: []Pin{
-			Pin{"dump"},
+			Pin{"dump", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"object"},
+			Pin{"object", OBJECT},
 		},
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -158,10 +158,10 @@ func kvDelete() Spec {
 	return Spec{
 		Name: "kvDelete",
 		Inputs: []Pin{
-			Pin{"key"},
+			Pin{"key", STRING},
 		},
 		Outputs: []Pin{
-			Pin{"deleted"},
+			Pin{"deleted", BOOLEAN},
 		},
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

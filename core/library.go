@@ -140,8 +140,8 @@ func GetLibrary() map[string]Spec {
 func First() Spec {
 	return Spec{
 		Name:    "first",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"first"}},
+		Inputs:  []Pin{Pin{"in", ANY}},
+		Outputs: []Pin{Pin{"first", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			_, ok := internal[0]
 			if !ok {
@@ -160,7 +160,7 @@ func Pusher() Spec {
 	return Spec{
 		Name:    "pusher",
 		Inputs:  []Pin{},
-		Outputs: []Pin{Pin{"out"}},
+		Outputs: []Pin{Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = nil
 			return nil
@@ -172,8 +172,8 @@ func Pusher() Spec {
 func Delay() Spec {
 	return Spec{
 		Name:    "delay",
-		Inputs:  []Pin{Pin{"passthrough"}, Pin{"duration"}},
-		Outputs: []Pin{Pin{"passthrough"}},
+		Inputs:  []Pin{Pin{"in", ANY}, Pin{"duration", STRING}},
+		Outputs: []Pin{Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
@@ -197,8 +197,8 @@ func Delay() Spec {
 func Set() Spec {
 	return Spec{
 		Name:    "set",
-		Inputs:  []Pin{Pin{"key"}, Pin{"value"}},
-		Outputs: []Pin{Pin{"object"}},
+		Inputs:  []Pin{Pin{"key", STRING}, Pin{"value", ANY}},
+		Outputs: []Pin{Pin{"object", OBJECT}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = map[string]interface{}{
 				in[0].(string): in[1],
@@ -213,7 +213,7 @@ func Set() Spec {
 func Log() Spec {
 	return Spec{
 		Name:    "log",
-		Inputs:  []Pin{Pin{"log"}},
+		Inputs:  []Pin{Pin{"log", ANY}},
 		Outputs: []Pin{},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			o, err := json.Marshal(in[0])
@@ -230,7 +230,7 @@ func Log() Spec {
 func Sink() Spec {
 	return Spec{
 		Name:    "sink",
-		Inputs:  []Pin{Pin{"in"}},
+		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			return nil
@@ -243,8 +243,8 @@ func Sink() Spec {
 func Latch() Spec {
 	return Spec{
 		Name:    "latch",
-		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
-		Outputs: []Pin{Pin{"out"}, Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", ANY}, Pin{"ctrl", BOOLEAN}},
+		Outputs: []Pin{Pin{"out", ANY}, Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			controlSignal, ok := in[1].(bool)
 			if !ok {
@@ -265,8 +265,8 @@ func Latch() Spec {
 func Gate() Spec {
 	return Spec{
 		Name:    "gate",
-		Inputs:  []Pin{Pin{"in"}, Pin{"ctrl"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", ANY}, Pin{"ctrl", ANY}},
+		Outputs: []Pin{Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0]
 			return nil
@@ -278,8 +278,8 @@ func Gate() Spec {
 func Identity() Spec {
 	return Spec{
 		Name:    "identity",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", ANY}},
+		Outputs: []Pin{Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0]
 			return nil
@@ -292,8 +292,8 @@ func Identity() Spec {
 func Head() Spec {
 	return Spec{
 		Name:    "head",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"head"}, Pin{"tail"}},
+		Inputs:  []Pin{Pin{"in", ARRAY}},
+		Outputs: []Pin{Pin{"head", ANY}, Pin{"tail", ARRAY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
@@ -312,8 +312,8 @@ func Head() Spec {
 func Tail() Spec {
 	return Spec{
 		Name:    "tail",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"tail"}, Pin{"head"}},
+		Inputs:  []Pin{Pin{"in", ARRAY}},
+		Outputs: []Pin{Pin{"tail", ANY}, Pin{"head", ARRAY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
@@ -331,8 +331,8 @@ func Tail() Spec {
 func Append() Spec {
 	return Spec{
 		Name:    "append",
-		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
-		Outputs: []Pin{Pin{"array"}},
+		Inputs:  []Pin{Pin{"element", ANY}, Pin{"array", ARRAY}},
+		Outputs: []Pin{Pin{"array", ARRAY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			arr, ok := in[1].([]interface{})
 			if !ok {
@@ -349,8 +349,8 @@ func Append() Spec {
 func Addition() Spec {
 	return Spec{
 		Name:    "+",
-		Inputs:  []Pin{Pin{"addend"}, Pin{"addend"}},
-		Outputs: []Pin{Pin{"sum"}},
+		Inputs:  []Pin{Pin{"addend", NUMBER}, Pin{"addend", NUMBER}},
+		Outputs: []Pin{Pin{"sum", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			a1, ok := in[0].(float64)
 			if !ok {
@@ -372,8 +372,8 @@ func Addition() Spec {
 func Subtraction() Spec {
 	return Spec{
 		Name:    "-",
-		Inputs:  []Pin{Pin{"minuend"}, Pin{"subtrahend"}},
-		Outputs: []Pin{Pin{"difference"}},
+		Inputs:  []Pin{Pin{"minuend", NUMBER}, Pin{"subtrahend", NUMBER}},
+		Outputs: []Pin{Pin{"difference", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			minuend, ok := in[0].(float64)
 			if !ok {
@@ -395,8 +395,8 @@ func Subtraction() Spec {
 func Multiplication() Spec {
 	return Spec{
 		Name:    "×",
-		Inputs:  []Pin{Pin{"multiplicand"}, Pin{"multiplicand"}},
-		Outputs: []Pin{Pin{"product"}},
+		Inputs:  []Pin{Pin{"multiplicand", NUMBER}, Pin{"multiplicand", NUMBER}},
+		Outputs: []Pin{Pin{"product", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {
@@ -418,8 +418,8 @@ func Multiplication() Spec {
 func Division() Spec {
 	return Spec{
 		Name:    "÷",
-		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
-		Outputs: []Pin{Pin{"quotient"}},
+		Inputs:  []Pin{Pin{"dividend", NUMBER}, Pin{"divisor", NUMBER}},
+		Outputs: []Pin{Pin{"quotient", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -441,8 +441,8 @@ func Division() Spec {
 func Exponentiation() Spec {
 	return Spec{
 		Name:    "^",
-		Inputs:  []Pin{Pin{"base"}, Pin{"exponent"}},
-		Outputs: []Pin{Pin{"power"}},
+		Inputs:  []Pin{Pin{"base", NUMBER}, Pin{"exponent", NUMBER}},
+		Outputs: []Pin{Pin{"power", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -464,8 +464,8 @@ func Exponentiation() Spec {
 func Modulation() Spec {
 	return Spec{
 		Name:    "mod",
-		Inputs:  []Pin{Pin{"dividend"}, Pin{"divisor"}},
-		Outputs: []Pin{Pin{"remainder"}},
+		Inputs:  []Pin{Pin{"dividend", NUMBER}, Pin{"divisor", NUMBER}},
+		Outputs: []Pin{Pin{"remainder", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -487,8 +487,8 @@ func Modulation() Spec {
 func GreaterThan() Spec {
 	return Spec{
 		Name:    ">",
-		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
-		Outputs: []Pin{Pin{"IsGreaterThan"}},
+		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
+		Outputs: []Pin{Pin{"IsGreaterThan", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -510,8 +510,8 @@ func GreaterThan() Spec {
 func LessThan() Spec {
 	return Spec{
 		Name:    "<",
-		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
-		Outputs: []Pin{Pin{"IsLessThan"}},
+		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
+		Outputs: []Pin{Pin{"IsLessThan", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -533,8 +533,8 @@ func LessThan() Spec {
 func EqualTo() Spec {
 	return Spec{
 		Name:    "==",
-		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
-		Outputs: []Pin{Pin{"IsEqualTo"}},
+		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
+		Outputs: []Pin{Pin{"IsEqualTo", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] == in[1]
 			return nil
@@ -546,8 +546,8 @@ func EqualTo() Spec {
 func NotEqualTo() Spec {
 	return Spec{
 		Name:    "!=",
-		Inputs:  []Pin{Pin{"value"}, Pin{"value"}},
-		Outputs: []Pin{Pin{"IsNotEqualTo"}},
+		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
+		Outputs: []Pin{Pin{"IsNotEqualTo", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] != in[1]
 			return nil

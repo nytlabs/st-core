@@ -3,8 +3,8 @@ package core
 func And() Spec {
 	return Spec{
 		Name:    "and",
-		Inputs:  []Pin{Pin{"in"}, Pin{"in"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", BOOLEAN}, Pin{"in", BOOLEAN}},
+		Outputs: []Pin{Pin{"out", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
@@ -25,8 +25,8 @@ func And() Spec {
 func Or() Spec {
 	return Spec{
 		Name:    "or",
-		Inputs:  []Pin{Pin{"in"}, Pin{"in"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", BOOLEAN}, Pin{"in", BOOLEAN}},
+		Outputs: []Pin{Pin{"out", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
@@ -47,8 +47,8 @@ func Or() Spec {
 func Not() Spec {
 	return Spec{
 		Name:    "not",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", BOOLEAN}},
+		Outputs: []Pin{Pin{"out", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {

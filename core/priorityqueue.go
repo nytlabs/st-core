@@ -79,11 +79,11 @@ func pqPush() Spec {
 	return Spec{
 		Name: "pqPush",
 		Inputs: []Pin{
-			Pin{"in"},
-			Pin{"priority"},
+			Pin{"in", ANY},
+			Pin{"priority", NUMBER},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -108,10 +108,10 @@ func pqPop() Spec {
 	return Spec{
 		Name: "pqPop",
 		Inputs: []Pin{
-			Pin{"trigger"},
+			Pin{"trigger", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -132,10 +132,10 @@ func pqPeek() Spec {
 	return Spec{
 		Name: "pqPeek",
 		Inputs: []Pin{
-			Pin{"trigger"},
+			Pin{"trigger", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -156,10 +156,10 @@ func pqLen() Spec {
 	return Spec{
 		Name: "pqLen",
 		Inputs: []Pin{
-			Pin{"trigger"},
+			Pin{"trigger", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"length"},
+			Pin{"length", NUMBER},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

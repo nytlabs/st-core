@@ -32,10 +32,10 @@ func ValueGet() Spec {
 	return Spec{
 		Name: "valueGet",
 		Inputs: []Pin{
-			Pin{"trigger"},
+			Pin{"trigger", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"value"},
+			Pin{"value", ANY},
 		},
 		Source: VALUE_PRIMITIVE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -51,10 +51,10 @@ func ValueSet() Spec {
 	return Spec{
 		Name: "valueSet",
 		Inputs: []Pin{
-			Pin{"value"},
+			Pin{"value", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: VALUE_PRIMITIVE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

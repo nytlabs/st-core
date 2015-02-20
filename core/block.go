@@ -9,8 +9,9 @@ func NewBlock(s Spec) *Block {
 
 	for _, v := range s.Inputs {
 		in = append(in, Input{
-			Name: v.Name,
-			C:    make(chan Message),
+			Name:  v.Name,
+			Value: nil,
+			C:     make(chan Message),
 		})
 	}
 
@@ -77,13 +78,28 @@ func (b *Block) exportInput(id RouteIndex) (*Input, error) {
 		return nil, errors.New("index out of range")
 	}
 
-	return &b.routing.Inputs[id], nil
+	if b.routing.Inputs[id].Value == nil {
+		return &b.routing.Inputs[id], nil
+	}
+
+	return &Input{
+		Value: &InputValue{
+			Data: Copy((*b.routing.Inputs[id].Value).Data),
+		},
+		C:    b.routing.Inputs[id].C,
+		Name: b.routing.Inputs[id].Name,
+	}, nil
+
 }
 
 // GetInput returns the specified Input
 func (b *Block) GetInput(id RouteIndex) (Input, error) {
 	b.routing.RLock()
 	r, err := b.exportInput(id)
+	if err != nil {
+		b.routing.RUnlock()
+		return Input{}, err
+	}
 	b.routing.RUnlock()
 	return *r, err
 }
@@ -98,6 +114,23 @@ func (b *Block) GetInputs() []Input {
 	}
 	b.routing.RUnlock()
 	return re
+}
+
+// RouteValue sets the route to always be the specified value
+func (b *Block) SetInput(id RouteIndex, v *InputValue) error {
+	returnVal := make(chan error, 1)
+	b.routing.InterruptChan <- func() bool {
+		if int(id) < 0 || int(id) >= len(b.routing.Inputs) {
+			returnVal <- errors.New("input out of range")
+			return true
+		}
+
+		b.routing.Inputs[id].Value = v
+
+		returnVal <- nil
+		return true
+	}
+	return <-returnVal
 }
 
 // Outputs return a list of manifest pairs for the block
@@ -193,6 +226,11 @@ func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
 		//if we have already received a value on this input, skip.
 		if _, ok := b.state.inputValues[RouteIndex(id)]; ok {
+			continue
+		}
+
+		if input.Value != nil {
+			b.state.inputValues[RouteIndex(id)] = Copy(input.Value.Data)
 			continue
 		}
 

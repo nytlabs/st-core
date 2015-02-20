@@ -133,14 +133,21 @@ func TestEndpoints(t *testing.T) {
 	// make a delay block (3)
 	post("/blocks", `{"type":"delay", "group":1}`, 200)
 
+	// set the delay's value
+	put("/blocks/3/routes/1", `{"data":"1s"}`, 204)
+
 	// make a log block (4)
 	post("/blocks", `{"type":"log", "group":1}`, 200)
 
 	// connect the + block to the delay block (5)
-	post("/connections", `{"source":{"id":2, "Route":0}, "target":{"id":3, "Route":0}}`, 200)
+	post("/connections", `{"source":{"id":2, "route":0}, "target":{"id":3, "route":0}}`, 200)
 
 	// connect the delay block to the log block (6)
-	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":4, "Route":0}}`, 200)
+	post("/connections", `{"source":{"id":3, "route":0}, "target":{"id":4, "route":0}}`, 200)
+
+	// set the value of the plus inputs
+	put("/blocks/2/routes/0", `{"data":1}`, 204)
+	put("/blocks/2/routes/1", `{"data":1}`, 204)
 
 	// make a set block (7)
 	post("/blocks", `{"type":"set", "group":1}`, 200)
@@ -149,13 +156,16 @@ func TestEndpoints(t *testing.T) {
 	del("/connections/6", 204)
 
 	// connect the set block to the log block and delay block (8) (9)
-	post("/connections", `{"source":{"id":7, "Route":0}, "target":{"id":4, "Route":0}}`, 200)
-	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":7, "Route":1}}`, 200)
+	post("/connections", `{"source":{"id":7, "Route":0}, "target":{"id":4, "route":0}}`, 200)
+	post("/connections", `{"source":{"id":3, "Route":0}, "target":{"id":7, "route":1}}`, 200)
 
 	// list connections
 	get("/connections", 200)
 	// describe connection 8
 	get("/connections/8", 200)
+
+	// set the value of the set key
+	put("/blocks/7/routes/0", `{"data":"myResult"}`, 204)
 
 	// move log block to root group
 	put("/groups/0/children/4", "", 204)
@@ -200,7 +210,7 @@ func TestEndpoints(t *testing.T) {
 	get("/groups/0/export", 200)
 
 	// import a pattern
-	pattern := `{"blocks":[{"label":"","type":"+","id":2,"inputs":[{"name":"addend","type":"fetch","value":"."},{"name":"addend","type":"fetch","value":"."}],"outputs":[{"name":"sum"}],"position":{"x":0,"y":0}},{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","type":"fetch","value":"."},{"name":"duration","type":"const","value":"1s"}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}}],"connections":[{"source":{"id":2,"route":0},"target":{"id":3,"route":0},"id":4}],"groups":[{"id":1,"label":"","children":[2,3],"position":{"x":0,"y":0}}]}`
+	pattern := `{"blocks":[{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","value":null},{"name":"duration","value":{"data":"1s"}}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}},{"label":"","type":"set","id":7,"inputs":[{"name":"key","value":{"data":"myResult"}},{"name":"value","value":null}],"outputs":[{"name":"object"}],"position":{"x":0,"y":0}},{"label":"","type":"log","id":4,"inputs":[{"name":"log","value":null}],"outputs":[],"position":{"x":0,"y":0}},{"label":"my bestest adder","type":"+","id":2,"inputs":[{"name":"addend","value":{"data":1}},{"name":"addend","value":{"data":1}}],"outputs":[{"name":"sum"}],"position":{"x":10,"y":10}},{"label":"","type":"kvGet","id":12,"inputs":[{"name":"key","value":null}],"outputs":[{"name":"value"}],"position":{"x":0,"y":0}}],"connections":[{"source":{"id":2,"route":0},"target":{"id":3,"route":0},"id":5},{"source":{"id":7,"route":0},"target":{"id":4,"route":0},"id":8},{"source":{"id":3,"route":0},"target":{"id":7,"route":1},"id":9}],"groups":[{"id":0,"label":"root","children":[1,4,2,11,12],"position":{"x":0,"y":0}},{"id":1,"label":"The Best Group Ever","children":[3,7],"position":{"x":20,"y":20}}],"sources":[{"label":"","type":"stream","id":11,"position":{"x":0,"y":0},"params":{"channel":"","lookupdAddr":"","maxInFlight":"10","topic":""}}],"links":null}`
 	post("/groups/1/import", pattern, 204)
 
 	// delete the log block
@@ -229,6 +239,7 @@ func TestEndpoints(t *testing.T) {
 	get("/links/450", 404)                                                                      // get an unknown link
 	put("/groups/8/children/4", "", 400)                                                        // modify an unknown group
 	put("/groups/0/children/34", "", 400)                                                       // move an unknown block to group 0
+	put("/blocks/2/routes/0", `{bobo}`, 400)                                                    // set the + block's route using malformed json
 	post("/groups", `{"group":10}`, 400)                                                        // create a group with an unknown parent
 	post("/groups", `{"group"10}`, 400)                                                         // create a group with malformed JSON
 	post("/blocks", `{"type":"invalid", "group":0}`, 400)                                       // create a block of invalid type

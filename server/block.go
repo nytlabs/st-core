@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/nytlabs/st-core/core"
@@ -301,5 +302,80 @@ func (s *Server) BlockDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
 
+func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := getIDFromMux(vars)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	routes, ok := vars["index"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"no route index supplied"})
+		return
+	}
+
+	route, err := strconv.Atoi(routes)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read request body"})
+		return
+	}
+
+	var v core.InputValue
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not unmarshal value"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	err = s.ModifyBlockRoute(id, route, &v)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) ModifyBlockRoute(id int, route int, v *core.InputValue) error {
+	b, ok := s.blocks[id]
+	if !ok {
+		return errors.New("could not find block")
+	}
+
+	err := b.Block.SetInput(core.RouteIndex(route), v)
+	if err != nil {
+		return err
+	}
+
+	s.blocks[id].Inputs[route].Value = v
+
+	update := struct {
+		*core.InputValue
+		Id    int `json:"id"`
+		input int `json:"input"`
+	}{
+		v, id, route,
+	}
+
+	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: update})
+	return nil
 }

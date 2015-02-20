@@ -97,6 +97,7 @@ func (b *Block) GetInput(id RouteIndex) (Input, error) {
 	b.routing.RLock()
 	r, err := b.exportInput(id)
 	if err != nil {
+		b.routing.RUnlock()
 		return Input{}, err
 	}
 	b.routing.RUnlock()

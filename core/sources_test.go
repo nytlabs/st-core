@@ -183,6 +183,12 @@ func TestPriorityQueue(t *testing.T) {
 		b.Connect(0, out)
 	}
 
+	// connect up a channel for priorities for pqPop and pqPeek
+	priorityChan := make(chan Message)
+
+	blocks["pqPeek"].Connect(1, priorityChan)
+	blocks["pqPop"].Connect(1, priorityChan)
+
 	// push a message with the current time as priority
 	p := float64(time.Now().Unix())
 	in, err := blocks["pqPush"].GetInput(0)
@@ -209,6 +215,9 @@ func TestPriorityQueue(t *testing.T) {
 	if <-out != "foo" {
 		t.Fatal("pqPeek did not generate expected output")
 	}
+	if <-priorityChan != p {
+		t.Fatal("pqPeek did not recive the expected priority")
+	}
 
 	// check the length of the queue
 	lenTrigger, err := blocks["pqLen"].GetInput(0)
@@ -228,6 +237,9 @@ func TestPriorityQueue(t *testing.T) {
 	trigger.C <- true
 	if <-out != "foo" {
 		t.Fatal("pqPop did not generate expected output")
+	}
+	if <-priorityChan != p {
+		t.Fatal("pqPop did not recive the expected priority")
 	}
 
 	// check the length of the queue again to make sure pop did its thing

@@ -117,7 +117,7 @@ func StreamReceive() Spec {
 	return Spec{
 		Name: "streamReceive",
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", OBJECT},
 		},
 		Source: STREAM,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

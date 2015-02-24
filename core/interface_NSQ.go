@@ -8,15 +8,15 @@ import (
 	"github.com/bitly/go-nsq"
 )
 
-func StreamInterface() SourceSpec {
+func NSQInterface() SourceSpec {
 	return SourceSpec{
 		Name: "stream",
 		Type: STREAM,
-		New:  NewStream,
+		New:  NewNSQ,
 	}
 }
 
-type Stream struct {
+type NSQ struct {
 	quit        chan bool
 	Out         chan Message // this channel is used by any block that would like to receive messages
 	topic       string
@@ -26,11 +26,11 @@ type Stream struct {
 	sync.Mutex
 }
 
-func (s Stream) GetType() SourceType {
+func (s NSQ) GetType() SourceType {
 	return STREAM
 }
 
-func (s *Stream) SetSourceParameter(name, value string) {
+func (s *NSQ) SetSourceParameter(name, value string) {
 	switch name {
 	case "topic":
 		s.topic = value
@@ -46,7 +46,7 @@ func (s *Stream) SetSourceParameter(name, value string) {
 	}
 }
 
-func (s *Stream) Describe() map[string]string {
+func (s *NSQ) Describe() map[string]string {
 	return map[string]string{
 		"topic":       s.topic,
 		"channel":     s.channel,
@@ -55,9 +55,9 @@ func (s *Stream) Describe() map[string]string {
 	}
 }
 
-func NewStream() Source {
+func NewNSQ() Source {
 	out := make(chan Message)
-	stream := &Stream{
+	stream := &NSQ{
 		quit:        make(chan bool),
 		Out:         out,
 		maxInFlight: "10",
@@ -65,7 +65,7 @@ func NewStream() Source {
 	return stream
 }
 
-func (s Stream) Serve() {
+func (s NSQ) Serve() {
 	conf := nsq.NewConfig()
 	m, err := strconv.Atoi(s.maxInFlight)
 	if err != nil {
@@ -101,27 +101,27 @@ Wait:
 	}
 }
 
-func (s Stream) HandleMessage(message *nsq.Message) error {
+func (s NSQ) HandleMessage(message *nsq.Message) error {
 	s.Out <- string(message.Body)
 	return nil
 }
 
-func (s Stream) Stop() {
+func (s NSQ) Stop() {
 	s.quit <- true
 }
 
-// StreamRecieve receives messages from the Stream store.
+// NSQRecieve receives messages from the NSQ system.
 //
 // OutPin 0: received message
-func StreamReceive() Spec {
+func NSQReceive() Spec {
 	return Spec{
-		Name: "streamReceive",
+		Name: "NSQReceive",
 		Outputs: []Pin{
 			Pin{"out", OBJECT},
 		},
 		Source: STREAM,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
-			stream := s.(*Stream)
+			stream := s.(*NSQ)
 			select {
 			case out[0] = <-stream.Out:
 			case f := <-i:

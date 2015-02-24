@@ -2,7 +2,7 @@ package core
 
 func GetSources() map[string]SourceSpec {
 	sources := []SourceSpec{
-		StreamInterface(),
+		NSQInterface(),
 		KeyValueStore(),
 		ValueStore(),
 		PriorityQueueStore(),

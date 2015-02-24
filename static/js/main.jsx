@@ -32,6 +32,11 @@ var app = app || {};
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
+                for(var key in m.data[m.type]){
+                    if(key !== 'id'){
+                        this.entities[m.data[m.type].id][key] = m.data[m.type][key] 
+                    }
+                }
                 break;
             case 'create':
                 if( ['block','group','source'].indexOf(m.type) != -1 ){
@@ -52,18 +57,28 @@ var m = new app.CoreModel();
 var Entity = React.createClass({
         render: function(){
                 var entity = this.props.model;
+                var divStyle = {
+                        top: entity.position.y,
+                        left: entity.position.x,
+                }
                 if(entity.hasOwnProperty('inputs')){
                 return(
-                        <div>
+                        <div className="block" style={divStyle}>
                                 {entity.id}
                                 {entity.label}
                                 {entity.type}
-                                <ol>
+                                [{entity.position.x},{entity.position.y}]
+                                <ul>
                                         {entity.inputs.map(function(name,i){
                                                 return <li key={i}>{name}</li>
                                         })}
 
-                                </ol>
+                                </ul>
+                                <ul>
+                                        {entity.outputs.map(function(name,i){
+                                                return <li key={i}>{name}</li>
+                                        })}
+                                </ul>
 
                         
                         </div>

@@ -3,7 +3,7 @@
         border-radius: 4px;
         border: 1px solid rgba(0,0,0,.3);
         width: 100px; 
-        position: relative;
+        position: absolute;
         font-family: 'Anonymous Pro' ;
         font-size: 14px;
 }

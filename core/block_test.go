@@ -228,7 +228,7 @@ func TestParseJSON(t *testing.T) {
 	lib := GetLibrary()
 	spec, ok := lib["parseJSON"]
 	if !ok {
-		log.Fatal("shit head")
+		t.Fatal("couldn't find block")
 	}
 	block := NewBlock(spec)
 	go block.Serve()
@@ -258,5 +258,41 @@ func TestParseJSON(t *testing.T) {
 	_, ok = m.(error)
 	if !ok {
 		t.Error("expected error")
+	}
+}
+
+func TestMerge(t *testing.T) {
+	log.Println("testing merge")
+	lib := GetLibrary()
+	block := NewBlock(lib["merge"])
+	go block.Serve()
+	out := make(chan Message)
+	inroute1, _ := block.GetInput(0)
+	inroute2, _ := block.GetInput(1)
+	block.Connect(0, out)
+	inmsg1 := map[string]interface{}{"a": 3, "b": true}
+	inmsg2 := map[string]interface{}{"c": 3}
+	inmsg3 := map[string]interface{}{"b": 3}
+	inroute1.C <- inmsg1
+	inroute2.C <- inmsg2
+	expected, _ := json.Marshal(map[string]interface{}{"a": 3, "b": true, "c": 3})
+	got, err := json.Marshal(<-out)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(got) != string(expected) {
+		t.Error("merge did not return the expected map")
+		return
+	}
+	inroute1.C <- inmsg1
+	inroute2.C <- inmsg3
+	expected, _ = json.Marshal(map[string]interface{}{"a": 3, "b": true})
+	got, err = json.Marshal(<-out)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(got) != string(expected) {
+		t.Error("merge did not return the expected map")
+		return
 	}
 }

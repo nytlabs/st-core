@@ -215,6 +215,36 @@ func Append() Spec {
 	}
 }
 
+// Merge takes merges two objects, favouring the first input to resolve conflicts
+func Merge() Spec {
+	return Spec{
+		Name: "merge",
+		Inputs: []Pin{
+			Pin{"in", OBJECT},
+			Pin{"in", OBJECT},
+		},
+		Outputs: []Pin{Pin{"out", OBJECT}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			o0, ok := in[0].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("Merge requires an object")
+				return nil
+			}
+			o1, ok := in[1].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("Merge requires an object")
+				return nil
+			}
+			result := o1
+			for k, v := range o0 {
+				result[k] = v
+			}
+			out[0] = result
+			return nil
+		},
+	}
+}
+
 // Addition returns the sum of the addenda
 func Addition() Spec {
 	return Spec{

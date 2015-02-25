@@ -34,6 +34,7 @@ func GetLibrary() map[string]Spec {
 		Tail(),
 		Head(),
 		Pusher(),
+		Merge(),
 
 		// monads
 		Exp(),

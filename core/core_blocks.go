@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/imdario/mergo"
 )
 
 func First() Spec {
@@ -215,7 +217,7 @@ func Append() Spec {
 	}
 }
 
-// Merge takes merges two objects, favouring the first input to resolve conflicts
+// Merge recursively merges two objects, favouring the first input to resolve conflicts
 func Merge() Spec {
 	return Spec{
 		Name: "merge",
@@ -225,23 +227,9 @@ func Merge() Spec {
 		},
 		Outputs: []Pin{Pin{"out", OBJECT}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
-			o0, ok := in[0].(map[string]interface{})
-			if !ok {
-				out[0] = NewError("Merge requires an object")
-				return nil
-			}
-			o1, ok := in[1].(map[string]interface{})
-			if !ok {
-				out[0] = NewError("Merge requires an object")
-				return nil
-			}
 			result := make(map[string]interface{})
-			for k, v := range o1 {
-				result[k] = v
-			}
-			for k, v := range o0 {
-				result[k] = v
-			}
+			mergo.Merge(&result, in[0])
+			mergo.Merge(&result, in[1])
 			out[0] = result
 			return nil
 		},

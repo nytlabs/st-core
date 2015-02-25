@@ -273,26 +273,34 @@ func TestMerge(t *testing.T) {
 	inmsg1 := map[string]interface{}{"a": 3, "b": true}
 	inmsg2 := map[string]interface{}{"c": 3}
 	inmsg3 := map[string]interface{}{"b": 3}
-	inroute1.C <- inmsg1
-	inroute2.C <- inmsg2
-	expected, _ := json.Marshal(map[string]interface{}{"a": 3, "b": true, "c": 3})
-	got, err := json.Marshal(<-out)
-	if err != nil {
-		t.Error(err)
+	inmsg4 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz"}}
+	inmsg5 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bob": "bat"}}
+
+	testMerge := func(i1, i2, expected map[string]interface{}) {
+		inroute1.C <- i1
+		inroute2.C <- i2
+		ex, _ := json.Marshal(expected)
+		got, err := json.Marshal(<-out)
+		if err != nil {
+			t.Error(err)
+		}
+		if string(got) != string(ex) {
+			log.Println(string(got))
+			log.Println(string(ex))
+			t.Error("merge did not return the expected map")
+		}
+
 	}
-	if string(got) != string(expected) {
-		t.Error("merge did not return the expected map")
-		return
-	}
-	inroute1.C <- inmsg1
-	inroute2.C <- inmsg3
-	expected, _ = json.Marshal(map[string]interface{}{"a": 3, "b": true})
-	got, err = json.Marshal(<-out)
-	if err != nil {
-		t.Error(err)
-	}
-	if string(got) != string(expected) {
-		t.Error("merge did not return the expected map")
-		return
-	}
+
+	// simple test
+	expected := map[string]interface{}{"a": 3, "b": true, "c": 3}
+	testMerge(inmsg1, inmsg2, expected)
+
+	// overwrite
+	expected = map[string]interface{}{"a": 3, "b": true}
+	testMerge(inmsg1, inmsg3, expected)
+
+	//nested
+	expected = map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz", "bob": "bat"}}
+	testMerge(inmsg4, inmsg5, expected)
 }

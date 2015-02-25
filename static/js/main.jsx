@@ -55,6 +55,16 @@ var app = app || {};
 var m = new app.CoreModel();
 
 var Entity = React.createClass({
+        dragStart: function(e){
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", JSON.stringify(this.props.model));
+        },
+        dragEnd: function(e){
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function(){}
+                xhr.open("PUT","blocks/" + this.props.model.id + "/position", true);
+                xhr.send(JSON.stringify({x: e.pageX, y: e.pageY - e.nativeEvent.toElement.clientHeight }))
+        },
         render: function(){
                 var entity = this.props.model;
                 var divStyle = {
@@ -63,7 +73,8 @@ var Entity = React.createClass({
                 }
                 if(entity.hasOwnProperty('inputs')){
                 return(
-                        <div className="block" style={divStyle}>
+                        //<div className="block" style={divStyle} onMouseDown={this.mouseDownHandler} onMouseUp={this.mouseUpHandler} onMouseMove={this.mouseMoveHandler}>
+                        <div className="block" style={divStyle} onDragStart={this.dragStart} draggable="true" onDragEnd={this.dragEnd}>
                                 {entity.id}
                                 {entity.label}
                                 {entity.type}
@@ -95,10 +106,13 @@ var CoreApp = React.createClass({
             group: 0,
         }
     },
+    dragOver: function(e){
+            e.preventDefault();
+    },
     render: function() {
             var entities = this.props.model.entities; 
             return (
-                    <div>
+                    <div className="stage" onDragOver={this.dragOver}>
                             {Object.keys(entities).map(function(id){
                                     return <Entity key={id} model={entities[id]}/>
                              })}

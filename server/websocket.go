@@ -50,7 +50,7 @@ func (s *Server) websocketRouter() {
 			delete(hub, c)
 		case m := <-s.broadcast:
 			for c := range hub {
-				c.send <- m
+				c.write(websocket.TextMessage, m)
 			}
 		}
 	}
@@ -75,23 +75,23 @@ func (s *Server) websocketReadPump(c *socket) {
 			s.Unlock()
 			for _, b := range blocks {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: BLOCK, Data: wsBlock{b}})
-				c.send <- o
+				c.write(websocket.TextMessage, o)
 			}
 			for _, g := range groups {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: GROUP, Data: wsGroup{g}})
-				c.send <- o
+				c.write(websocket.TextMessage, o)
 			}
 			for _, source := range sources {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: SOURCE, Data: wsSource{source}})
-				c.send <- o
+				c.write(websocket.TextMessage, o)
 			}
 			for _, connection := range connections {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{connection}})
-				c.send <- o
+				c.write(websocket.TextMessage, o)
 			}
 			for _, l := range links {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: LINK, Data: wsLink{l}})
-				c.send <- o
+				c.write(websocket.TextMessage, o)
 			}
 		}
 

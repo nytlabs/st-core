@@ -29,6 +29,30 @@ var app = app || {};
         });
     }
 
+    app.Group = function(data){
+            for(var key in data){
+                     this[key] = data[key]
+            }
+    }
+   
+    app.Block = function(data){
+            for(var key in data){
+                    this[key] = data[key]
+            }
+    }
+
+    app.Source = function(data){
+            for(var key in data){
+                    this[key] = data[key];
+            }
+    }
+
+    var nodes = {
+        'block': app.Block,
+        'source': app.Source,
+        'group': app.Group
+    }
+
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
@@ -39,8 +63,9 @@ var app = app || {};
                 }
                 break;
             case 'create':
-                if( ['block','group','source'].indexOf(m.type) != -1 ){
-                        this.entities[m.data[m.type].id] = m.data[m.type];
+                if( nodes.hasOwnProperty(m.type) === true){
+                        this.entities[m.data[m.type].id] = new nodes[m.type](m.data[m.type]);
+            
                 }
                 break;
             case 'delete':
@@ -55,29 +80,34 @@ var app = app || {};
 var m = new app.CoreModel();
 
 var Entity = React.createClass({
+        getInitialState: function(){
+                return {
+                        top: this.props.model.position.y,
+                        left: this.props.model.position.x}
+        },
         dragStart: function(e){
                 e.dataTransfer.effectAllowed = "move";
                 e.dataTransfer.setData("text/plain", JSON.stringify(this.props.model));
         },
         dragEnd: function(e){
-                var xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = function(){}
-                xhr.open("PUT","blocks/" + this.props.model.id + "/position", true);
-                xhr.send(JSON.stringify({x: e.pageX, y: e.pageY - e.nativeEvent.toElement.clientHeight }))
+                this.setState({left: e.pageX, top: e.pageY - e.nativeEvent.toElement.clientHeight})
+
+                app.Utils.request(
+                        "PUT", 
+                        "blocks/" + this.props.model.id + "/position", 
+                        {x: e.pageX, y: e.pageY - e.nativeEvent.toElement.clientHeight }, 
+                        null
+                );
         },
         render: function(){
                 var entity = this.props.model;
-                var divStyle = {
-                        top: entity.position.y,
-                        left: entity.position.x,
-                }
                 if(entity.hasOwnProperty('inputs')){
                 return(
-                        //<div className="block" style={divStyle} onMouseDown={this.mouseDownHandler} onMouseUp={this.mouseUpHandler} onMouseMove={this.mouseMoveHandler}>
-                        <div className="block" style={divStyle} onDragStart={this.dragStart} draggable="true" onDragEnd={this.dragEnd}>
-                                {entity.id}
-                                {entity.label}
-                                {entity.type}
+                        <div className="block" style={this.state} onDragStart={this.dragStart} draggable="true" onDragEnd={this.dragEnd}>
+                                {entity.id}<br />
+                                {entity.label}<br />
+                                {entity.type}<br />
+                                [{JSON.stringify(this.state)}]<br/>
                                 [{entity.position.x},{entity.position.y}]
                                 <ul>
                                         {entity.inputs.map(function(name,i){

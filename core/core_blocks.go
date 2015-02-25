@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/imdario/mergo"
 )
 
 func First() Spec {
@@ -210,6 +212,34 @@ func Append() Spec {
 				return nil
 			}
 			out[0] = append(arr, in[0])
+			return nil
+		},
+	}
+}
+
+// Merge recursively merges two objects, favouring the first input to resolve conflicts
+func Merge() Spec {
+	return Spec{
+		Name: "merge",
+		Inputs: []Pin{
+			Pin{"in", OBJECT},
+			Pin{"in", OBJECT},
+		},
+		Outputs: []Pin{Pin{"out", OBJECT}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			result := make(map[string]interface{})
+			var err error
+			err = mergo.Merge(&result, in[0])
+			if err != nil {
+				out[0] = err
+				return nil
+			}
+			err = mergo.Merge(&result, in[1])
+			if err != nil {
+				out[0] = err
+				return nil
+			}
+			out[0] = result
 			return nil
 		},
 	}

@@ -235,7 +235,10 @@ func Merge() Spec {
 				out[0] = NewError("Merge requires an object")
 				return nil
 			}
-			result := o1
+			result := make(map[string]interface{})
+			for k, v := range o1 {
+				result[k] = v
+			}
 			for k, v := range o0 {
 				result[k] = v
 			}

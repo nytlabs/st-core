@@ -228,8 +228,17 @@ func Merge() Spec {
 		Outputs: []Pin{Pin{"out", OBJECT}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			result := make(map[string]interface{})
-			mergo.Merge(&result, in[0])
-			mergo.Merge(&result, in[1])
+			var err error
+			err = mergo.Merge(&result, in[0])
+			if err != nil {
+				out[0] = err
+				return nil
+			}
+			err = mergo.Merge(&result, in[1])
+			if err != nil {
+				out[0] = err
+				return nil
+			}
 			out[0] = result
 			return nil
 		},

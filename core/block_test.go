@@ -289,7 +289,6 @@ func TestMerge(t *testing.T) {
 			log.Println(string(ex))
 			t.Error("merge did not return the expected map")
 		}
-
 	}
 
 	// simple test

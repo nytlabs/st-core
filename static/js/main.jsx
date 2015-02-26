@@ -12,7 +12,7 @@ var app = app || {};
         this.list = [];
         this.onChanges = [];
 
-        var ws = new WebSocket("ws://localhost:7071/updates");
+        var ws = new WebSocket("ws://10.51.126.66:7071/updates");
 
         ws.onmessage = function(m) {
             this.update(JSON.parse(m.data));

@@ -37,18 +37,15 @@ func merge(A map[string]interface{}, i interface{}) interface{} {
 				switch v.(type) {
 				case map[string]interface{}:
 					// if the value is a map, initialise a new map to be merged
-					//				log.Printf("initialised A[%v]\n", k)
 					Ak = make(map[string]interface{})
 				default:
 					// otherwise just merge into this A
-					//					log.Printf("set A[%v] to %v\n", k, v)
 					A[k] = v
 					continue
 				}
 			}
 			B, ok := Ak.(map[string]interface{})
 			if !ok {
-				//		log.Printf("Ak: %v  k: %v  v: %v\n", Ak, k, v)
 				// A[k] is not a map, so just overwrite
 				A[k] = v
 			}

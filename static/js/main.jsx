@@ -5,6 +5,7 @@ var app = app || {};
 
     app.CoreModel = function() {
         this.entities = {};
+        this.list = [];
         this.onChanges = [];
 
         var ws = new WebSocket("ws://localhost:7071/updates");
@@ -23,7 +24,7 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.inform = function() {
-        console.log(this.entities);
+        console.log("updating...");
         this.onChanges.forEach(function(cb) {
             cb();
         });
@@ -53,6 +54,14 @@ var app = app || {};
         'group': app.Group
     }
 
+    app.CoreModel.prototype.select = function(id){
+        console.log(id);
+        console.log(this.entities[id]);
+        this.list.push(this.list.splice(this.list.indexOf(this.entities[id]), 1)[0]);
+        console.log(id);
+        this.inform();
+    }
+
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
@@ -65,10 +74,12 @@ var app = app || {};
             case 'create':
                 if( nodes.hasOwnProperty(m.type) === true){
                         this.entities[m.data[m.type].id] = new nodes[m.type](m.data[m.type]);
-            
+                        this.list.push(this.entities[m.data[m.type].id]) 
                 }
                 break;
             case 'delete':
+                var i = this.list.indexOf(this.entities[m.data[m.type].id]);
+                this.list.splice(i, 1);
                 delete this.entities[m.data[m.type].id];
                 break;
         }
@@ -79,50 +90,86 @@ var app = app || {};
 
 var m = new app.CoreModel();
 
-var Entity = React.createClass({
+var DragContainer = React.createClass({
         getInitialState: function(){
                 return {
-                        top: this.props.model.position.y,
-                        left: this.props.model.position.x}
+                        dragging: false,
+                        x: this.props.x,
+                        y: this.props.y,
+                        offX: null,
+                        offY: null
+                }
         },
-        dragStart: function(e){
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", JSON.stringify(this.props.model));
+        onMouseDown: function(e){
+                m.select(this.props.model.id);
+                
+                this.setState({
+                        dragging: true,
+                        offX: e.pageX - this.state.x,
+                        offY: e.pageY - this.state.y
+                })
+                console.log(this.state.offX, this.state.offY);
         },
-        dragEnd: function(e){
-                this.setState({left: e.pageX, top: e.pageY - e.nativeEvent.toElement.clientHeight})
-
+        componentDidUpdate: function (props, state) {
+                if (this.state.dragging && !state.dragging) {
+                        document.addEventListener('mousemove', this.onMouseMove)
+                        document.addEventListener('mouseup', this.onMouseUp)
+                } else if (!this.state.dragging && state.dragging) {
+                        document.removeEventListener('mousemove', this.onMouseMove)
+                        document.removeEventListener('mouseup', this.onMouseUp)
+                }
+        },
+        onMouseUp: function(e){
                 app.Utils.request(
                         "PUT", 
                         "blocks/" + this.props.model.id + "/position", 
-                        {x: e.pageX, y: e.pageY - e.nativeEvent.toElement.clientHeight }, 
+                        {x: this.state.x, y: this.state.y }, 
                         null
                 );
+              
+                this.setState({
+                        dragging: false,
+                })
         },
+        onMouseMove: function(e){
+                if(this.state.dragging){
+                        this.setState({
+                                x: e.pageX - this.state.offX,
+                                y: e.pageY - this.state.offY,
+                        })
+                }
+        },
+        componentWillReceiveProps: function(props){
+                this.setState({
+                      x: props.x,
+                      y: props.y       
+                })
+        },
+        render: function(){
+                return (
+                        <g 
+                        transform={'translate(' + this.state.x + ', ' + this.state.y + ')'} 
+                        onMouseMove={this.onMouseMove}
+                        onMouseDown={this.onMouseDown}
+                        onMouseUp={this.onMouseUp}
+                        >
+                        {this.props.children}
+                        </g>
+                )
+
+        }
+})
+
+
+
+var Entity = React.createClass({
         render: function(){
                 var entity = this.props.model;
                 if(entity.hasOwnProperty('inputs')){
                 return(
-                        <div className="block" style={this.state} onDragStart={this.dragStart} draggable="true" onDragEnd={this.dragEnd}>
-                                {entity.id}<br />
-                                {entity.label}<br />
-                                {entity.type}<br />
-                                [{JSON.stringify(this.state)}]<br/>
-                                [{entity.position.x},{entity.position.y}]
-                                <ul>
-                                        {entity.inputs.map(function(name,i){
-                                                return <li key={i}>{name}</li>
-                                        })}
-
-                                </ul>
-                                <ul>
-                                        {entity.outputs.map(function(name,i){
-                                                return <li key={i}>{name}</li>
-                                        })}
-                                </ul>
-
-                        
-                        </div>
+                        <DragContainer {...this.props} x={this.props.model.position.x} y={this.props.model.position.y}>
+                        <rect className='block' x='0' y='0' width='100' height='100' />
+                        </DragContainer>
                 )
                 } else {
                 return <div>LOL WHO CARES</div>
@@ -131,22 +178,13 @@ var Entity = React.createClass({
 })
 
 var CoreApp = React.createClass({
-    getInitialState: function() {
-        return {
-            group: 0,
-        }
-    },
-    dragOver: function(e){
-            e.preventDefault();
-    },
     render: function() {
-            var entities = this.props.model.entities; 
             return (
-                    <div className="stage" onDragOver={this.dragOver}>
-                            {Object.keys(entities).map(function(id){
-                                    return <Entity key={id} model={entities[id]}/>
-                             })}
-                    </div>
+                    <svg className="stage" onDragOver={this.dragOver}>
+                    {this.props.model.list.map(function(e){
+                        return <Entity key={e.id} model={e} />
+                    })}
+                    </svg>
             )
     }
 })

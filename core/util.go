@@ -23,11 +23,6 @@ func Copy(i interface{}) interface{} {
 // this is the recursion
 func merge(A map[string]interface{}, i interface{}) interface{} {
 
-	/*
-		log.Println("A:", A)
-		log.Println("i:", i)
-	*/
-
 	switch t := i.(type) {
 	case map[string]interface{}:
 		for k, v := range t {

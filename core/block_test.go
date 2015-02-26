@@ -272,7 +272,7 @@ func TestMerge(t *testing.T) {
 	block.Connect(0, out)
 	inmsg1 := map[string]interface{}{"a": 3, "b": true}
 	inmsg2 := map[string]interface{}{"c": 3}
-	inmsg3 := map[string]interface{}{"b": 3}
+	inmsg3 := map[string]interface{}{"b": "cat"}
 	inmsg4 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz"}}
 	inmsg5 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bob": "bat"}}
 
@@ -292,14 +292,17 @@ func TestMerge(t *testing.T) {
 	}
 
 	// simple test
+	log.Println("simple test")
 	expected := map[string]interface{}{"a": 3, "b": true, "c": 3}
 	testMerge(inmsg1, inmsg2, expected)
 
 	// overwrite
-	expected = map[string]interface{}{"a": 3, "b": true}
+	log.Println("overwrite test")
+	expected = map[string]interface{}{"a": 3, "b": "cat"}
 	testMerge(inmsg1, inmsg3, expected)
 
 	//nested
+	log.Println("nested test")
 	expected = map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz", "bob": "bat"}}
 	testMerge(inmsg4, inmsg5, expected)
 }

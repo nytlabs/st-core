@@ -1,5 +1,9 @@
 var app = app || {};
 
+// TODO:
+// create a standard model API that the rest of the components can use
+// this standard API should use WS to communicate back to server
+
 (function() {
     'use strict';
 
@@ -24,16 +28,34 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.inform = function() {
-        console.log("updating...");
+        console.log("updating model");
         this.onChanges.forEach(function(cb) {
             cb();
         });
+    }
+
+    app.Entity = function(){
+    }
+
+    app.Entity.prototype.setPosition = function(p){
+                    app.Utils.request(
+                            "PUT", 
+                            this.instance() + "s/" + this.id + "/position", 
+                            p, 
+                            null
+                    );   
     }
 
     app.Group = function(data){
             for(var key in data){
                      this[key] = data[key]
             }
+    }
+
+    app.Group.prototype = new app.Entity();
+
+    app.Group.prototype.instance = function(){
+        return "group";
     }
    
     app.Block = function(data){
@@ -42,10 +64,23 @@ var app = app || {};
             }
     }
 
+    app.Block.prototype = new app.Entity();
+    
+    app.Block.prototype.instance = function(){
+        return "block";
+    }
+   
+
     app.Source = function(data){
             for(var key in data){
                     this[key] = data[key];
             }
+    }
+
+    app.Source.prototype = new app.Entity();
+
+    app.Source.prototype.instance = function(){
+        return "source";
     }
 
     var nodes = {
@@ -54,11 +89,9 @@ var app = app || {};
         'group': app.Group
     }
 
+    // this takes an id and puts it at the very top of the list
     app.CoreModel.prototype.select = function(id){
-        console.log(id);
-        console.log(this.entities[id]);
         this.list.push(this.list.splice(this.list.indexOf(this.entities[id]), 1)[0]);
-        console.log(id);
         this.inform();
     }
 
@@ -97,7 +130,8 @@ var DragContainer = React.createClass({
                         x: this.props.x,
                         y: this.props.y,
                         offX: null,
-                        offY: null
+                        offY: null,
+                        debounce: 0,
                 }
         },
         onMouseDown: function(e){
@@ -107,7 +141,7 @@ var DragContainer = React.createClass({
                         dragging: true,
                         offX: e.pageX - this.state.x,
                         offY: e.pageY - this.state.y
-                })
+                }) 
                 console.log(this.state.offX, this.state.offY);
         },
         componentDidUpdate: function (props, state) {
@@ -120,18 +154,25 @@ var DragContainer = React.createClass({
                 }
         },
         onMouseUp: function(e){
-                app.Utils.request(
-                        "PUT", 
-                        "blocks/" + this.props.model.id + "/position", 
-                        {x: this.state.x, y: this.state.y }, 
-                        null
-                );
-              
+                this.props.model.setPosition({x: this.state.x, y: this.state.y})
+                
                 this.setState({
                         dragging: false,
                 })
         },
         onMouseMove: function(e){
+                this.setState({
+                        debounce: this.state.debounce + 1,
+                })
+
+                if(this.state.debounce > 5){
+                        this.setState({
+                                debounce: 0,
+                        })
+                        
+                        this.props.model.setPosition({x: this.state.x, y: this.state.y})
+                }
+                
                 if(this.state.dragging){
                         this.setState({
                                 x: e.pageX - this.state.offX,
@@ -140,10 +181,12 @@ var DragContainer = React.createClass({
                 }
         },
         componentWillReceiveProps: function(props){
-                this.setState({
-                      x: props.x,
-                      y: props.y       
-                })
+                if(!this.state.dragging){
+                        this.setState({
+                                x: props.x,
+                                y: props.y       
+                        })
+                }
         },
         render: function(){
                 return (
@@ -160,20 +203,50 @@ var DragContainer = React.createClass({
         }
 })
 
+var Block = React.createClass({
+        render: function(){
+                return (
+                        <rect className='block' x='0' y='0' width='100' height='100' />
+                )
+        }
+})
 
+var Group = React.createClass({
+        render: function(){
+                return (
+                        <rect className='block' x='0' y='0' width='100' height='10' />
+                )
+        }
+})
+
+var Source = React.createClass({
+        render: function(){
+                return (
+                        <rect className='block' x='0' y='0' width='10' height='10' /> 
+                )      
+        }
+})
 
 var Entity = React.createClass({
         render: function(){
-                var entity = this.props.model;
-                if(entity.hasOwnProperty('inputs')){
+                var element;
+                switch(this.props.model.instance()){
+                        case 'block':
+                        element = <Block {...this.props} />
+                        break;
+                        case 'group':
+                        element = <Group {...this.props} />
+                        break;
+                        case 'source':
+                        element = <Source {...this.props }/>
+                        break;
+                }
+
                 return(
                         <DragContainer {...this.props} x={this.props.model.position.x} y={this.props.model.position.y}>
-                        <rect className='block' x='0' y='0' width='100' height='100' />
+                                {element}
                         </DragContainer>
                 )
-                } else {
-                return <div>LOL WHO CARES</div>
-                }
         }
 })
 

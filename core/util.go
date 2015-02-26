@@ -20,9 +20,8 @@ func Copy(i interface{}) interface{} {
 	return i
 }
 
-// this is the recursion
+// this is the recursion called by mergeMap
 func merge(A map[string]interface{}, i interface{}) interface{} {
-
 	switch t := i.(type) {
 	case map[string]interface{}:
 		for k, v := range t {
@@ -51,10 +50,9 @@ func merge(A map[string]interface{}, i interface{}) interface{} {
 	}
 	// if a leaf is reached, just return it
 	return i
-
 }
 
-// Merge recursively merges one map into another
+// MergeMap recursively merges one map into another, overwriting base when necessary
 func MergeMap(base, tomerge map[string]interface{}) (map[string]interface{}, error) {
 	// call the recursion knowing the inputs are of the correct type
 	result := merge(base, tomerge)

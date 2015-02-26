@@ -275,6 +275,7 @@ func TestMerge(t *testing.T) {
 	inmsg3 := map[string]interface{}{"b": "cat"}
 	inmsg4 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz"}}
 	inmsg5 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bob": "bat"}}
+	inmsg6 := map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "car"}}
 
 	testMerge := func(i1, i2, expected map[string]interface{}) {
 		inroute1.C <- i1
@@ -292,17 +293,18 @@ func TestMerge(t *testing.T) {
 	}
 
 	// simple test
-	log.Println("simple test")
 	expected := map[string]interface{}{"a": 3, "b": true, "c": 3}
 	testMerge(inmsg1, inmsg2, expected)
 
 	// overwrite
-	log.Println("overwrite test")
 	expected = map[string]interface{}{"a": 3, "b": "cat"}
 	testMerge(inmsg1, inmsg3, expected)
 
 	//nested
-	log.Println("nested test")
 	expected = map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "baz", "bob": "bat"}}
 	testMerge(inmsg4, inmsg5, expected)
+
+	//nested overerite
+	expected = map[string]interface{}{"a": 3, "b": true, "c": map[string]interface{}{"foo": false, "bar": "car"}}
+	testMerge(inmsg4, inmsg6, expected)
 }

@@ -202,8 +202,6 @@ var DragContainer = React.createClass({
         getInitialState: function(){
                 return {
                         dragging: false,
-                        x: this.props.x,
-                        y: this.props.y,
                         offX: null,
                         offY: null,
                         debounce: 0,
@@ -214,8 +212,8 @@ var DragContainer = React.createClass({
                 
                 this.setState({
                         dragging: true,
-                        offX: e.pageX - this.state.x,
-                        offY: e.pageY - this.state.y
+                        offX: e.pageX - this.props.x,
+                        offY: e.pageY - this.props.y
                 }) 
         },
         componentDidUpdate: function (props, state) {
@@ -228,34 +226,21 @@ var DragContainer = React.createClass({
                 }
         },
         onMouseUp: function(e){
-                this.props.model.setPosition({x: this.state.x, y: this.state.y})
+                this.props.model.setPosition({x: e.pageX - this.state.offX, y: e.pageY - this.state.offY})
                 
                 this.setState({
                         dragging: false,
                 })
         },
         onMouseMove: function(e){
-                this.props.model.setPosition({x: this.state.x, y: this.state.y})
-                
                 if(this.state.dragging){
-                        this.setState({
-                                x: e.pageX - this.state.offX,
-                                y: e.pageY - this.state.offY,
-                        })
-                }
-        },
-        componentWillReceiveProps: function(props){
-                if(!this.state.dragging){
-                        this.setState({
-                                x: props.x,
-                                y: props.y       
-                        })
+                        this.props.model.setPosition({x: e.pageX - this.state.offX, y: e.pageY - this.state.offY})
                 }
         },
         render: function(){
                 return (
                         <g 
-                        transform={'translate(' + this.state.x + ', ' + this.state.y + ')'} 
+                        transform={'translate(' + this.props.x + ', ' + this.props.y + ')'} 
                         onMouseMove={this.onMouseMove}
                         onMouseDown={this.onMouseDown}
                         onMouseUp={this.onMouseUp}

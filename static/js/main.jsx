@@ -12,7 +12,7 @@ var app = app || {};
         this.list = [];
         this.onChanges = [];
 
-        var ws = new WebSocket("ws://10.51.126.66:7071/updates");
+        var ws = new WebSocket("ws://localhost:7071/updates");
 
         ws.onmessage = function(m) {
             this.update(JSON.parse(m.data));
@@ -28,7 +28,7 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.inform = function() {
-        console.log("updating model");
+        //console.log("updating model");
         this.onChanges.forEach(function(cb) {
             cb();
         });
@@ -37,13 +37,44 @@ var app = app || {};
     app.Entity = function(){
     }
 
+    function Debounce(){
+        this.func = null;
+        this.fire = null;
+    }
+
+    Debounce.prototype.push = function(e, duration){
+        this.func = e;
+        if(this.fire != null) clearInterval(this.fire);
+        this.fire = setTimeout(function(){
+            this.func();
+        }.bind(this), duration);
+    }
+
+    function DebounceManager(){
+        this.entities = {};
+    }
+
+    DebounceManager.prototype.push = function(id, f, duration){
+        if(!this.entities.hasOwnProperty(id)){
+            this.entities[id] = new Debounce();
+        }
+        this.entities[id].push(f, duration)
+    }
+
+    var dm = new DebounceManager();
+
     app.Entity.prototype.setPosition = function(p){
-                    app.Utils.request(
-                            "PUT", 
-                            this.instance() + "s/" + this.id + "/position", 
-                            p, 
-                            null
-                    );   
+        this.position.x = p.x;
+        this.position.y = p.y;
+        dm.push(this.id, this.__model.inform, 30);
+        dm.push(this.id, function(){
+            app.Utils.request(
+                "PUT", 
+                this.instance() + "s/" + this.id + "/position",  // would be nice to change API to not have the "S" in it!
+                p, 
+                null
+            );
+        }.bind(this))   
     }
 
     app.Group = function(data){
@@ -69,7 +100,6 @@ var app = app || {};
     app.Block.prototype.instance = function(){
         return "block";
     }
-   
 
     app.Source = function(data){
             for(var key in data){
@@ -83,10 +113,36 @@ var app = app || {};
         return "source";
     }
 
+    app.Connection = function(data){
+            for(var key in data){
+                    this[key] = data[key];
+            }
+    }
+
+    app.Connection.prototype = new app.Entity();
+
+    app.Connection.prototype.instance = function(){
+        return "connection";
+    }
+
+    app.Link = function(data){
+            for(var key in data){
+                    this[key] = data[key];
+            }
+    }
+
+    app.Link.prototype = new app.Entity();
+
+    app.Link.prototype.instance = function(){
+        return "link";
+    }
+
     var nodes = {
         'block': app.Block,
         'source': app.Source,
-        'group': app.Group
+    	'group': app.Group,
+    	'connection': app.Connection,
+    	'link': app.Link
     }
 
     // this takes an id and puts it at the very top of the list
@@ -105,10 +161,10 @@ var app = app || {};
                 }
                 break;
             case 'create':
-                if( nodes.hasOwnProperty(m.type) === true){
-                        this.entities[m.data[m.type].id] = new nodes[m.type](m.data[m.type]);
-                        this.list.push(this.entities[m.data[m.type].id]) 
-                }
+                var n = new nodes[m.type](m.data[m.type]);
+                n.__model = this;
+                this.entities[m.data[m.type].id] = n;
+                this.list.push(this.entities[m.data[m.type].id]) 
                 break;
             case 'delete':
                 var i = this.list.indexOf(this.entities[m.data[m.type].id]);
@@ -142,7 +198,6 @@ var DragContainer = React.createClass({
                         offX: e.pageX - this.state.x,
                         offY: e.pageY - this.state.y
                 }) 
-                console.log(this.state.offX, this.state.offY);
         },
         componentDidUpdate: function (props, state) {
                 if (this.state.dragging && !state.dragging) {
@@ -161,17 +216,7 @@ var DragContainer = React.createClass({
                 })
         },
         onMouseMove: function(e){
-                this.setState({
-                        debounce: this.state.debounce + 1,
-                })
-
-                if(this.state.debounce > 5){
-                        this.setState({
-                                debounce: 0,
-                        })
-                        
-                        this.props.model.setPosition({x: this.state.x, y: this.state.y})
-                }
+                this.props.model.setPosition({x: this.state.x, y: this.state.y})
                 
                 if(this.state.dragging){
                         this.setState({
@@ -206,7 +251,7 @@ var DragContainer = React.createClass({
 var Block = React.createClass({
         render: function(){
                 return (
-                        <rect className='block' x='0' y='0' width='100' height='100' />
+                        <rect className='block' x='0' y='0' width='50' height='20'/>
                 )
         }
 })
@@ -222,42 +267,79 @@ var Group = React.createClass({
 var Source = React.createClass({
         render: function(){
                 return (
+                        <rect className='block' x='0' y='0' width='10' height='10' />
+                )      
+        }
+})
+
+var Connection = React.createClass({
+        render: function(){
+                var from = this.props.graph.entities[this.props.model.from.id]
+                var to = this.props.graph.entities[this.props.model.to.id]
+                var lineStyle = {stroke: "black",strokeWidth:2, fill: 'transparent'}
+                var path = 'M' + (50 + from.position.x) + ' ' + from.position.y + ' C ';
+                path += (from.position.x + 100) + ' ' + from.position.y +', '
+                path += (to.position.x - 50) + ' ' + to.position.y + ', '
+                path += to.position.x + ' ' + to.position.y;
+
+                return (
+                        <path style={lineStyle} d={path} />
+                )      
+        }
+})
+
+var Link = React.createClass({
+        render: function(){
+                return (
                         <rect className='block' x='0' y='0' width='10' height='10' /> 
                 )      
         }
 })
 
-var Entity = React.createClass({
-        render: function(){
-                var element;
-                switch(this.props.model.instance()){
-                        case 'block':
-                        element = <Block {...this.props} />
-                        break;
-                        case 'group':
-                        element = <Group {...this.props} />
-                        break;
-                        case 'source':
-                        element = <Source {...this.props }/>
-                        break;
-                }
-
-                return(
-                        <DragContainer {...this.props} x={this.props.model.position.x} y={this.props.model.position.y}>
-                                {element}
-                        </DragContainer>
-                )
-        }
-})
-
 var CoreApp = React.createClass({
     render: function() {
+            var nodes = {
+                'source': Source,
+                'group': Group,
+                'block': Block
+            }
+
+            var edges = {
+                'link': Link,
+                'connection': Connection
+            }
+
+            var _model = this.props.model;
+
             return (
-                    <svg className="stage" onDragOver={this.dragOver}>
-                    {this.props.model.list.map(function(e){
-                        return <Entity key={e.id} model={e} />
-                    })}
-                    </svg>
+            <svg className="stage" onDragOver={this.dragOver}>
+    		    {this.props.model.list.map(function(e){
+                    switch(e.instance()){
+                        case 'source':
+                        case 'group':
+                        case 'block':
+                        return React.createElement(DragContainer, 
+                                { 
+                                    key: e.id, 
+                                    model: e,
+                                    x: e.position.x,
+                                    y: e.position.y,
+                                }, React.createElement(nodes[e.instance()], {
+                                    key: e.id, 
+                                    model: e 
+                                }, null))
+                        break;
+                        case 'link':
+                        case 'connection':
+                        return React.createElement(edges[e.instance()], {
+                                    key: e.id, 
+                                    model: e,
+                                    graph: _model
+                                }, null)
+                        break;
+                    }
+                })}
+            </svg>
             )
     }
 })

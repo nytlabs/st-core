@@ -262,9 +262,10 @@ var DragContainer = React.createClass({
 
 var Block = React.createClass({
         render: function(){
-                return (
-                        <rect className='block' x='0' y='0' width='50' height='20'/>
-                )
+                var children = [];
+                children.push(React.createElement('rect',{x:0,y:0,width:50,height:20, className: 'block'},null));
+                children.push(React.createElement('text',{x:0,y:10,className: 'label unselectable'},this.props.model.type));
+                return React.createElement('g',{},children);
         }
 })
 

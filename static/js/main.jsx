@@ -40,13 +40,20 @@ var app = app || {};
     function Debounce(){
         this.func = null;
         this.fire = null;
+        this.last = null;
     }
 
     Debounce.prototype.push = function(e, duration){
+        if(this.last === null || this.last + duration < +new Date()){
+                this.last = +new Date();
+                e();
+                return;
+        }
         this.func = e;
         if(this.fire != null) clearInterval(this.fire);
         this.fire = setTimeout(function(){
-            this.func();
+                this.func();
+                this.last = +new Date()
         }.bind(this), duration);
     }
 
@@ -63,10 +70,11 @@ var app = app || {};
 
     var dm = new DebounceManager();
 
+    // TODO: put API methods on CoreModel
     app.Entity.prototype.setPosition = function(p){
         this.position.x = p.x;
         this.position.y = p.y;
-        dm.push(this.id, this.__model.inform, 30);
+        this.__model.inform();
         dm.push(this.id, function(){
             app.Utils.request(
                 "PUT", 
@@ -74,7 +82,7 @@ var app = app || {};
                 p, 
                 null
             );
-        }.bind(this))   
+        }.bind(this),50)   
     }
 
     app.Group = function(data){

@@ -217,7 +217,6 @@ var DragContainer = React.createClass({
         },
         onMouseDown: function(e){
                 m.select(this.props.model.id);
-                
                 this.setState({
                         dragging: true,
                         offX: e.pageX - this.props.x,
@@ -310,7 +309,46 @@ var Link = React.createClass({
 })
 
 var CoreApp = React.createClass({
-    render: function() {
+	getInitialState: function(){
+		return{
+			dragging: false,
+			x: 0,
+			y: 0,
+			offX: null,
+			offY: null,
+			width: null,
+			height: null,
+		}
+	},
+	componentWillMount: function(){
+		document.addEventListener('mousemove',function(e){
+		if(this.state.dragging === true){
+			this.setState({
+				x: e.pageX - this.state.offX, 
+				y: e.pageY - this.state.offY
+			})
+		}
+		}.bind(this))
+		this.setState({
+			width: document.body.clientWidth,
+			height: document.body.clientHeight
+		})
+	},
+	onMouseDown: function(e){
+                this.setState({
+                        dragging: true,
+                        offX: e.pageX - this.state.x,
+                        offY: e.pageY - this.state.y
+                }) 
+	},
+	onMouseUp: function(e){
+		this.setState({
+			x: e.pageX - this.state.offX, 
+			y: e.pageY - this.state.offY,
+			dragging: false
+		})
+	},
+	render: function() {
             var nodes = {
                 'source': Source,
                 'group': Group,
@@ -321,18 +359,27 @@ var CoreApp = React.createClass({
                 'link': Link,
                 'connection': Connection
             }
-
-            var _model = this.props.model;
-
+	
+		var _model = this.props.model;
             return (
-            <svg className="stage" onDragOver={this.dragOver}>
+		<svg className="stage">
+		    <rect 
+		    className="background" 
+		    x="0" 
+       	     	y="0" 
+		    width={this.state.width} 
+		    height={this.state.height}
+       	   	     onMouseDown={this.onMouseDown}
+       		     onMouseUp={this.onMouseUp}
+		/>
+		<g transform={'translate(' + this.state.x + ', ' + this.state.y + ')'}>
     		    {this.props.model.list.map(function(e){
                     switch(e.instance()){
                         case 'source':
                         case 'group':
                         case 'block':
                         return React.createElement(DragContainer, 
-                                { 
+			{ 
                                     key: e.id, 
                                     model: e,
                                     x: e.position.x,
@@ -351,7 +398,8 @@ var CoreApp = React.createClass({
                                 }, null)
                         break;
                     }
-                })}
+		    })}
+	    </g>
             </svg>
             )
     }

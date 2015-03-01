@@ -6,6 +6,10 @@
         shape-rendering: crispEdges;
 }
 
+.background{
+	fill: rgba(240,240,240,1);
+}
+
 .label{
         font-family: 'Anonymous Pro';
         font-size: 12px;

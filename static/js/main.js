@@ -166,7 +166,8 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.removeChild = function(group, id) {
-        this.entites.splice(this.entities[group].indexOf(id), 1);
+        console.log(group, id, this.entities[group]);
+        this.entities[group].children.splice(this.entities[group].children.indexOf(id), 1);
         this.inform();
     }
 
@@ -299,12 +300,14 @@ var Block = React.createClass({
             y: 0,
             width: 50,
             height: 20,
-            className: 'block'
+            className: 'block',
+            key: 'bg'
         }, null));
         children.push(React.createElement('text', {
             x: 0,
             y: 10,
-            className: 'label unselectable'
+            className: 'label unselectable',
+            key: 'label'
         }, this.props.model.type));
         return React.createElement('g', {}, children);
     }
@@ -421,6 +424,11 @@ var CoreApp = React.createClass({
             dragging: false
         })
     },
+    selectGroup: function(e) {
+        this.setState({
+            group: e.id
+        })
+    },
     render: function() {
         var nodes = {
             'source': Source,
@@ -454,7 +462,6 @@ var CoreApp = React.createClass({
                     switch (e.instance()) {
                         case 'connection':
                             if (g.children.indexOf(e.to.id) !== -1) {
-                                console.log(g.children, e.to.id);
                                 return true;
                             }
                             break;
@@ -481,22 +488,39 @@ var CoreApp = React.createClass({
             }, children);
         }.bind(this)(this.state.group);
 
-        return (
-            React.createElement("svg", {
-                    className: "stage"
-                },
-                React.createElement("rect", {
-                    className: "background",
-                    x: "0",
-                    y: "0",
-                    width: this.state.width,
-                    height: this.state.height,
-                    onMouseDown: this.onMouseDown,
-                    onMouseUp: this.onMouseUp
-                }),
-                renderGroups
-            )
+        var stage = React.createElement("svg", {
+                className: "stage",
+                key: "stage"
+            },
+            React.createElement("rect", {
+                className: "background",
+                x: "0",
+                y: "0",
+                width: this.state.width,
+                height: this.state.height,
+                onMouseDown: this.onMouseDown,
+                onMouseUp: this.onMouseUp
+            }),
+            renderGroups
         )
+
+        var groups = this.props.model.groups.map(function(g, i) {
+            return React.createElement("div", {
+                onClick: this.selectGroup.bind(null, g),
+                key: g.id,
+            }, g.label)
+        }.bind(this))
+
+        var groupList = React.createElement("div", {
+            className: "group_list",
+            key: "group_list"
+        }, groups)
+
+        var container = React.createElement("div", {
+            className: "app",
+        }, [stage, groupList]);
+
+        return container
     }
 })
 

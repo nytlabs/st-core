@@ -128,6 +128,10 @@ func (s *Server) websocketReadPump(c *socket) {
 				}
 			}
 
+			// group 0 is the root, and does not require to be added to a group.
+			// TODO: in the future, we may consider moving to a non-root tree structure.
+			o, _ := json.Marshal(Update{Action: CREATE, Type: GROUP, Data: wsGroup{cache[0]}})
+			c.write(websocket.TextMessage, o)
 			recurseGroups(0)
 
 			for _, connection := range connections {

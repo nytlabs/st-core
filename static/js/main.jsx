@@ -159,12 +159,12 @@ var app = app || {};
         this.inform();
     }
 
-    app.CoreModel.addChild = function(group,id){
+   app.CoreModel.prototype.addChild = function(group,id){
             this.entities[group].children.push(id);
             this.inform();
     }
 
-    app.CoreModel.removeChild = function(group, id){
+    app.CoreModel.prototype.removeChild = function(group, id){
         this.entites.splice(this.entities[group].indexOf(id), 1);
         this.inform();
     }
@@ -180,19 +180,23 @@ var app = app || {};
                 break;
                 case 'create':
                         // create seperate action for child.
-                if(m.type === "child"){
-                        this.addChild(m.data.group.id, m.data.child.id);
-                 }
+if(m.type === "child"){
+		if(!this.entities.hasOwnProperty(m.data.group.id)) console.log("?HELP", m);
+			this.addChild(m.data.group.id, m.data.child.id);
+			return;
+                }
             
                 var n = new nodes[m.type](m.data[m.type]);
                 n.__model = this;
                 this.entities[m.data[m.type].id] = n;
-                this.list.push(this.entities[m.data[m.type].id]) 
+		this.list.push(this.entities[m.data[m.type].id]) 
+
                 break;
             case 'delete':
-                if(m.type === "child"){
-                    this.removeChild(m.data.group.id, m.data.child.id); // this child nonsense is a mess
-                 }
+		if(m.type === "child"){
+			this.removeChild(m.data.group.id, m.data.child.id); // this child nonsense is a mess
+			return
+		 }
                  
                  var i = this.list.indexOf(this.entities[m.data[m.type].id]);
                 this.list.splice(i, 1);

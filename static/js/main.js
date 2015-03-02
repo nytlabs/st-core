@@ -390,6 +390,7 @@ var CoreApp = React.createClass({
             offY: null,
             width: null,
             height: null,
+            group: 0,
         }
     },
     componentWillMount: function() {
@@ -432,32 +433,53 @@ var CoreApp = React.createClass({
             'connection': Connection
         }
 
-        var _model = this.props.model;
+        var renderGroups = function(id) {
+            var children = null;
+            if (this.props.model.entities.hasOwnProperty(id)) {
+                var g = this.props.model.entities[id];
+                children = g.children.map(function(id) {
+                    var c = this.props.model.entities[id];
+                    return React.createElement(DragContainer, {
+                        key: c.id,
+                        model: c,
+                        x: c.position.x,
+                        y: c.position.y,
+                    }, React.createElement(nodes[c.instance()], {
+                        key: c.id,
+                        model: c
+                    }, null))
+                }.bind(this));
 
-        var renderGroups = _model.groups.map(function(g) {
-            var children = g.children.map(function(id) {
-                var c = _model.entities[id];
-                return React.createElement(DragContainer, {
-                    key: c.id,
-                    model: c,
-                    x: c.position.x,
-                    y: c.position.y,
-                }, React.createElement(nodes[c.instance()], {
-                    key: c.id,
-                    model: c
-                }, null))
-            })
+                var filteredEdges = this.props.model.edges.filter(function(e) {
+                    switch (e.instance()) {
+                        case 'connection':
+                            if (g.children.indexOf(e.to.id) !== -1) {
+                                console.log(g.children, e.to.id);
+                                return true;
+                            }
+                            break;
+                        case 'link':
+                            if (g.children.indexOf(e.block.id) !== -1) {
+                                return true;
+                            }
+                            break;
+                    }
+                    return false;
+                });
 
-            children = children.concat(_model.edges.map(function(c) {
-                return React.createElement(edges[c.instance()], {
-                    key: c.id,
-                    model: c,
-                    graph: _model
-                }, null)
-            }))
+                children = children.concat(filteredEdges.map(function(c) {
+                    return React.createElement(edges[c.instance()], {
+                        key: c.id,
+                        model: c,
+                        graph: this.props.model
+                    }, null)
+                }.bind(this)));
+            }
 
-            return React.createElement('g', {}, children);
-        })
+            return React.createElement('g', {
+                transform: 'translate(' + this.state.x + ', ' + this.state.y + ')'
+            }, children);
+        }.bind(this)(this.state.group);
 
         return (
             React.createElement("svg", {

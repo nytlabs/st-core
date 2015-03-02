@@ -15,6 +15,26 @@
         font-size: 12px;
 }
 
+.group_list{
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        z-index:11;
+        width: 20px;
+}
+
+.seleted {
+        fill: rgba(255,0,0,1);
+}
+
+.group_list div {
+        padding: 2px;
+        font-family: 'Anonymous Pro';
+        background: rgba(200,200,200,1);
+        position: relative;
+        float: left
+}
+
 *.unselectable {
            -moz-user-select: -moz-none;
               -khtml-user-select: none;

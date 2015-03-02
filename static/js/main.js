@@ -159,7 +159,6 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.addChild = function(group, id) {
-        console.log("???", group, id)
         this.entities[group].children.push(id);
         this.inform();
     }
@@ -190,6 +189,7 @@ var app = app || {};
                 n.__model = this;
                 this.entities[m.data[m.type].id] = n;
                 this.list.push(this.entities[m.data[m.type].id])
+
                 break;
             case 'delete':
                 if (m.type === "child") {

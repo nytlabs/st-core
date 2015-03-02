@@ -242,7 +242,9 @@ var DragContainer = React.createClass({
         }
     },
     onMouseDown: function(e) {
-        m.select(this.props.model.id);
+        //m.select(this.props.model.id);
+        this.props.nodeSelect(this.props.model.id);
+
         this.setState({
             dragging: true,
             offX: e.pageX - this.props.x,
@@ -282,7 +284,7 @@ var DragContainer = React.createClass({
                     transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
                     onMouseMove: this.onMouseMove,
                     onMouseDown: this.onMouseDown,
-                    onMouseUp: this.onMouseUp
+                    onMouseUp: this.onMouseUp,
                 },
                 this.props.children
             )
@@ -393,10 +395,32 @@ var CoreApp = React.createClass({
             offY: null,
             width: null,
             height: null,
+            keys: {
+                shift: false,
+            },
+            selected: [],
             group: 0,
         }
     },
     componentWillMount: function() {
+        document.addEventListener('keydown', function(e) {
+            if (e.shiftKey === true) this.setState({
+                keys: {
+                    shift: true
+                }
+            })
+            console.log(this.state.keys);
+        }.bind(this));
+
+        document.addEventListener('keyup', function(e) {
+            if (e.shiftKey === false) this.setState({
+                keys: {
+                    shift: false
+                }
+            })
+            console.log(this.state.keys)
+        }.bind(this));
+
         document.addEventListener('mousemove', function(e) {
             if (this.state.dragging === true) {
                 this.setState({
@@ -429,7 +453,23 @@ var CoreApp = React.createClass({
             group: e.id
         })
     },
+    nodeSelect: function(id) {
+        if (this.state.keys.shift === true) {
+            this.state.selected.indexOf(id) ?
+                this.setState({
+                    selected: this.state.selected.concat([id])
+                }) :
+                this.setState({
+                    selected: this.state.selected.slice().splice(this.state.selected.indexOf(id), 1)
+                })
+        } else {
+            this.setState({
+                selected: [id],
+            })
+        }
+    },
     render: function() {
+        console.log(this.state.selected)
         var nodes = {
             'source': Source,
             'group': Group,
@@ -452,6 +492,7 @@ var CoreApp = React.createClass({
                         model: c,
                         x: c.position.x,
                         y: c.position.y,
+                        nodeSelect: this.nodeSelect
                     }, React.createElement(nodes[c.instance()], {
                         key: c.id,
                         model: c

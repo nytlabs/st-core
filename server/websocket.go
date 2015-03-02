@@ -72,27 +72,79 @@ func (s *Server) websocketReadPump(c *socket) {
 			sources := s.ListSources()
 			connections := s.ListConnections()
 			links := s.listLinks()
-			s.Unlock()
-			for _, b := range blocks {
-				o, _ := json.Marshal(Update{Action: CREATE, Type: BLOCK, Data: wsBlock{b}})
-				c.write(websocket.TextMessage, o)
+
+			cache := make(map[int]Node)
+
+			for i, _ := range blocks {
+				cache[blocks[i].Id] = &blocks[i]
 			}
-			for _, g := range groups {
-				o, _ := json.Marshal(Update{Action: CREATE, Type: GROUP, Data: wsGroup{g}})
-				c.write(websocket.TextMessage, o)
+
+			for i, _ := range groups {
+				cache[groups[i].Id] = &groups[i]
 			}
-			for _, source := range sources {
-				o, _ := json.Marshal(Update{Action: CREATE, Type: SOURCE, Data: wsSource{source}})
-				c.write(websocket.TextMessage, o)
+
+			for i, _ := range sources {
+				cache[sources[i].Id] = &sources[i]
 			}
+
+			var recurseGroups func(int)
+			recurseGroups = func(id int) {
+				g := cache[id].(*Group)
+				for _, child := range g.Children {
+					switch n := cache[child].(type) {
+					case *BlockLedger:
+						o, _ := json.Marshal(Update{Action: CREATE, Type: BLOCK, Data: wsBlock{n}})
+						c.write(websocket.TextMessage, o)
+
+						o, _ = json.Marshal(Update{Action: CREATE, Type: CHILD, Data: wsGroupChild{
+							Group: wsId{id},
+							Child: wsId{child},
+						}})
+						c.write(websocket.TextMessage, o)
+					case *Group:
+						// we have to set empty out the children because the children don't exist
+						// in the client at the time that this message is posted.
+						// this is suboptimal, but provides a cleaner representation of state to
+						// the client.
+						ng := *n
+						ng.Children = []int{}
+						o, _ := json.Marshal(Update{Action: CREATE, Type: GROUP, Data: wsGroup{ng}})
+						c.write(websocket.TextMessage, o)
+						o, _ = json.Marshal(Update{Action: CREATE, Type: CHILD, Data: wsGroupChild{
+							Group: wsId{id},
+							Child: wsId{child},
+						}})
+						c.write(websocket.TextMessage, o)
+						recurseGroups(child)
+					case *SourceLedger:
+						o, _ := json.Marshal(Update{Action: CREATE, Type: SOURCE, Data: wsSource{n}})
+						c.write(websocket.TextMessage, o)
+						o, _ = json.Marshal(Update{Action: CREATE, Type: CHILD, Data: wsGroupChild{
+							Group: wsId{id},
+							Child: wsId{child},
+						}})
+						c.write(websocket.TextMessage, o)
+					}
+				}
+			}
+
+			recurseGroups(0)
+
 			for _, connection := range connections {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{connection}})
 				c.write(websocket.TextMessage, o)
+
 			}
+
 			for _, l := range links {
 				o, _ := json.Marshal(Update{Action: CREATE, Type: LINK, Data: wsLink{l}})
 				c.write(websocket.TextMessage, o)
 			}
+
+			s.Unlock()
+			// we want to lock for this entire time, so that nothing can interfere
+			// with our state as we are dumping it
+
 		}
 
 		if err != nil {

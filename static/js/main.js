@@ -10,6 +10,8 @@ var app = app || {};
     app.CoreModel = function() {
         this.entities = {};
         this.list = [];
+        this.groups = [];
+        this.edges = [];
         this.onChanges = [];
 
         var ws = new WebSocket("ws://localhost:7071/updates");
@@ -180,15 +182,23 @@ var app = app || {};
             case 'create':
                 // create seperate action for child.
                 if (m.type === "child") {
-                    if (!this.entities.hasOwnProperty(m.data.group.id)) console.log("?HELP", m);
                     this.addChild(m.data.group.id, m.data.child.id);
                     return;
                 }
 
                 var n = new nodes[m.type](m.data[m.type]);
+                // this reference allows all entities to inform() the model
                 n.__model = this;
                 this.entities[m.data[m.type].id] = n;
-                this.list.push(this.entities[m.data[m.type].id])
+                this.list.push(this.entities[m.data[m.type].id]);
+
+                if (m.type === "group") {
+                    this.groups.push(n);
+                }
+
+                if (m.type === "connection" || m.type === "link") {
+                    this.edges.push(n);
+                }
 
                 break;
             case 'delete':
@@ -199,6 +209,17 @@ var app = app || {};
 
                 var i = this.list.indexOf(this.entities[m.data[m.type].id]);
                 this.list.splice(i, 1);
+
+                if (m.type === "group") {
+                    var i = this.groups.indexOf(this.entities[m.data[m.type].id]);
+                    this.groups.splice(i, 1);
+                }
+
+                if (m.type === "connection" || m.type == "link") {
+                    var i = this.edges.indexOf(this.entities[m.data[m.type].id]);
+                    this.edges.splice(i, 1);
+                }
+
                 delete this.entities[m.data[m.type].id];
                 break;
         }
@@ -412,6 +433,32 @@ var CoreApp = React.createClass({
         }
 
         var _model = this.props.model;
+
+        var renderGroups = _model.groups.map(function(g) {
+            var children = g.children.map(function(id) {
+                var c = _model.entities[id];
+                return React.createElement(DragContainer, {
+                    key: c.id,
+                    model: c,
+                    x: c.position.x,
+                    y: c.position.y,
+                }, React.createElement(nodes[c.instance()], {
+                    key: c.id,
+                    model: c
+                }, null))
+            })
+
+            children = children.concat(_model.edges.map(function(c) {
+                return React.createElement(edges[c.instance()], {
+                    key: c.id,
+                    model: c,
+                    graph: _model
+                }, null)
+            }))
+
+            return React.createElement('g', {}, children);
+        })
+
         return (
             React.createElement("svg", {
                     className: "stage"
@@ -425,35 +472,7 @@ var CoreApp = React.createClass({
                     onMouseDown: this.onMouseDown,
                     onMouseUp: this.onMouseUp
                 }),
-                React.createElement("g", {
-                        transform: 'translate(' + this.state.x + ', ' + this.state.y + ')'
-                    },
-                    this.props.model.list.map(function(e) {
-                        switch (e.instance()) {
-                            case 'source':
-                            case 'group':
-                            case 'block':
-                                return React.createElement(DragContainer, {
-                                    key: e.id,
-                                    model: e,
-                                    x: e.position.x,
-                                    y: e.position.y,
-                                }, React.createElement(nodes[e.instance()], {
-                                    key: e.id,
-                                    model: e
-                                }, null))
-                                break;
-                            case 'link':
-                            case 'connection':
-                                return React.createElement(edges[e.instance()], {
-                                    key: e.id,
-                                    model: e,
-                                    graph: _model
-                                }, null)
-                                break;
-                        }
-                    })
-                )
+                renderGroups
             )
         )
     }

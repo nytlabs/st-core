@@ -6,8 +6,6 @@ var app = app || {};
         getInitialState: function() {
             return {
                 dragging: false,
-                x: 0,
-                y: 0,
                 offX: null,
                 offY: null,
                 width: null,
@@ -16,7 +14,6 @@ var app = app || {};
                     shift: false,
                 },
                 selected: [],
-                group: 0,
                 selectionRect: {
                     x1: null,
                     y1: null,
@@ -38,16 +35,17 @@ var app = app || {};
                 var rectY = y2 - y1 < 0 ? y2 : y1;
                 var width = Math.abs(x2 - x1);
                 var height = Math.abs(y2 - y1);
-
+                var translateX = this.props.model.entities[this.props.model.focusedGroup].translateX;
+                var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
                 var selected = [];
 
                 selected = this.props.model.entities[this.props.model.focusedGroup].data.children.filter(function(id) {
                     var node = this.props.model.entities[id].data;
                     return node.hasOwnProperty('position') &&
-                        node.position.x + this.state.x >= rectX &&
-                        node.position.x + this.state.x < rectX + width &&
-                        node.position.y + this.state.y >= rectY &&
-                        node.position.y + this.state.y < rectY + height
+                        node.position.x + translateX >= rectX &&
+                        node.position.x + translateX < rectX + width &&
+                        node.position.y + translateY >= rectY &&
+                        node.position.y + translateY < rectY + height
                 }.bind(this));
 
                 this.setState({
@@ -63,10 +61,7 @@ var app = app || {};
                     }
                 })
             } else if (this.state.dragging === true) {
-                this.setState({
-                    x: e.pageX - this.state.offX,
-                    y: e.pageY - this.state.offY
-                })
+                this.props.model.entities[this.props.model.focusedGroup].setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
             }
 
             this.setState({
@@ -103,8 +98,8 @@ var app = app || {};
                 selected: []
             }) : this.setState({
                 dragging: true,
-                offX: e.pageX - this.state.x,
-                offY: e.pageY - this.state.y,
+                offX: e.pageX - this.props.model.entities[this.props.model.focusedGroup].translateX,
+                offY: e.pageY - this.props.model.entities[this.props.model.focusedGroup].translateY,
                 selected: [],
             })
         },
@@ -116,9 +111,8 @@ var app = app || {};
                     }
                 })
             } else if (this.state.dragging === true) {
+                this.props.model.entities[this.props.model.focusedGroup].setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
                 this.setState({
-                    x: e.pageX - this.state.offX,
-                    y: e.pageY - this.state.offY,
                     dragging: false
                 })
             }
@@ -176,10 +170,13 @@ var app = app || {};
                 }, null)
             }.bind(this));
 
-            var renderGroups = React.createElement('g', {
-                transform: 'translate(' + this.state.x + ', ' + this.state.y + ')',
-                key: 'renderGroups'
-            }, edgeElements.concat(nodeElements));
+            var renderGroups = null;
+            if (this.props.model.entities.hasOwnProperty(this.props.model.focusedGroup) === true) {
+                renderGroups = React.createElement('g', {
+                    transform: 'translate(' + this.props.model.entities[this.props.model.focusedGroup].translateX + ', ' + this.props.model.entities[this.props.model.focusedGroup].translateY + ')',
+                    key: 'renderGroups'
+                }, edgeElements.concat(nodeElements));
+            }
 
             var background = [];
             background.push(React.createElement("rect", {

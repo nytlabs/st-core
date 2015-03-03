@@ -60,12 +60,24 @@ var app = app || {};
     app.Group = function(data, model) {
         this.data = data;
         this.model = model;
+
+        // translation coords for each group workspace.
+        // not synced with server.
+        this.translateX = 0;
+        this.translateY = 0;
     }
+
 
     app.Group.prototype = new app.Entity();
 
     app.Group.prototype.instance = function() {
         return "group";
+    }
+
+    app.Group.prototype.setTranslation = function(x, y) {
+        this.translateX = x;
+        this.translateY = y;
+        this.model.inform();
     }
 
     app.Group.prototype.refreshFocusedGroup = function() {

@@ -1,6 +1,6 @@
 var app = app || {};
 
-(function(){
+(function() {
     app.CoreApp = React.createClass({
         displayName: "CoreApp",
         getInitialState: function() {
@@ -56,10 +56,10 @@ var app = app || {};
                         selected = g.children.filter(function(id) {
                             var node = this.props.model.entities[id];
                             return node.hasOwnProperty('position') &&
-                                node.position.x >= this.state.selectionRect.x &&
-                                node.position.x < this.state.selectionRect.x + width &&
-                                node.position.y >= this.state.selectionRect.y &&
-                                node.position.y < this.state.selectionRect.y + height
+                                node.position.x + this.state.x >= this.state.selectionRect.x &&
+                                node.position.x + this.state.x < this.state.selectionRect.x + width &&
+                                node.position.y + this.state.y >= this.state.selectionRect.y &&
+                                node.position.y + this.state.y < this.state.selectionRect.y + height
                         }.bind(this))
                     }
 

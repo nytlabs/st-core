@@ -18,6 +18,8 @@ var app = app || {};
                 selected: [],
                 group: 0,
                 selectionRect: {
+                    x1: null,
+                    y1: null,
                     x: null,
                     y: null,
                     width: 0,
@@ -28,25 +30,34 @@ var app = app || {};
         },
         documentMouseMove: function(e) {
             if (this.state.selectionRect.enabled === true) {
-                var width = e.pageX - this.state.selectionRect.x;
-                var height = e.pageY - this.state.selectionRect.y;
+                var x1 = this.state.selectionRect.x1;
+                var y1 = this.state.selectionRect.y1;
+                var x2 = e.pageX;
+                var y2 = e.pageY;
+                var rectX = x2 - x1 < 0 ? x2 : x1;
+                var rectY = y2 - y1 < 0 ? y2 : y1;
+                var width = Math.abs(x2 - x1);
+                var height = Math.abs(y2 - y1);
+
                 var selected = [];
 
                 selected = this.props.model.entities[this.props.model.focusedGroup].children.filter(function(id) {
                     var node = this.props.model.entities[id];
                     return node.hasOwnProperty('position') &&
-                        node.position.x + this.state.x >= this.state.selectionRect.x &&
-                        node.position.x + this.state.x < this.state.selectionRect.x + width &&
-                        node.position.y + this.state.y >= this.state.selectionRect.y &&
-                        node.position.y + this.state.y < this.state.selectionRect.y + height
+                        node.position.x + this.state.x >= rectX &&
+                        node.position.x + this.state.x < rectX + width &&
+                        node.position.y + this.state.y >= rectY &&
+                        node.position.y + this.state.y < rectY + height
                 }.bind(this));
 
                 this.setState({
                     selected: selected,
                     selectionRect: {
+                        x1: x1,
+                        y1: y1,
                         enabled: true,
-                        x: this.state.selectionRect.x,
-                        y: this.state.selectionRect.y,
+                        x: rectX,
+                        y: rectY,
                         width: width,
                         height: height,
                     }
@@ -85,8 +96,8 @@ var app = app || {};
         onMouseDown: function(e) {
             e.nativeEvent.button === 0 ? this.setState({
                 selectionRect: {
-                    x: e.pageX,
-                    y: e.pageY,
+                    x1: e.pageX,
+                    y1: e.pageY,
                     enabled: true
                 },
                 selected: []

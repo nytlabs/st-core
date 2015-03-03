@@ -46,7 +46,11 @@ var app = app || {};
     app.Entity.prototype.setPosition = function(p) {
         this.data.position.x = p.x;
         this.data.position.y = p.y;
-        this.model.inform();
+
+        // this function refreshes all connection geometry in view
+        // it may be better to have a specific call for just connections that
+        // are touching this particular entity.
+        this.model.refreshFocusedEdgeGeometry();
         dm.push(this.id, function() {
             app.Utils.request(
                 "PUT",
@@ -67,7 +71,6 @@ var app = app || {};
         this.translateY = 0;
     }
 
-
     app.Group.prototype = new app.Entity();
 
     app.Group.prototype.instance = function() {
@@ -80,6 +83,7 @@ var app = app || {};
         this.model.inform();
     }
 
+    // when a group changes, this swaps out references in focusedNodes and focusedEdges
     app.Group.prototype.refreshFocusedGroup = function() {
         var model = this.model;
         var id = this.data.id;
@@ -105,10 +109,9 @@ var app = app || {};
         }.bind(model))
     }
 
-    /* setFocusedGroup sets takes a group id and prepares that group to be 
-     * viewed. It changes the model's current group in focus, in addition to
-     * preparing focusedNodes and focusedEdges.
-     */
+    // setFocusedGroup sets takes a group id and prepares that group to be 
+    // viewed. It changes the model's current group in focus, in addition to
+    // preparing focusedNodes and focusedEdges.
     app.Group.prototype.setFocusedGroup = function() {
         this.model.focusedGroup = this.data.id;
         this.refreshFocusedGroup();
@@ -140,12 +143,39 @@ var app = app || {};
     app.Connection = function(data, model) {
         this.data = data;
         this.model = model;
+        this.refreshGeometry();
     }
 
     app.Connection.prototype = new app.Entity();
 
     app.Connection.prototype.instance = function() {
         return "connection";
+    }
+
+    app.Connection.prototype.refreshGeometry = function() {
+        var from = this.model.entities[this.data.from.id].data;
+        var to = this.model.entities[this.data.to.id].data;
+
+        var x1 = 50 + from.position.x;
+        var y1 = from.position.y;
+        var cx1 = 100 + from.position.x;
+        var cy1 = from.position.y;
+        var x2 = to.position.x;
+        var y2 = to.position.y;
+        var cx2 = -50 + to.position.x;
+        var cy2 = to.position.y;
+
+        this.from = {
+            x: x1,
+            y: y1
+        };
+
+        this.to = {
+            x: x2,
+            y: y2
+        };
+
+        this.path = ['M', x1, ' ', y1, ' C ', cx1, ' ', cy1, ' ', cx2, ' ', cy2, ' ', x2, ' ', y2].join('');
     }
 
     app.Link = function(data, model) {
@@ -157,6 +187,10 @@ var app = app || {};
 
     app.Link.prototype.instance = function() {
         return "link";
+    }
+
+    app.Link.prototype.refreshGeometry = function() {
+        //TODO
     }
 
     var nodes = {
@@ -182,6 +216,13 @@ var app = app || {};
     app.CoreModel.prototype.removeChild = function(group, id) {
         this.entities[group].data.children.splice(this.entities[group].data.children.indexOf(id), 1);
         if (group === this.focusedGroup) this.entities[group].refreshFocusedGroup();
+        this.inform();
+    }
+
+    app.CoreModel.prototype.refreshFocusedEdgeGeometry = function() {
+        this.focusedEdges.forEach(function(e) {
+            e.refreshGeometry();
+        })
         this.inform();
     }
 

@@ -20,6 +20,10 @@ var app = app || {};
         }
     }
 
+    app.Utils.pointInRect = function(x, y, w, h, px, py) {
+        return (px >= x) && (px < x + w) && (py >= y) && (py < py + h);
+    }
+
     app.Utils.Debounce = function() {
         this.func = null;
         this.fire = null;

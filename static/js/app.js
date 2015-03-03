@@ -39,14 +39,19 @@ var app = app || {};
                 var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
                 var selected = [];
 
-                selected = this.props.model.entities[this.props.model.focusedGroup].data.children.filter(function(id) {
-                    var node = this.props.model.entities[id].data;
-                    return node.hasOwnProperty('position') &&
-                        node.position.x + translateX >= rectX &&
-                        node.position.x + translateX < rectX + width &&
-                        node.position.y + translateY >= rectY &&
-                        node.position.y + translateY < rectY + height
+                selected = this.props.model.focusedNodes.filter(function(node) {
+                    if (!node.data.hasOwnProperty('position')) return false; // we may be able to get rid of this now.
+                    var position = node.data.position;
+                    return app.Utils.pointInRect(rectX, rectY, width, height, position.x + translateX, position.y + translateY);
                 }.bind(this));
+
+                selected = selected.concat(this.props.model.focusedEdges.filter(function(node) {
+                    if (!node.hasOwnProperty('from')) return false; // we may be able to get rid of this now.
+                    var p1 = node.from;
+                    var p2 = node.to;
+                    return (app.Utils.pointInRect(rectX, rectY, width, height, p1.x + translateX, p1.y + translateY) &&
+                        app.Utils.pointInRect(rectX, rectY, width, height, p2.x + translateX, p2.y + translateY));
+                }.bind(this)));
 
                 this.setState({
                     selected: selected,
@@ -118,21 +123,22 @@ var app = app || {};
             }
         },
         nodeSelect: function(id) {
+            var node = this.props.model.entities[id];
             if (this.state.keys.shift === true) {
-                if (this.state.selected.indexOf(id) === -1) {
+                if (this.state.selected.indexOf(node) === -1) {
                     this.setState({
-                        selected: this.state.selected.concat([id])
+                        selected: this.state.selected.concat([node])
                     })
                 } else {
                     this.setState({
                         selected: this.state.selected.slice().filter(function(i) {
-                            return i != id;
+                            return i != node;
                         })
                     })
                 }
             } else {
                 this.setState({
-                    selected: [id],
+                    selected: [node],
                 })
             }
         },
@@ -158,7 +164,7 @@ var app = app || {};
                 }, React.createElement(nodes[c.instance()], {
                     key: c.data.id,
                     model: c,
-                    selected: this.state.selected.indexOf(c.data.id) !== -1 ? true : false,
+                    selected: this.state.selected.indexOf(c) !== -1 ? true : false,
                 }, null))
             }.bind(this));
 
@@ -166,7 +172,8 @@ var app = app || {};
                 return React.createElement(edges[c.instance()], {
                     key: c.data.id,
                     model: c,
-                    graph: this.props.model
+                    nodeSelect: this.nodeSelect,
+                    selected: this.state.selected.indexOf(c) !== -1 ? true : false,
                 }, null)
             }.bind(this));
 

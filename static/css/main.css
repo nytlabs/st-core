@@ -23,8 +23,16 @@
         width: 20px;
 }
 
-.seleted {
-        fill: rgba(255,0,0,1);
+
+.selection_rect{
+	stroke: rgba(50,50,240,1);
+	stroke-width: 2px;
+	fill: rgba(50,250,240,.2);
+}
+
+.selected {
+	stroke-width: 2px;
+        stroke: rgba(50,50,240,1);
 }
 
 .group_list div {

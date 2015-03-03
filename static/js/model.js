@@ -14,6 +14,10 @@ var app = app || {};
         this.edges = [];
         this.onChanges = [];
 
+        this.focusedGroup = 0; // the current group in focus
+        this.focusedNodes = []; // nodes apart of the focused group
+        this.focusedEdges = []; // nedges that are apart of the focused group
+
         var ws = new WebSocket("ws://localhost:7071/updates");
 
         ws.onmessage = function(m) {
@@ -75,7 +79,7 @@ var app = app || {};
     app.Entity.prototype.setPosition = function(p) {
         this.position.x = p.x;
         this.position.y = p.y;
-        this.__model.inform();
+        this.model.inform();
         dm.push(this.id, function() {
             app.Utils.request(
                 "PUT",
@@ -96,6 +100,37 @@ var app = app || {};
 
     app.Group.prototype.instance = function() {
         return "group";
+    }
+
+    /* setFocusedGroup sets takes a group id and prepares that group to be 
+     * viewed. It changes the model's current group in focus, in addition to
+     * preparing focusedNodes and focusedEdges.
+     */
+    app.Group.prototype.setFocusedGroup = function() {
+        var model = this.model;
+        var id = this.id;
+
+        model.focusedGroup = id;
+        model.focusedNodes = model.entities[id].children.map(function(id) {
+            return this.entities[id];
+        }.bind(model))
+
+        model.focusedEdges = model.edges.filter(function(e) {
+            switch (e.instance()) {
+                case 'connection':
+                    if (this.entities[id].children.indexOf(e.to.id) !== -1) {
+                        return true;
+                    }
+                    break;
+                case 'link':
+                    if (this.entities[id].children.indexOf(e.block.id) !== -1) {
+                        return true;
+                    }
+                    break;
+            }
+            return false;
+        }.bind(model))
+        model.inform();
     }
 
     app.Block = function(data) {
@@ -166,7 +201,6 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.removeChild = function(group, id) {
-        console.log(group, id, this.entities[group]);
         this.entities[group].children.splice(this.entities[group].children.indexOf(id), 1);
         this.inform();
     }
@@ -189,7 +223,7 @@ var app = app || {};
 
                 var n = new nodes[m.type](m.data[m.type]);
                 // this reference allows all entities to inform() the model
-                n.__model = this;
+                n.model = this;
                 this.entities[m.data[m.type].id] = n;
                 this.list.push(this.entities[m.data[m.type].id]);
 

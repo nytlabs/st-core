@@ -20,7 +20,8 @@
         top: 0px;
         left: 0px;
         z-index:11;
-        width: 20px;
+        width: 50px;
+        background: rgba(200,200,200,1);
 }
 
 
@@ -36,12 +37,18 @@
 }
 
 .group_list div {
+        width: 50px;
         padding: 2px;
         font-family: 'Anonymous Pro';
-        background: rgba(200,200,200,1);
         position: relative;
         float: left
 }
+
+.focused {
+        background: rgba(100,100,100,1);
+        color: white;
+}
+
 
 *.unselectable {
            -moz-user-select: -moz-none;

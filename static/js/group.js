@@ -1,18 +1,28 @@
 var app = app || {};
 
-(function(){
+(function() {
     app.GroupComponent = React.createClass({
         displayName: "GroupComponent",
         render: function() {
-            return (
-                React.createElement("rect", {
-                    className: "block",
-                    x: "0",
-                    y: "0",
-                    width: "100",
-                    height: "10"
-                })
-            )
+            var classes = "block"
+            if (this.props.selected === true) classes += " selected";
+
+            var children = [];
+            children.push(React.createElement('rect', {
+                x: 0,
+                y: 0,
+                width: 50,
+                height: 50,
+                className: classes,
+                key: 'bg'
+            }, null));
+            children.push(React.createElement('text', {
+                x: 0,
+                y: 10,
+                className: 'label unselectable',
+                key: 'label'
+            }, 'group ' + this.props.model.id));
+            return React.createElement('g', {}, children);
         }
     })
 })();

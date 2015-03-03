@@ -26,65 +26,61 @@ var app = app || {};
                 }
             }
         },
-        componentWillMount: function() {
-            document.addEventListener('keydown', function(e) {
-                if (e.shiftKey === true) this.setState({
-                    keys: {
-                        shift: true
+        documentMouseMove: function(e) {
+            if (this.state.selectionRect.enabled === true) {
+                var width = e.pageX - this.state.selectionRect.x;
+                var height = e.pageY - this.state.selectionRect.y;
+                var selected = [];
+
+                selected = this.props.model.entities[this.props.model.focusedGroup].children.filter(function(id) {
+                    var node = this.props.model.entities[id];
+                    return node.hasOwnProperty('position') &&
+                        node.position.x + this.state.x >= this.state.selectionRect.x &&
+                        node.position.x + this.state.x < this.state.selectionRect.x + width &&
+                        node.position.y + this.state.y >= this.state.selectionRect.y &&
+                        node.position.y + this.state.y < this.state.selectionRect.y + height
+                }.bind(this));
+
+                this.setState({
+                    selected: selected,
+                    selectionRect: {
+                        enabled: true,
+                        x: this.state.selectionRect.x,
+                        y: this.state.selectionRect.y,
+                        width: width,
+                        height: height,
                     }
                 })
-                console.log(this.state.keys);
-            }.bind(this));
-
-            document.addEventListener('keyup', function(e) {
-                if (e.shiftKey === false) this.setState({
-                    keys: {
-                        shift: false
-                    }
+            } else if (this.state.dragging === true) {
+                this.setState({
+                    x: e.pageX - this.state.offX,
+                    y: e.pageY - this.state.offY
                 })
-                console.log(this.state.keys)
-            }.bind(this));
-
-            document.addEventListener('mousemove', function(e) {
-                if (this.state.selectionRect.enabled === true) {
-                    var width = e.pageX - this.state.selectionRect.x;
-                    var height = e.pageY - this.state.selectionRect.y;
-
-                    var selected = [];
-                    if (this.props.model.entities.hasOwnProperty(this.state.group)) {
-                        var g = this.props.model.entities[this.state.group];
-                        selected = g.children.filter(function(id) {
-                            var node = this.props.model.entities[id];
-                            return node.hasOwnProperty('position') &&
-                                node.position.x + this.state.x >= this.state.selectionRect.x &&
-                                node.position.x + this.state.x < this.state.selectionRect.x + width &&
-                                node.position.y + this.state.y >= this.state.selectionRect.y &&
-                                node.position.y + this.state.y < this.state.selectionRect.y + height
-                        }.bind(this))
-                    }
-
-                    this.setState({
-                        selected: selected,
-                        selectionRect: {
-                            enabled: true,
-                            x: this.state.selectionRect.x,
-                            y: this.state.selectionRect.y,
-                            width: width,
-                            height: height,
-                        }
-                    })
-                } else if (this.state.dragging === true) {
-                    this.setState({
-                        x: e.pageX - this.state.offX,
-                        y: e.pageY - this.state.offY
-                    })
-                }
-            }.bind(this))
+            }
 
             this.setState({
                 width: document.body.clientWidth,
                 height: document.body.clientHeight
             })
+        },
+        documentKeyDown: function(e) {
+            if (e.shiftKey === true) this.setState({
+                keys: {
+                    shift: true
+                }
+            })
+        },
+        documentKeyUp: function(e) {
+            if (e.shiftKey === false) this.setState({
+                keys: {
+                    shift: false
+                }
+            })
+        },
+        componentWillMount: function() {
+            document.addEventListener('keydown', this.documentKeyDown);
+            document.addEventListener('keyup', this.documentKeyUp);
+            document.addEventListener('mousemove', this.documentMouseMove);
         },
         onMouseDown: function(e) {
             e.nativeEvent.button === 0 ? this.setState({
@@ -152,67 +148,43 @@ var app = app || {};
                 'connection': app.ConnectionComponent
             }
 
-            var renderGroups = function(id) {
-                var children = null;
-                if (this.props.model.entities.hasOwnProperty(id)) {
-                    var g = this.props.model.entities[id];
-                    children = g.children.map(function(id) {
-                        var c = this.props.model.entities[id];
-                        return React.createElement(app.DragContainer, {
-                            key: c.id,
-                            model: c,
-                            x: c.position.x,
-                            y: c.position.y,
-                            nodeSelect: this.nodeSelect
-                        }, React.createElement(nodes[c.instance()], {
-                            key: c.id,
-                            model: c,
-                            selected: this.state.selected.indexOf(c.id) !== -1 ? true : false,
-                        }, null))
-                    }.bind(this));
+            var nodeElements = this.props.model.focusedNodes.map(function(c) {
+                return React.createElement(app.DragContainer, {
+                    key: c.id,
+                    model: c,
+                    x: c.position.x,
+                    y: c.position.y,
+                    nodeSelect: this.nodeSelect
+                }, React.createElement(nodes[c.instance()], {
+                    key: c.id,
+                    model: c,
+                    selected: this.state.selected.indexOf(c.id) !== -1 ? true : false,
+                }, null))
+            }.bind(this));
 
-                    var filteredEdges = this.props.model.edges.filter(function(e) {
-                        switch (e.instance()) {
-                            case 'connection':
-                                if (g.children.indexOf(e.to.id) !== -1) {
-                                    return true;
-                                }
-                                break;
-                            case 'link':
-                                if (g.children.indexOf(e.block.id) !== -1) {
-                                    return true;
-                                }
-                                break;
-                        }
-                        return false;
-                    });
+            var edgeElements = this.props.model.focusedEdges.map(function(c) {
+                return React.createElement(edges[c.instance()], {
+                    key: c.id,
+                    model: c,
+                    graph: this.props.model
+                }, null)
+            }.bind(this));
 
-                    children = children.concat(filteredEdges.map(function(c) {
-                        return React.createElement(edges[c.instance()], {
-                            key: c.id,
-                            model: c,
-                            graph: this.props.model
-                        }, null)
-                    }.bind(this)));
-                }
-
-                return React.createElement('g', {
-                    transform: 'translate(' + this.state.x + ', ' + this.state.y + ')',
-                    key: 'renderGroups'
-                }, children);
-            }.bind(this)(this.state.group);
+            var renderGroups = React.createElement('g', {
+                transform: 'translate(' + this.state.x + ', ' + this.state.y + ')',
+                key: 'renderGroups'
+            }, edgeElements.concat(nodeElements));
 
             var background = [];
-            background.push(
-                React.createElement("rect", {
-                    className: "background",
-                    x: "0",
-                    y: "0",
-                    width: this.state.width,
-                    height: this.state.height,
-                    onMouseDown: this.onMouseDown,
-                    key: 'background'
-                }))
+            background.push(React.createElement("rect", {
+                className: "background",
+                x: "0",
+                y: "0",
+                width: this.state.width,
+                height: this.state.height,
+                onMouseDown: this.onMouseDown,
+                key: 'background'
+            }))
 
             if (this.state.selectionRect.enabled === true) {
                 background.push(React.createElement("rect", {
@@ -236,17 +208,10 @@ var app = app || {};
                 }
             }, background)
 
-            var groups = this.props.model.groups.map(function(g, i) {
-                return React.createElement("div", {
-                    onClick: this.selectGroup.bind(null, g),
-                    key: g.id,
-                }, g.label)
-            }.bind(this))
-
-            var groupList = React.createElement("div", {
-                className: "group_list",
-                key: "group_list"
-            }, groups)
+            var groupList = React.createElement(app.GroupSelectorComponent, {
+                focusedGroup: this.props.model.focusedGroup,
+                groups: this.props.model.groups,
+            }, null)
 
             var container = React.createElement("div", {
                 className: "app",

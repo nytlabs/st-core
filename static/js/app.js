@@ -41,8 +41,8 @@ var app = app || {};
 
                 var selected = [];
 
-                selected = this.props.model.entities[this.props.model.focusedGroup].children.filter(function(id) {
-                    var node = this.props.model.entities[id];
+                selected = this.props.model.entities[this.props.model.focusedGroup].data.children.filter(function(id) {
+                    var node = this.props.model.entities[id].data;
                     return node.hasOwnProperty('position') &&
                         node.position.x + this.state.x >= rectX &&
                         node.position.x + this.state.x < rectX + width &&
@@ -123,11 +123,6 @@ var app = app || {};
                 })
             }
         },
-        selectGroup: function(e) {
-            this.setState({
-                group: e.id
-            })
-        },
         nodeSelect: function(id) {
             if (this.state.keys.shift === true) {
                 if (this.state.selected.indexOf(id) === -1) {
@@ -161,21 +156,21 @@ var app = app || {};
 
             var nodeElements = this.props.model.focusedNodes.map(function(c) {
                 return React.createElement(app.DragContainer, {
-                    key: c.id,
+                    key: c.data.id,
                     model: c,
-                    x: c.position.x,
-                    y: c.position.y,
+                    x: c.data.position.x,
+                    y: c.data.position.y,
                     nodeSelect: this.nodeSelect
                 }, React.createElement(nodes[c.instance()], {
-                    key: c.id,
+                    key: c.data.id,
                     model: c,
-                    selected: this.state.selected.indexOf(c.id) !== -1 ? true : false,
+                    selected: this.state.selected.indexOf(c.data.id) !== -1 ? true : false,
                 }, null))
             }.bind(this));
 
             var edgeElements = this.props.model.focusedEdges.map(function(c) {
                 return React.createElement(edges[c.instance()], {
-                    key: c.id,
+                    key: c.data.id,
                     model: c,
                     graph: this.props.model
                 }, null)

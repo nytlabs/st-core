@@ -21,7 +21,7 @@ var app = app || {};
                 y: 10,
                 className: 'label unselectable',
                 key: 'label'
-            }, 'group ' + this.props.model.id));
+            }, 'group ' + this.props.model.data.id));
             return React.createElement('g', {}, children);
         }
     })

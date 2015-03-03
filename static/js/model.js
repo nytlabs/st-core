@@ -7,6 +7,8 @@ var app = app || {};
 (function() {
     'use strict';
 
+    var dm = new app.Utils.DebounceManager();
+
     app.CoreModel = function() {
         this.entities = {};
         this.list = [];
@@ -34,7 +36,6 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.inform = function() {
-        //console.log("updating model");
         this.onChanges.forEach(function(cb) {
             cb();
         });
@@ -42,58 +43,23 @@ var app = app || {};
 
     app.Entity = function() {}
 
-    function Debounce() {
-        this.func = null;
-        this.fire = null;
-        this.last = null;
-    }
-
-    Debounce.prototype.push = function(e, duration) {
-        if (this.last === null || this.last + duration < +new Date()) {
-            this.last = +new Date();
-            e();
-            return;
-        }
-        this.func = e;
-        if (this.fire != null) clearInterval(this.fire);
-        this.fire = setTimeout(function() {
-            this.func();
-            this.last = +new Date()
-        }.bind(this), duration);
-    }
-
-    function DebounceManager() {
-        this.entities = {};
-    }
-
-    DebounceManager.prototype.push = function(id, f, duration) {
-        if (!this.entities.hasOwnProperty(id)) {
-            this.entities[id] = new Debounce();
-        }
-        this.entities[id].push(f, duration)
-    }
-
-    var dm = new DebounceManager();
-
-    // TODO: put API methods on CoreModel
     app.Entity.prototype.setPosition = function(p) {
-        this.position.x = p.x;
-        this.position.y = p.y;
+        this.data.position.x = p.x;
+        this.data.position.y = p.y;
         this.model.inform();
         dm.push(this.id, function() {
             app.Utils.request(
                 "PUT",
-                this.instance() + "s/" + this.id + "/position", // would be nice to change API to not have the "S" in it!
+                this.instance() + "s/" + this.data.id + "/position", // would be nice to change API to not have the "S" in it!
                 p,
                 null
             );
         }.bind(this), 50)
     }
 
-    app.Group = function(data) {
-        for (var key in data) {
-            this[key] = data[key]
-        }
+    app.Group = function(data, model) {
+        this.data = data;
+        this.model = model;
     }
 
     app.Group.prototype = new app.Entity();
@@ -102,41 +68,44 @@ var app = app || {};
         return "group";
     }
 
-    /* setFocusedGroup sets takes a group id and prepares that group to be 
-     * viewed. It changes the model's current group in focus, in addition to
-     * preparing focusedNodes and focusedEdges.
-     */
-    app.Group.prototype.setFocusedGroup = function() {
+    app.Group.prototype.refreshFocusedGroup = function() {
         var model = this.model;
-        var id = this.id;
+        var id = this.data.id;
 
-        model.focusedGroup = id;
-        model.focusedNodes = model.entities[id].children.map(function(id) {
+        model.focusedNodes = model.entities[id].data.children.map(function(id) {
             return this.entities[id];
         }.bind(model))
 
         model.focusedEdges = model.edges.filter(function(e) {
             switch (e.instance()) {
                 case 'connection':
-                    if (this.entities[id].children.indexOf(e.to.id) !== -1) {
+                    if (this.entities[id].data.children.indexOf(e.data.to.id) !== -1) {
                         return true;
                     }
                     break;
                 case 'link':
-                    if (this.entities[id].children.indexOf(e.block.id) !== -1) {
+                    if (this.entities[id].data.children.indexOf(e.data.block.id) !== -1) {
                         return true;
                     }
                     break;
             }
             return false;
         }.bind(model))
-        model.inform();
     }
 
-    app.Block = function(data) {
-        for (var key in data) {
-            this[key] = data[key]
-        }
+    /* setFocusedGroup sets takes a group id and prepares that group to be 
+     * viewed. It changes the model's current group in focus, in addition to
+     * preparing focusedNodes and focusedEdges.
+     */
+    app.Group.prototype.setFocusedGroup = function() {
+        this.model.focusedGroup = this.data.id;
+        this.refreshFocusedGroup();
+        this.model.inform();
+    }
+
+    app.Block = function(data, model) {
+        this.data = data;
+        this.model = model;
     }
 
     app.Block.prototype = new app.Entity();
@@ -145,10 +114,9 @@ var app = app || {};
         return "block";
     }
 
-    app.Source = function(data) {
-        for (var key in data) {
-            this[key] = data[key];
-        }
+    app.Source = function(data, model) {
+        this.data = data;
+        this.model = model;
     }
 
     app.Source.prototype = new app.Entity();
@@ -157,10 +125,9 @@ var app = app || {};
         return "source";
     }
 
-    app.Connection = function(data) {
-        for (var key in data) {
-            this[key] = data[key];
-        }
+    app.Connection = function(data, model) {
+        this.data = data;
+        this.model = model;
     }
 
     app.Connection.prototype = new app.Entity();
@@ -169,10 +136,9 @@ var app = app || {};
         return "connection";
     }
 
-    app.Link = function(data) {
-        for (var key in data) {
-            this[key] = data[key];
-        }
+    app.Link = function(data, model) {
+        this.data = data;
+        this.model = model;
     }
 
     app.Link.prototype = new app.Entity();
@@ -196,12 +162,14 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.addChild = function(group, id) {
-        this.entities[group].children.push(id);
+        this.entities[group].data.children.push(id);
+        if (group === this.focusedGroup) this.entities[group].refreshFocusedGroup();
         this.inform();
     }
 
     app.CoreModel.prototype.removeChild = function(group, id) {
-        this.entities[group].children.splice(this.entities[group].children.indexOf(id), 1);
+        this.entities[group].data.children.splice(this.entities[group].data.children.indexOf(id), 1);
+        if (group === this.focusedGroup) this.entities[group].refreshFocusedGroup();
         this.inform();
     }
 
@@ -221,9 +189,9 @@ var app = app || {};
                     return;
                 }
 
-                var n = new nodes[m.type](m.data[m.type]);
-                // this reference allows all entities to inform() the model
-                n.model = this;
+                // we put a reference to model in each entitiy so that we can
+                // propagate inform();
+                var n = new nodes[m.type](m.data[m.type], this);
                 this.entities[m.data[m.type].id] = n;
                 this.list.push(this.entities[m.data[m.type].id]);
 

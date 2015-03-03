@@ -1,11 +1,11 @@
 var app = app || {};
 
-(function(){
+(function() {
     app.ConnectionComponent = React.createClass({
         displayName: "ConnectionComponent",
         render: function() {
-            var from = this.props.graph.entities[this.props.model.from.id]
-            var to = this.props.graph.entities[this.props.model.to.id]
+            var from = this.props.graph.entities[this.props.model.data.from.id].data
+            var to = this.props.graph.entities[this.props.model.data.to.id].data
             var lineStyle = {
                 stroke: "black",
                 strokeWidth: 2,

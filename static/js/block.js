@@ -1,6 +1,6 @@
 var app = app || {};
 
-(function(){
+(function() {
     app.BlockComponent = React.createClass({
         displayName: "BlockComponent",
         render: function() {
@@ -21,7 +21,7 @@ var app = app || {};
                 y: 10,
                 className: 'label unselectable',
                 key: 'label'
-            }, this.props.model.type));
+            }, this.props.model.data.type));
             return React.createElement('g', {}, children);
         }
     })

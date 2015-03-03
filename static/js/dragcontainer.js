@@ -1,6 +1,6 @@
 var app = app || {};
 
-(function(){
+(function() {
     app.DragContainer = React.createClass({
         displayName: "DragContainer",
         getInitialState: function() {
@@ -13,7 +13,7 @@ var app = app || {};
         },
         onMouseDown: function(e) {
             //m.select(this.props.model.id);
-            this.props.nodeSelect(this.props.model.id);
+            this.props.nodeSelect(this.props.model.data.id);
 
             this.setState({
                 dragging: true,

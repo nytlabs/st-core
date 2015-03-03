@@ -19,12 +19,12 @@ var app = app || {};
                 className: 'group_list',
             }, this.props.groups.map(function(g) {
                 var classes = 'group';
-                if (this.props.focusedGroup === g.id) classes += ' focused';
+                if (this.props.focusedGroup === g.data.id) classes += ' focused';
                 return React.createElement('div', {
                     className: classes,
-                    key: g.id,
+                    key: g.data.id,
                     onClick: this.onClick.bind(null, g),
-                }, g.label + ' ' + g.id);
+                }, g.data.label + ' ' + g.data.id);
             }.bind(this)))
         }
     })

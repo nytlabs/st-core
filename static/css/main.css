@@ -44,6 +44,18 @@
         float: left
 }
 
+.route_label{
+        font-family: verdana;
+        font-size: 12px;
+        user-select: none
+}
+
+.route_circle{
+        fill: none;
+        stroke: black;
+        stroke-width: 1px;
+}
+
 .focused {
         background: rgba(100,100,100,1);
         color: white;
@@ -63,6 +75,13 @@
               user-select: none;
 }
 
+/* this is terrible, there is to be another way */
+.measure_text_scratch {
+        position: absolute;
+        top: -1000px;
+        left: -1000px;
+        user-select: none;
+}
 
 .stage{
         position: absolute;

@@ -121,12 +121,58 @@ var app = app || {};
     app.Block = function(data, model) {
         this.data = data;
         this.model = model;
+        this.refreshGeometry();
     }
 
     app.Block.prototype = new app.Entity();
 
     app.Block.prototype.instance = function() {
         return "block";
+    }
+
+    app.Block.prototype.refreshGeometry = function() {
+        this.inputs = this.data.inputs.map(function(i) {
+            return app.Utils.measureText(i.name, "route_label");
+        }.bind(this))
+        this.outputs = this.data.outputs.map(function(o) {
+            return app.Utils.measureText(o.name, "route_label");
+        }.bind(this));
+
+        var inputMaxWidth = [{
+            width: 0
+        }].concat(this.inputs).reduce(function(p, v) {
+            return (p.width > v.width ? p : v);
+        })
+
+        var outputMaxWidth = [{
+            width: 0
+        }].concat(this.outputs).reduce(function(p, v) {
+            return (p.width > v.width ? p : v);
+        })
+
+        var inputMaxHeight = [{
+            height: 0
+        }].concat(this.inputs).reduce(function(p, v) {
+            return (p.height > v.height ? p : v);
+        })
+
+        var outputMaxHeight = [{
+            height: 0
+        }].concat(this.outputs).reduce(function(p, v) {
+            return (p.height > v.height ? p : v);
+        })
+
+        this.width = inputMaxWidth.width + outputMaxWidth.width;
+        this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
+        this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
+
+        this.inputs.forEach(function(e, i) {
+            e.routeY = (i + 1) * this.routeHeight;
+        }.bind(this))
+
+        this.outputs.forEach(function(e, i) {
+            e.routeY = (i + 1) * this.routeHeight;
+        }.bind(this))
     }
 
     app.Source = function(data, model) {
@@ -153,17 +199,17 @@ var app = app || {};
     }
 
     app.Connection.prototype.refreshGeometry = function() {
-        var from = this.model.entities[this.data.from.id].data;
-        var to = this.model.entities[this.data.to.id].data;
+        var from = this.model.entities[this.data.from.id];
+        var to = this.model.entities[this.data.to.id];
 
-        var x1 = 50 + from.position.x;
-        var y1 = from.position.y;
-        var cx1 = 100 + from.position.x;
-        var cy1 = from.position.y;
-        var x2 = to.position.x;
-        var y2 = to.position.y;
-        var cx2 = -50 + to.position.x;
-        var cy2 = to.position.y;
+        var x1 = from.width + from.data.position.x;
+        var y1 = from.data.position.y;
+        var cx1 = from.width + 50 + from.data.position.x;
+        var cy1 = from.data.position.y;
+        var x2 = to.data.position.x;
+        var y2 = to.data.position.y;
+        var cx2 = -50 + to.data.position.x;
+        var cy2 = to.data.position.y;
 
         this.from = {
             x: x1,

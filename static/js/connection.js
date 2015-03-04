@@ -10,7 +10,7 @@ var app = app || {};
             var lineStyle = {
                 stroke: "black",
                 strokeWidth: 2,
-                fill: 'transparent'
+                fill: 'none'
             }
             if (this.props.selected === true) lineStyle.stroke = "blue";
             return (

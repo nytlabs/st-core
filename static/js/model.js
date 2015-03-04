@@ -106,7 +106,9 @@ var app = app || {};
                     break;
             }
             return false;
-        }.bind(model))
+        }.bind(model));
+
+        model.refreshFocusedEdgeGeometry();
     }
 
     // setFocusedGroup sets takes a group id and prepares that group to be 
@@ -291,7 +293,15 @@ var app = app || {};
             case 'update':
                 for (var key in m.data[m.type]) {
                     if (key !== 'id') {
-                        this.entities[m.data[m.type].id].data[key] = m.data[m.type][key]
+                        this.entities[m.data[m.type].id].data[key] = m.data[m.type][key];
+
+                        //
+                        // this update should live somewhere else
+                        //
+                        if (m.type == 'block') {
+                            this.refreshFocusedEdgeGeometry();
+                            return;
+                        }
                     }
                 }
                 break;

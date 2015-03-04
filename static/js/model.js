@@ -291,7 +291,7 @@ var app = app || {};
             case 'update':
                 for (var key in m.data[m.type]) {
                     if (key !== 'id') {
-                        this.entities[m.data[m.type].id][key] = m.data[m.type][key]
+                        this.entities[m.data[m.type].id].data[key] = m.data[m.type][key]
                     }
                 }
                 break;

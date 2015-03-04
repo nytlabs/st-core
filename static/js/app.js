@@ -221,6 +221,7 @@ var app = app || {};
             var groupList = React.createElement(app.GroupSelectorComponent, {
                 focusedGroup: this.props.model.focusedGroup,
                 groups: this.props.model.groups,
+                key: "group_list",
             }, null)
 
             var container = React.createElement("div", {

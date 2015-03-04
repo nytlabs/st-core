@@ -4,20 +4,23 @@ var app = app || {};
     app.RouteComponent = React.createClass({
         displayName: "RouteComponent",
         render: function() {
-            var style = {}
             return React.createElement('g', {
-                transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
+                transform: 'translate(' + this.props.model.routeX + ', ' + this.props.model.routeY + ')',
             }, [
                 React.createElement('text', {
                     className: "route_label unselectable",
-                    textAnchor: this.props.left ? "start" : "end",
-                    style: style
-                }, this.props.model.name),
+                    textAnchor: this.props.model.routeAlign,
+                    key: "route_label",
+                }, this.props.model.data.name),
+                React.createElement('circle', {
+                    cx: this.props.model.routeCircleX,
+                    cy: this.props.model.routeCircleY,
+                    r: this.props.model.routeRadius,
+                    className: "route_circle",
+                    key: "route_circle"
+                }, null)
             ])
         },
-        componentDidMount: function() {
-            // console.log(this.getDOMNode().getComputedTextLength());
-        }
     })
 })();
 
@@ -32,7 +35,7 @@ var app = app || {};
                 x: 0,
                 y: 0,
                 width: this.props.model.width,
-                height: this.props.model.height + 5,
+                height: this.props.model.height,
                 className: classes,
                 key: 'bg'
             }, null));
@@ -43,23 +46,12 @@ var app = app || {};
                 key: 'label'
             }, this.props.model.data.type));
 
-            children = children.concat(this.props.model.data.inputs.map(function(e, i) {
-                return React.createElement(app.RouteComponent, {
-                    model: e,
-                    geometry: this.props.model.inputs[i],
-                    x: 0,
-                    y: this.props.model.inputs[i].routeY,
-                    left: true
-                }, null)
-            }.bind(this)));
+            var routes = this.props.model.inputs.concat(this.props.model.outputs);
 
-            children = children.concat(this.props.model.data.outputs.map(function(e, i) {
+            children = children.concat(routes.map(function(r, i) {
                 return React.createElement(app.RouteComponent, {
-                    model: e,
-                    geometry: this.props.model.outputs[i],
-                    x: this.props.model.width,
-                    y: this.props.model.outputs[i].routeY,
-                    left: false,
+                    model: r,
+                    key: r.routeAlign + i
                 }, null)
             }.bind(this)));
 

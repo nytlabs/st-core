@@ -166,13 +166,27 @@ var app = app || {};
         this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
         this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
 
+        this.routeRadius = 5;
+
         this.inputs.forEach(function(e, i) {
             e.routeY = (i + 1) * this.routeHeight;
-        }.bind(this))
+            e.routeX = 0;
+            e.routeCircleX = -this.routeRadius * .5;
+            e.routeCircleY = -this.routeHeight * .5;
+            e.routeAlign = "start";
+            e.routeRadius = this.routeRadius;
+            e.data = this.data.inputs[i];
+        }.bind(this));
 
         this.outputs.forEach(function(e, i) {
             e.routeY = (i + 1) * this.routeHeight;
-        }.bind(this))
+            e.routeX = this.width;
+            e.routeCircleX = this.routeRadius * .5;
+            e.routeCircleY = -this.routeHeight * .5;
+            e.routeAlign = "end";
+            e.routeRadius = this.routeRadius;
+            e.data = this.data.outputs[i];
+        }.bind(this));
     }
 
     app.Source = function(data, model) {
@@ -202,12 +216,12 @@ var app = app || {};
         var from = this.model.entities[this.data.from.id];
         var to = this.model.entities[this.data.to.id];
 
-        var x1 = from.width + from.data.position.x;
-        var y1 = from.data.position.y;
+        var x1 = from.width + from.data.position.x + from.outputs[this.data.from.route].routeCircleX;
+        var y1 = from.data.position.y - from.outputs[this.data.from.route].routeCircleY;
         var cx1 = from.width + 50 + from.data.position.x;
         var cy1 = from.data.position.y;
-        var x2 = to.data.position.x;
-        var y2 = to.data.position.y;
+        var x2 = to.data.position.x + to.inputs[this.data.to.route].routeCircleX;
+        var y2 = to.data.position.y - to.inputs[this.data.to.route].routeCircleY;
         var cx2 = -50 + to.data.position.x;
         var cy2 = to.data.position.y;
 

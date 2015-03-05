@@ -1,6 +1,8 @@
 var app = app || {};
 
 (function() {
+    'use strict';
+
     app.CoreApp = React.createClass({
         displayName: "CoreApp",
         getInitialState: function() {
@@ -224,9 +226,14 @@ var app = app || {};
                 key: "group_list",
             }, null)
 
+            var panelList = React.createElement(app.PanelListComponent, {
+                nodes: this.state.selected,
+                key: 'panel_list',
+            });
+
             var container = React.createElement("div", {
                 className: "app",
-            }, [stage, groupList]);
+            }, [stage, groupList, panelList]);
 
             return container
         }

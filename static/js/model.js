@@ -247,6 +247,8 @@ var app = app || {};
             y: y2
         };
 
+        this.routeRadius = 3;
+
         this.path = ['M', x1, ' ', y1, ' C ', cx1, ' ', cy1, ' ', cx2, ' ', cy2, ' ', x2, ' ', y2].join('');
     }
 

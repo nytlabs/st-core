@@ -4,14 +4,17 @@ var app = app || {};
     app.RouteComponent = React.createClass({
         displayName: "RouteComponent",
         render: function() {
-            return React.createElement('g', {
-                transform: 'translate(' + this.props.model.routeX + ', ' + this.props.model.routeY + ')',
-            }, [
+            var children = [];
+
+            children.push(
                 React.createElement('text', {
                     className: "route_label unselectable",
                     textAnchor: this.props.model.routeAlign,
                     key: "route_label",
-                }, this.props.model.data.name),
+                }, this.props.model.data.name)
+            )
+
+            children.push(
                 React.createElement('circle', {
                     cx: this.props.model.routeCircleX,
                     cy: this.props.model.routeCircleY,
@@ -19,7 +22,23 @@ var app = app || {};
                     className: "route_circle",
                     key: "route_circle"
                 }, null)
-            ])
+            )
+
+            if (this.props.model.data.value != null) {
+                children.push(
+                    React.createElement('circle', {
+                        cx: this.props.model.routeCircleX,
+                        cy: this.props.model.routeCircleY,
+                        r: this.props.model.routeRadius - 2,
+                        className: "route_circle_filled",
+                        key: "route_circle_filled"
+                    }, null)
+                )
+            }
+
+            return React.createElement('g', {
+                transform: 'translate(' + this.props.model.routeX + ', ' + this.props.model.routeY + ')',
+            }, children)
         },
     })
 })();

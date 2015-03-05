@@ -56,6 +56,11 @@
         stroke-width: 1px;
 }
 
+.route_circle_filled{
+        fill: black;
+        stroke: none;
+}
+
 .focused {
         background: rgba(100,100,100,1);
         color: white;

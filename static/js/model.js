@@ -212,13 +212,13 @@ var app = app || {};
     }
 
     app.Connection = function(data, model) {
-        app.Entity.call(this);
+        //app.Entity.call(this);
         this.data = data;
         this.model = model;
         this.refreshGeometry();
     }
 
-    app.Connection.prototype = new app.Entity();
+    //app.Connection.prototype = new app.Entity();
 
     app.Connection.prototype.instance = function() {
         return "connection";
@@ -251,12 +251,12 @@ var app = app || {};
     }
 
     app.Link = function(data, model) {
-        app.Entity.call(this);
+        //app.Entity.call(this);
         this.data = data;
         this.model = model;
     }
 
-    app.Link.prototype = new app.Entity();
+    //app.Link.prototype = new app.Entity();
 
     app.Link.prototype.instance = function() {
         return "link";

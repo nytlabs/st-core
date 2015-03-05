@@ -6,7 +6,13 @@ var app = app || {};
         render: function() {
             return React.createElement('div', {
                 className: 'panel'
-            }, this.props.model.data.type);
+            }, this.props.model.data.inputs.map(function(r, i) {
+                return React.createElement('div', {
+                    className: 'input',
+                    key: i
+                }, r.name + ' ' + JSON.stringify(r.value))
+
+            }));
         }
     })
 })();

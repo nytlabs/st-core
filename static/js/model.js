@@ -186,6 +186,7 @@ var app = app || {};
             e.routeAlign = "start";
             e.routeRadius = this.routeRadius;
             e.data = this.data.inputs[i];
+            e.connections = [];
         }.bind(this));
 
         this.outputs.forEach(function(e, i) {
@@ -196,6 +197,7 @@ var app = app || {};
             e.routeAlign = "end";
             e.routeRadius = this.routeRadius;
             e.data = this.data.outputs[i];
+            e.connections = [];
         }.bind(this));
     }
 
@@ -216,6 +218,21 @@ var app = app || {};
         this.data = data;
         this.model = model;
         this.refreshGeometry();
+        this.attach();
+    }
+
+
+    // attach() and detach() adds/removes a reference to this connection the route on the block entity.
+    app.Connection.prototype.attach = function() {
+        this.model.entities[this.data.from.id].outputs[this.data.from.route].connections.push(this);
+        this.model.entities[this.data.to.id].inputs[this.data.to.route].connections.push(this);
+    }
+
+    app.Connection.prototype.detach = function() {
+        var fromRoute = this.model.entities[this.data.from.id].outputs[this.data.from.route];
+        var toRoute = this.model.entities[this.data.to.id].inputs[this.data.to.route];
+        fromRoute.connections.splice(fromRoute.connections.indexOf(this), 1);
+        toRoute.connections.splice(toRoute.connections.indexOf(this), 1);
     }
 
     //app.Connection.prototype = new app.Entity();
@@ -354,6 +371,10 @@ var app = app || {};
                 if (m.type === "child") {
                     this.removeChild(m.data.group.id, m.data.child.id); // this child nonsense is a mess
                     return
+                }
+
+                if (m.type === "connection") {
+                    this.entities[m.data[m.type].id].detach();
                 }
 
                 var i = this.list.indexOf(this.entities[m.data[m.type].id]);

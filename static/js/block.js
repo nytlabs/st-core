@@ -24,7 +24,7 @@ var app = app || {};
                 }, null)
             )
 
-            if (this.props.model.data.value != null) {
+            if ((this.props.model.data.hasOwnProperty('value') && this.props.model.data.value !== null) || this.props.model.connections.length !== 0) {
                 children.push(
                     React.createElement('circle', {
                         cx: this.props.model.routeCircleX,

@@ -41,7 +41,9 @@ var app = app || {};
         });
     }
 
-    app.Entity = function() {}
+    app.Entity = function() {
+        this.isDragging = false;
+    }
 
     app.Entity.prototype.setPosition = function(p) {
         this.data.position.x = p.x;
@@ -61,7 +63,12 @@ var app = app || {};
         }.bind(this), 50)
     }
 
+    app.Entity.prototype.setDragging = function(e) {
+        this.isDragging = e;
+    }
+
     app.Group = function(data, model) {
+        app.Entity.call(this);
         this.data = data;
         this.model = model;
 
@@ -121,6 +128,7 @@ var app = app || {};
     }
 
     app.Block = function(data, model) {
+        app.Entity.call(this);
         this.data = data;
         this.model = model;
         this.refreshGeometry();
@@ -192,6 +200,7 @@ var app = app || {};
     }
 
     app.Source = function(data, model) {
+        app.Entity.call(this);
         this.data = data;
         this.model = model;
     }
@@ -203,6 +212,7 @@ var app = app || {};
     }
 
     app.Connection = function(data, model) {
+        app.Entity.call(this);
         this.data = data;
         this.model = model;
         this.refreshGeometry();
@@ -241,6 +251,7 @@ var app = app || {};
     }
 
     app.Link = function(data, model) {
+        app.Entity.call(this);
         this.data = data;
         this.model = model;
     }
@@ -295,10 +306,20 @@ var app = app || {};
                     if (key !== 'id') {
                         this.entities[m.data[m.type].id].data[key] = m.data[m.type][key];
 
+                        // TODO: sort out model updates
+                        // this stops the feedback loop from a client making a request
+                        // that ends up updating the client for the same change to the model.
+                        // TWO separate models that represent the same thing is 
+                        // an anti-pattern, HOWEVER in this circumstance we are doing this on 
+                        // purpose -- we want the client to have immediate feedback from dragging
+                        // a node, and we want to broadcast this to the rest of the clients
+                        // at a throttle rate. This means we have to create a way to reconcile
+                        // the messages coming from the server with the client side node that
+                        // is being dragged.
                         //
-                        // this update should live somewhere else
-                        //
-                        if (m.type == 'block') {
+                        // The following updates all node geometry for nodes that are NOT 
+                        // currently being dragged in this client state. 
+                        if (m.type == 'block' || m.type == 'group' || m.type == 'source' && !this.entities[m.data[m.type].id].isDragging) {
                             this.refreshFocusedEdgeGeometry();
                             return;
                         }

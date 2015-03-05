@@ -12,8 +12,12 @@ var app = app || {};
             }
         },
         onMouseDown: function(e) {
-            //m.select(this.props.model.id);
             this.props.nodeSelect(this.props.model.data.id);
+
+            // see TODO in model.js in CoreModel.update()
+            // this is to protect our model from receiving updates
+            // from the server
+            this.props.model.setDragging(true);
 
             this.setState({
                 dragging: true,
@@ -34,11 +38,15 @@ var app = app || {};
             this.props.model.setPosition({
                 x: e.pageX - this.state.offX,
                 y: e.pageY - this.state.offY
-            })
+            });
 
             this.setState({
                 dragging: false,
-            })
+            });
+            // see TODO in model.js in CoreModel.update()
+            // this is to protect our model from receiving updates
+            // would like to do away with this...
+            this.props.model.setDragging(false);
         },
         onMouseMove: function(e) {
             if (this.state.dragging) {

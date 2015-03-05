@@ -47,7 +47,7 @@ var app = app || {};
      * x,y,w,h.
      */
     app.Utils.pointInRect = function(x, y, w, h, px, py) {
-        return (px >= x) && (px < x + w) && (py >= y) && (py < py + h);
+        return (px >= x) && (px < x + w) && (py >= y) && (py < y + h);
     }
 
     app.Utils.Debounce = function() {

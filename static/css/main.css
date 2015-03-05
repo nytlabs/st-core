@@ -91,6 +91,14 @@
         padding: 0px;
 }
 
+.panel_list{
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        width: 150px;
+        z-index: 10;
+}
+
 body{
         margin: 0px;
         padding: 0px;

@@ -232,8 +232,8 @@ var app = app || {};
         var y1 = from.data.position.y - from.outputs[this.data.from.route].routeCircleY;
         var cx1 = from.width + 50 + from.data.position.x;
         var cy1 = from.data.position.y;
-        var x2 = to.data.position.x + to.inputs[this.data.to.route].routeCircleX;
-        var y2 = to.data.position.y - to.inputs[this.data.to.route].routeCircleY;
+        var x2 = to.data.position.x + to.inputs[this.data.to.route].routeX + to.inputs[this.data.to.route].routeCircleX;
+        var y2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;
         var cx2 = -50 + to.data.position.x;
         var cy2 = to.data.position.y;
 

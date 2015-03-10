@@ -321,28 +321,35 @@ var app = app || {};
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
-                for (var key in m.data[m.type]) {
-                    if (key !== 'id') {
-                        this.entities[m.data[m.type].id].data[key] = m.data[m.type][key];
+                if (m.type === 'block' ||
+                    m.type === 'group' ||
+                    m.type === 'source') {
+                    for (var key in m.data[m.type]) {
+                        if (key !== 'id') {
+                            this.entities[m.data[m.type].id].data[key] = m.data[m.type][key];
 
-                        // TODO: sort out model updates
-                        // this stops the feedback loop from a client making a request
-                        // that ends up updating the client for the same change to the model.
-                        // TWO separate models that represent the same thing is 
-                        // an anti-pattern, HOWEVER in this circumstance we are doing this on 
-                        // purpose -- we want the client to have immediate feedback from dragging
-                        // a node, and we want to broadcast this to the rest of the clients
-                        // at a throttle rate. This means we have to create a way to reconcile
-                        // the messages coming from the server with the client side node that
-                        // is being dragged.
-                        //
-                        // The following updates all node geometry for nodes that are NOT 
-                        // currently being dragged in this client state. 
-                        if (m.type == 'block' || m.type == 'group' || m.type == 'source' && !this.entities[m.data[m.type].id].isDragging) {
-                            this.refreshFocusedEdgeGeometry();
-                            return;
+                            // TODO: sort out model updates
+                            // this stops the feedback loop from a client making a request
+                            // that ends up updating the client for the same change to the model.
+                            // TWO separate models that represent the same thing is 
+                            // an anti-pattern, HOWEVER in this circumstance we are doing this on 
+                            // purpose -- we want the client to have immediate feedback from dragging
+                            // a node, and we want to broadcast this to the rest of the clients
+                            // at a throttle rate. This means we have to create a way to reconcile
+                            // the messages coming from the server with the client side node that
+                            // is being dragged.
+                            //
+                            // The following updates all node geometry for nodes that are NOT 
+                            // currently being dragged in this client state. 
+                            if (!this.entities[m.data[m.type].id].isDragging) {
+                                this.refreshFocusedEdgeGeometry();
+                                return;
+                            }
                         }
                     }
+                } else if (m.type === 'route') {
+                    this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
+
                 }
                 break;
             case 'create':

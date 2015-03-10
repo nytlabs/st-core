@@ -58,12 +58,17 @@ var app = app || {};
                 className: classes,
                 key: 'bg'
             }, null));
+
+            // TODO: style this better
+            var title = this.props.model.data.type;
+            title += ' ' + this.props.model.data.label;
+
             children.push(React.createElement('text', {
                 x: 0,
                 y: 0,
-                className: 'label unselectable',
-                key: 'label'
-            }, this.props.model.data.type));
+                className: 'type unselectable',
+                key: 'type'
+            }, title));
 
             var routes = this.props.model.inputs.concat(this.props.model.outputs);
 

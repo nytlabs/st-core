@@ -108,3 +108,34 @@ body{
         margin: 0px;
         padding: 0px;
 }
+
+
+.route_name {
+        float: left;
+        position: relative;
+}
+
+.route_value{
+        float: left;
+        position: relative;
+}
+
+.input{
+        clear: both;
+        position: relative;
+        float: left;
+}
+
+.connected{
+        float: left;
+        position: relative;
+        background: rgba(100,100,100,1);
+}
+
+.panel{
+        background: rgba(200,200,200, 1);
+        border-bottom: 1px solid rgba(100,100,100,1);
+        padding: 5px;
+        float: left;
+}
+

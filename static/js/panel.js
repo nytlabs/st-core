@@ -1,6 +1,46 @@
 var app = app || {};
 
 (function() {
+    app.PanelEditableComponent = React.createClass({
+        displayName: "PanelEditableComponent",
+        getInitialState: function() {
+            return {
+                isEditing: false,
+                value: this.props.value
+            }
+        },
+        handleClick: function() {
+            this.setState({
+                isEditing: true
+            })
+        },
+        handleKeyUp: function(e) {
+            if (e.nativeEvent.keyCode === 13) {
+                this.props.onChange(e.target.value);
+                this.setState({
+                    isEditing: false,
+                })
+            }
+        },
+        render: function() {
+            var children = [];
+            if (this.state.isEditing) {
+                children.push(React.createElement('input', {
+                    defaultValue: this.state.value,
+                    onKeyUp: this.handleKeyUp,
+                }, null));
+            } else {
+                children.push(React.createElement('div', {
+                    onClick: this.handleClick
+                }, this.state.value));
+            }
+
+            return React.createElement('div', {}, children);
+        }
+    })
+})();
+
+(function() {
     app.PanelInputComponent = React.createClass({
         displayName: "PanelInputCompnent",
         getInitialState: function() {
@@ -75,14 +115,7 @@ var app = app || {};
                 )
             }
         },
-        updateRoute: function(e, index, value) {
-            app.Utils.request(
-                "PUT",
-                this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + index,
-                JSON.parse(value),
-                null
-            )
-        },
+        updateRoute: function(e, index, value) {},
         render: function() {
             return React.createElement('div', {
                 className: 'panel'
@@ -102,11 +135,26 @@ var app = app || {};
                     onKeyPress: this.updateLabel
                 }, null),
                 this.props.model.inputs.map(function(r, i) {
-                    return React.createElement(app.PanelInputComponent, {
+                    console.log(r.data.value);
+                    return React.createElement(app.PanelEditableComponent, {
+                            value: JSON.stringify(r.data.value),
+                            onChange: function(value) {
+                                console.log("NEW:", value)
+                                app.Utils.request(
+                                    "PUT",
+                                    this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + i,
+                                    JSON.parse(value),
+                                    null
+                                )
+                            }.bind(this)
+                        },
+                        null)
+
+                    /*return React.createElement(app.PanelInputComponent, {
                         updateRoute: this.updateRoute,
                         model: r,
                         index: i,
-                    }, null);
+                    }, null);*/
                 }.bind(this))
             ]);
         }

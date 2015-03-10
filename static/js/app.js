@@ -71,10 +71,6 @@ var app = app || {};
                 this.props.model.entities[this.props.model.focusedGroup].setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
             }
 
-            this.setState({
-                width: document.body.clientWidth,
-                height: document.body.clientHeight
-            })
         },
         documentKeyDown: function(e) {
             if (e.shiftKey === true) this.setState({
@@ -94,6 +90,10 @@ var app = app || {};
             document.addEventListener('keydown', this.documentKeyDown);
             document.addEventListener('keyup', this.documentKeyUp);
             document.addEventListener('mousemove', this.documentMouseMove);
+            this.setState({
+                width: document.body.clientWidth,
+                height: document.body.clientHeight
+            })
         },
         onMouseDown: function(e) {
             e.nativeEvent.button === 0 ? this.setState({

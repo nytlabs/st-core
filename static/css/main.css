@@ -116,6 +116,8 @@ body{
 }
 
 .route_value{
+        width: 100px;
+        background: rgba(150,150,150,1);
         float: left;
         position: relative;
 }

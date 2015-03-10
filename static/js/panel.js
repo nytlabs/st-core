@@ -3,11 +3,25 @@ var app = app || {};
 (function() {
     app.PanelInputComponent = React.createClass({
         displayName: "PanelInputCompnent",
+        getInitialState: function() {
+            return {
+                isEditing: false
+            }
+        },
         onKeyPress: function(e) {
-            this.props.updateRoute(e, this.props.index, e.target.value);
+            if (e.nativeEvent.keyCode === 13) {
+                this.props.updateRoute(e, this.props.index, e.target.value);
+                this.setState({
+                    isEditing: false
+                })
+            }
+        },
+        handleClick: function() {
+            this.setState({
+                isEditing: true
+            })
         },
         render: function() {
-
             var child = [];
 
             child.push(React.createElement('div', {
@@ -23,13 +37,20 @@ var app = app || {};
                     return c.data.from.id
                 }).join(", ")));
             } else {
-                child.push(
-                    React.createElement('input', {
+                if (this.state.isEditing) {
+                    child.push(React.createElement('input', {
                         key: 'route_value',
                         className: 'route_value',
                         defaultValue: JSON.stringify(this.props.model.data.value),
                         onKeyPress: this.onKeyPress,
-                    }, null));
+                    }))
+                } else {
+                    child.push(React.createElement('div', {
+                        key: 'route_value',
+                        className: 'route_value',
+                        onClick: this.handleClick,
+                    }, JSON.stringify(this.props.model.data.value)))
+                }
             }
 
             return React.createElement('div', {
@@ -55,14 +76,12 @@ var app = app || {};
             }
         },
         updateRoute: function(e, index, value) {
-            if (e.nativeEvent.keyCode === 13) {
-                app.Utils.request(
-                    "PUT",
-                    this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + index,
-                    JSON.parse(value),
-                    null
-                )
-            }
+            app.Utils.request(
+                "PUT",
+                this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + index,
+                JSON.parse(value),
+                null
+            )
         },
         render: function() {
             return React.createElement('div', {

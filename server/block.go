@@ -320,7 +320,7 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	var v *core.InputValue
-	err = json.Unmarshal(body, v)
+	err = json.Unmarshal(body, &v)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"could not unmarshal value"})

@@ -62,17 +62,6 @@ var app = app || {};
 (function() {
     app.PanelComponent = React.createClass({
         displayName: "PanelComponent",
-        updateLabel: function(e) {
-            if (e.nativeEvent.keyCode === 13) {
-                app.Utils.request(
-                    "PUT",
-                    this.props.model.instance() + "s/" + this.props.model.data.id + "/label",
-                    e.target.value,
-                    null
-                )
-            }
-        },
-        updateRoute: function(e, index, value) {},
         render: function() {
             return React.createElement('div', {
                 className: 'panel'

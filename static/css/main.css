@@ -141,3 +141,9 @@ body{
         float: left;
 }
 
+
+.editable{
+        min-width: 100px;
+        float: left;
+        background: rgba(150,150,150,1);
+}

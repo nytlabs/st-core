@@ -319,7 +319,7 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var v core.InputValue
+	var v interface{}
 	err = json.Unmarshal(body, &v)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -330,7 +330,7 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 	s.Lock()
 	defer s.Unlock()
 
-	err = s.ModifyBlockRoute(id, route, &v)
+	err = s.ModifyBlockRoute(id, route, v)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
@@ -340,19 +340,36 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) ModifyBlockRoute(id int, route int, v *core.InputValue) error {
+func (s *Server) ModifyBlockRoute(id int, route int, v interface{}) error {
 	b, ok := s.blocks[id]
 	if !ok {
 		return errors.New("could not find block")
 	}
 
-	err := b.Block.SetInput(core.RouteIndex(route), v)
+	var value *core.InputValue
+	if v != nil {
+		mv, ok := v.(map[string]interface{})
+		if !ok {
+			return errors.New("bad input value")
+		}
+
+		dd, ok := mv["data"]
+		if !ok {
+			return errors.New("bad input value")
+		}
+
+		value = &core.InputValue{
+			Data: dd,
+		}
+	}
+
+	err := b.Block.SetInput(core.RouteIndex(route), value)
 	if err != nil {
 		return err
 	}
 
-	s.blocks[id].Inputs[route].Value = v
+	s.blocks[id].Inputs[route].Value = value
 
-	s.websocketBroadcast(Update{Action: UPDATE, Type: ROUTE, Data: wsRouteModify{ConnectionNode{id, route}, v}})
+	s.websocketBroadcast(Update{Action: UPDATE, Type: ROUTE, Data: wsRouteModify{ConnectionNode{id, route}, value}})
 	return nil
 }

@@ -11,7 +11,8 @@ var app = app || {};
         },
         handleClick: function() {
             this.setState({
-                isEditing: true
+                isEditing: true,
+                value: this.props.value
             })
         },
         handleKeyUp: function(e) {
@@ -24,6 +25,8 @@ var app = app || {};
         },
         render: function() {
             var children = [];
+            var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
+
             if (this.state.isEditing) {
                 children.push(React.createElement('input', {
                     defaultValue: this.state.value,
@@ -32,71 +35,10 @@ var app = app || {};
             } else {
                 children.push(React.createElement('div', {
                     onClick: this.handleClick
-                }, this.state.value));
+                }, value));
             }
 
             return React.createElement('div', {}, children);
-        }
-    })
-})();
-
-(function() {
-    app.PanelInputComponent = React.createClass({
-        displayName: "PanelInputCompnent",
-        getInitialState: function() {
-            return {
-                isEditing: false
-            }
-        },
-        onKeyPress: function(e) {
-            if (e.nativeEvent.keyCode === 13) {
-                this.props.updateRoute(e, this.props.index, e.target.value);
-                this.setState({
-                    isEditing: false
-                })
-            }
-        },
-        handleClick: function() {
-            this.setState({
-                isEditing: true
-            })
-        },
-        render: function() {
-            var child = [];
-
-            child.push(React.createElement('div', {
-                key: 'route_name',
-                className: 'route_name'
-            }, this.props.model.data.name));
-
-            if (this.props.model.connections.length > 0) {
-                child.push(React.createElement('div', {
-                    key: 'connected',
-                    className: 'connected'
-                }, this.props.model.connections.map(function(c) {
-                    return c.data.from.id
-                }).join(", ")));
-            } else {
-                if (this.state.isEditing) {
-                    child.push(React.createElement('input', {
-                        key: 'route_value',
-                        className: 'route_value',
-                        defaultValue: JSON.stringify(this.props.model.data.value),
-                        onKeyPress: this.onKeyPress,
-                    }))
-                } else {
-                    child.push(React.createElement('div', {
-                        key: 'route_value',
-                        className: 'route_value',
-                        onClick: this.handleClick,
-                    }, JSON.stringify(this.props.model.data.value)))
-                }
-            }
-
-            return React.createElement('div', {
-                className: 'input',
-                key: this.props.index,
-            }, child);
         }
     })
 })();
@@ -124,22 +66,34 @@ var app = app || {};
                     key: 'block_header',
                     className: 'block_header',
                 }, this.props.model.data.type),
-                React.createElement('div', {
+                React.createElement(app.PanelEditableComponent, {
                     key: 'label',
-                    className: 'route_name',
-                }, "label"),
+                    className: 'editable',
+                    value: this.props.model.data.label,
+                    onChange: function(value) {
+                        app.Utils.request(
+                            "PUT",
+                            this.props.model.instance() + "s/" + this.props.model.data.id + "/label",
+                            value,
+                            null
+                        )
+                    }.bind(this)
+                }, null),
+                /*                React.createElement('div', {
+                                    key: 'label',
+                                    className: 'route_name',
+                                }, "label"),
                 React.createElement('input', {
                     key: 'label_input',
                     className: 'route_value',
                     defaultValue: this.props.model.data.label,
                     onKeyPress: this.updateLabel
-                }, null),
+                }, null),*/
                 this.props.model.inputs.map(function(r, i) {
-                    console.log(r.data.value);
                     return React.createElement(app.PanelEditableComponent, {
                             value: JSON.stringify(r.data.value),
+                            className: 'editable',
                             onChange: function(value) {
-                                console.log("NEW:", value)
                                 app.Utils.request(
                                     "PUT",
                                     this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + i,
@@ -148,13 +102,7 @@ var app = app || {};
                                 )
                             }.bind(this)
                         },
-                        null)
-
-                    /*return React.createElement(app.PanelInputComponent, {
-                        updateRoute: this.updateRoute,
-                        model: r,
-                        index: i,
-                    }, null);*/
+                        null);
                 }.bind(this))
             ]);
         }

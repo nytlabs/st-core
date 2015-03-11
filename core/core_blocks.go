@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"github.com/imdario/mergo"
 )
 
 func First() Spec {
@@ -229,12 +227,22 @@ func Merge() Spec {
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			result := make(map[string]interface{})
 			var err error
-			err = mergo.Merge(&result, in[0])
+			in0, ok := in[0].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("Merge needs map")
+				return nil
+			}
+			result, err = MergeMap(result, in0)
 			if err != nil {
 				out[0] = err
 				return nil
 			}
-			err = mergo.Merge(&result, in[1])
+			in1, ok := in[1].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("Merge needs map")
+				return nil
+			}
+			result, err = MergeMap(result, in1)
 			if err != nil {
 				out[0] = err
 				return nil

@@ -6,6 +6,15 @@ var app = app || {};
         getInitialState: function() {
             return {
                 isEditing: false,
+                // yes yes anti-pattern but yet another circumstance where it
+                // totally fine to have 2 separate models representing the 
+                // "same" state.
+                //
+                // One state is meant to be user-editable and is sent as a req
+                // to the server, the other state is always displaying the 
+                // current state synced w/ server. we populate default for 
+                // state that is meant to make the req with what is set by
+                // the server.
                 value: this.props.value
             }
         },
@@ -79,16 +88,6 @@ var app = app || {};
                         )
                     }.bind(this)
                 }, null),
-                /*                React.createElement('div', {
-                                    key: 'label',
-                                    className: 'route_name',
-                                }, "label"),
-                React.createElement('input', {
-                    key: 'label_input',
-                    className: 'route_value',
-                    defaultValue: this.props.model.data.label,
-                    onKeyPress: this.updateLabel
-                }, null),*/
                 this.props.model.inputs.map(function(r, i) {
                     return React.createElement(app.PanelEditableComponent, {
                             value: JSON.stringify(r.data.value),

@@ -100,7 +100,6 @@
         position: absolute;
         right: 0px;
         top: 0px;
-        width: 200px;
         z-index: 10;
 }
 
@@ -139,11 +138,21 @@ body{
         border-bottom: 1px solid rgba(100,100,100,1);
         padding: 5px;
         float: left;
+        width: 200px;
+        clear: both;
 }
 
+.panel .label{
+        width: 50px;
+        float: left;
+        clear: left;
+}
 
 .editable{
         min-width: 100px;
         float: left;
-        background: rgba(150,150,150,1);
+        clear: right;
+        position: relative;
+        background: rgba(240,240,240,1);
+        font-family: "Anonymous Pro"; 
 }

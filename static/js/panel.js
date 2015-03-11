@@ -22,7 +22,9 @@ var app = app || {};
             this.setState({
                 isEditing: true,
                 value: this.props.value
-            })
+            }, function() {
+                this.refs.editableInput.getDOMNode().focus();
+            });
         },
         handleKeyUp: function(e) {
             if (e.nativeEvent.keyCode === 13) {
@@ -38,22 +40,31 @@ var app = app || {};
             });
         },
         render: function() {
-            var children = [];
             var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
+            var inputStyle = {
+                display: this.state.isEditing ? 'block' : 'none'
+            }
+            var style = {
+                display: this.state.isEditing ? 'none' : 'block'
+            }
 
-            if (this.state.isEditing) {
-                children.push(React.createElement('input', {
+            return React.createElement('div', {
+                className: 'editable'
+            }, [
+                React.createElement('input', {
                     defaultValue: this.state.value,
                     onKeyUp: this.handleKeyUp,
                     onBlur: this.handleBlur,
-                }, null));
-            } else {
-                children.push(React.createElement('div', {
-                    onClick: this.handleClick
-                }, value));
-            }
-
-            return React.createElement('div', {}, children);
+                    style: inputStyle,
+                    ref: "editableInput",
+                    key: "editableInput"
+                }, null),
+                React.createElement('div', {
+                    onClick: this.handleClick,
+                    style: style,
+                    key: 'editableDisplay'
+                }, value)
+            ]);
         }
     })
 })();
@@ -70,6 +81,9 @@ var app = app || {};
                     key: 'block_header',
                     className: 'block_header',
                 }, this.props.model.data.type),
+                React.createElement('div', {
+                    className: "label"
+                }, "label"),
                 React.createElement(app.PanelEditableComponent, {
                     key: 'label',
                     className: 'editable',
@@ -84,19 +98,23 @@ var app = app || {};
                     }.bind(this)
                 }, null),
                 this.props.model.inputs.map(function(r, i) {
-                    return React.createElement(app.PanelEditableComponent, {
-                            value: JSON.stringify(r.data.value),
-                            className: 'editable',
-                            onChange: function(value) {
-                                app.Utils.request(
-                                    "PUT",
-                                    this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + i,
-                                    JSON.parse(value),
-                                    null
-                                )
-                            }.bind(this)
-                        },
-                        null);
+                    return [
+                        React.createElement('div', {
+                            className: 'label',
+                        }, r.data.name),
+                        React.createElement(app.PanelEditableComponent, {
+                                value: JSON.stringify(r.data.value),
+                                onChange: function(value) {
+                                    app.Utils.request(
+                                        "PUT",
+                                        this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + i,
+                                        JSON.parse(value),
+                                        null
+                                    )
+                                }.bind(this)
+                            },
+                            null)
+                    ]
                 }.bind(this))
             ]);
         }

@@ -14,6 +14,9 @@ var app = app || {};
         this.list = [];
         this.groups = [];
         this.edges = [];
+        this.blockLibrary = [];
+        this.sourceLibrary = [];
+
         this.onChanges = [];
 
         this.focusedGroup = 0; // the current group in focus
@@ -29,6 +32,24 @@ var app = app || {};
         ws.onopen = function() {
             ws.send('list');
         }
+
+        app.Utils.request(
+            "GET",
+            "blocks/library",
+            null,
+            function(req) {
+                this.blockLibrary = JSON.parse(req.response);
+            }.bind(this)
+        )
+
+        app.Utils.request(
+            "GET",
+            "sources/library",
+            null,
+            function(req) {
+                this.sourceLibrary = JSON.parse(req.response);
+            }.bind(this)
+        )
     }
 
     app.CoreModel.prototype.subscribe = function(onChange) {
@@ -349,7 +370,6 @@ var app = app || {};
                     }
                 } else if (m.type === 'route') {
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
-
                 }
                 break;
             case 'create':

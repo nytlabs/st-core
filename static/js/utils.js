@@ -10,7 +10,7 @@ var app = app || {};
         req.open(method, url, true);
         req.send(JSON.stringify(data));
         req.onreadystatechange = function() {
-            if (typeof callback === 'function') {
+            if (typeof callback === 'function' && this.readyState == 4) {
                 callback(req);
             }
         }

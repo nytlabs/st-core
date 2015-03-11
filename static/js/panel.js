@@ -24,6 +24,7 @@ var app = app || {};
                 value: this.props.value
             }, function() {
                 this.refs.editableInput.getDOMNode().focus();
+                this.refs.editableInput.getDOMNode().select();
             });
         },
         handleKeyUp: function(e) {

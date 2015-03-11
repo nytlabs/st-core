@@ -24,6 +24,11 @@ var app = app || {};
                     width: 0,
                     height: 0,
                     enabled: false
+                },
+                library: {
+                    x: null,
+                    y: null,
+                    enabled: false,
                 }
             }
         },
@@ -109,6 +114,11 @@ var app = app || {};
                 offY: e.pageY - this.props.model.entities[this.props.model.focusedGroup].translateY,
                 selected: [],
             })
+            this.setState({
+                library: {
+                    enabled: false
+                }
+            })
         },
         onMouseUp: function(e) {
             if (this.state.selectionRect.enabled === true) {
@@ -143,6 +153,15 @@ var app = app || {};
                     selected: [node],
                 })
             }
+        },
+        handleDoubleClick: function(e) {
+            this.setState({
+                library: {
+                    enabled: true,
+                    x: e.pageX,
+                    y: e.pageY
+                }
+            })
         },
         render: function() {
             var nodes = {
@@ -195,6 +214,7 @@ var app = app || {};
                 width: this.state.width,
                 height: this.state.height,
                 onMouseDown: this.onMouseDown,
+                onDoubleClick: this.handleDoubleClick,
                 key: 'background'
             }))
 
@@ -231,9 +251,13 @@ var app = app || {};
                 key: 'panel_list',
             });
 
+            var children = [stage, groupList, panelList];
+
+
+
             var container = React.createElement("div", {
                 className: "app",
-            }, [stage, groupList, panelList]);
+            }, children);
 
             return container
         }

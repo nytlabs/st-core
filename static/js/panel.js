@@ -29,8 +29,13 @@ var app = app || {};
                 this.props.onChange(e.target.value);
                 this.setState({
                     isEditing: false,
-                })
+                });
             }
+        },
+        handleBlur: function() {
+            this.setState({
+                isEditing: false,
+            });
         },
         render: function() {
             var children = [];
@@ -40,6 +45,7 @@ var app = app || {};
                 children.push(React.createElement('input', {
                     defaultValue: this.state.value,
                     onKeyUp: this.handleKeyUp,
+                    onBlur: this.handleBlur,
                 }, null));
             } else {
                 children.push(React.createElement('div', {

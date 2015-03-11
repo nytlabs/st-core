@@ -319,8 +319,8 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var v interface{}
-	err = json.Unmarshal(body, &v)
+	var v *core.InputValue
+	err = json.Unmarshal(body, v)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{"could not unmarshal value"})
@@ -340,27 +340,16 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) ModifyBlockRoute(id int, route int, v interface{}) error {
+func (s *Server) ModifyBlockRoute(id int, route int, v *core.InputValue) error {
 	b, ok := s.blocks[id]
 	if !ok {
 		return errors.New("could not find block")
 	}
 
 	var value *core.InputValue
-	if v != nil {
-		mv, ok := v.(map[string]interface{})
-		if !ok {
-			return errors.New("bad input value")
-		}
 
-		dd, ok := mv["data"]
-		if !ok {
-			return errors.New("bad input value")
-		}
-
-		value = &core.InputValue{
-			Data: dd,
-		}
+	if v.Exists() {
+		value = v
 	}
 
 	err := b.Block.SetInput(core.RouteIndex(route), value)

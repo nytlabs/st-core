@@ -2,7 +2,11 @@ var app = app || {};
 
 // TODO:
 // create a standard model API that the rest of the components can use
-// this standard API should use WS to communicate back to server
+// this standard API should use WS to communicate back to server.
+// 
+// the inform() situation is a mess. we should limit the number of places that
+// it makes an appearance is, as it causes horrendous snake calls that refresh
+// the UI too many times.
 
 (function() {
     'use strict';
@@ -19,7 +23,7 @@ var app = app || {};
 
         this.onChanges = [];
 
-        this.focusedGroup = 0; // the current group in focus
+        this.focusedGroup = null;
         this.focusedNodes = []; // nodes apart of the focused group
         this.focusedEdges = []; // nedges that are apart of the focused group
 
@@ -143,7 +147,7 @@ var app = app || {};
     // viewed. It changes the model's current group in focus, in addition to
     // preparing focusedNodes and focusedEdges.
     app.Group.prototype.setFocusedGroup = function() {
-        this.model.focusedGroup = this.data.id;
+        this.model.focusedGroup = this;
         this.refreshFocusedGroup();
         this.model.inform();
     }
@@ -320,15 +324,15 @@ var app = app || {};
         this.inform();
     }
 
-    app.CoreModel.prototype.addChild = function(group, id) {
-        this.entities[group].data.children.push(id);
-        if (group === this.focusedGroup) this.entities[group].refreshFocusedGroup();
+    app.CoreModel.prototype.addChild = function(groupId, id) {
+        this.entities[groupId].data.children.push(id);
+        if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
         this.inform();
     }
 
-    app.CoreModel.prototype.removeChild = function(group, id) {
-        this.entities[group].data.children.splice(this.entities[group].data.children.indexOf(id), 1);
-        if (group === this.focusedGroup) this.entities[group].refreshFocusedGroup();
+    app.CoreModel.prototype.removeChild = function(groupId, id) {
+        this.entities[groupId].data.children.splice(this.entities[groupId].data.children.indexOf(id), 1);
+        if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
         this.inform();
     }
 
@@ -385,12 +389,27 @@ var app = app || {};
                 this.entities[m.data[m.type].id] = n;
                 this.list.push(this.entities[m.data[m.type].id]);
 
+                // if we currently don't have a focus group, we wait for the 
+                // first group to arrive from the server. We then set that
+                // group as our currently focused group.
                 if (m.type === "group") {
                     this.groups.push(n);
+                    if (this.focusedGroup === null) {
+                        n.setFocusedGroup();
+                        return;
+                    }
                 }
+
 
                 if (m.type === "connection" || m.type === "link") {
                     this.edges.push(n);
+                }
+
+                // if we have a focused group we need to have a way to update the 
+                // conections that are currently on display. 
+                if (this.focusedGroup != null) {
+                    this.focusedGroup.refreshFocusedGroup();
+                    return;
                 }
 
                 break;

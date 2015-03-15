@@ -81,7 +81,7 @@ var app = app || {};
                     }
                 })
             } else if (this.state.dragging === true) {
-                this.props.model.entities[this.props.model.focusedGroup].setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
+                this.props.model.focusedGroup.setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
             }
 
         },
@@ -118,8 +118,8 @@ var app = app || {};
                 selected: []
             }) : this.setState({
                 dragging: true,
-                offX: e.pageX - this.props.model.entities[this.props.model.focusedGroup].translateX,
-                offY: e.pageY - this.props.model.entities[this.props.model.focusedGroup].translateY,
+                offX: e.pageX - this.props.model.focusedGroup.translateX,
+                offY: e.pageY - this.props.model.focusedGroup.translateY,
                 selected: [],
             })
             this.setState({
@@ -136,7 +136,7 @@ var app = app || {};
                     }
                 })
             } else if (this.state.dragging === true) {
-                this.props.model.entities[this.props.model.focusedGroup].setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
+                this.props.model.focusedGroup.setTranslation(e.pageX - this.state.offX, e.pageY - this.state.offY);
                 this.setState({
                     dragging: false
                 })
@@ -207,9 +207,9 @@ var app = app || {};
             }.bind(this));
 
             var renderGroups = null;
-            if (this.props.model.entities.hasOwnProperty(this.props.model.focusedGroup) === true) {
+            if (this.props.model.focusedGroup !== null) {
                 renderGroups = React.createElement('g', {
-                    transform: 'translate(' + this.props.model.entities[this.props.model.focusedGroup].translateX + ', ' + this.props.model.entities[this.props.model.focusedGroup].translateY + ')',
+                    transform: 'translate(' + this.props.model.focusedGroup.translateX + ', ' + this.props.model.focusedGroup.translateY + ')',
                     key: 'renderGroups'
                 }, edgeElements.concat(nodeElements));
             }
@@ -228,9 +228,9 @@ var app = app || {};
 
 
             // draws panning background grid
-            if (this.props.model.entities.hasOwnProperty(this.props.model.focusedGroup) === true) {
-                var translateX = this.props.model.entities[this.props.model.focusedGroup].translateX;
-                var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
+            if (this.props.model.focusedGroup !== null) {
+                var translateX = this.props.model.focusedGroup.translateX;
+                var translateY = this.props.model.focusedGroup.translateY;
                 var x = translateX % 200.0;
                 var y = translateY % 200.0;
                 var lines = [];
@@ -290,14 +290,13 @@ var app = app || {};
                 }
             }, background)
 
-
-
-
-            var groupList = React.createElement(app.GroupSelectorComponent, {
-                focusedGroup: this.props.model.focusedGroup,
-                groups: this.props.model.groups,
-                key: "group_list",
-            }, null)
+            if (this.props.model.focusedGroup !== null) {
+                var groupList = React.createElement(app.GroupSelectorComponent, {
+                    focusedGroup: this.props.model.focusedGroup.data.id,
+                    groups: this.props.model.groups,
+                    key: "group_list",
+                }, null);
+            }
 
             var panelList = React.createElement(app.PanelListComponent, {
                 nodes: this.state.selected,

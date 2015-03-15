@@ -218,6 +218,40 @@ var app = app || {};
                 key: 'background'
             }))
 
+
+            // draws panning background grid
+            if (this.props.model.entities.hasOwnProperty(this.props.model.focusedGroup) === true) {
+                var translateX = this.props.model.entities[this.props.model.focusedGroup].translateX;
+                var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
+                var x = translateX % 200.0;
+                var y = translateY % 200.0;
+                var lines = [];
+                var hMax = Math.floor(this.state.width / 200.0);
+                var vMax = Math.floor(this.state.height / 200.0);
+                for (var i = 0; i <= hMax; i++) {
+                    lines.push(React.createElement('line', {
+                        x1: x + (i * 200),
+                        y1: 0,
+                        x2: x + (i * 200),
+                        y2: this.state.height,
+                        stroke: 'rgba(220,220,220,1)'
+                    }, null));
+                }
+
+                for (var i = 0; i <= vMax; i++) {
+                    lines.push(React.createElement('line', {
+                        x1: 0,
+                        y1: y + (i * 200),
+                        x2: this.state.width,
+                        y2: y + (i * 200),
+                        stroke: 'rgba(220,220,220,1)'
+                    }, null));
+                }
+
+                var lineGroup = React.createElement('g', {}, lines)
+                background.push(lines);
+            }
+
             if (this.state.selectionRect.enabled === true) {
                 background.push(React.createElement("rect", {
                     x: this.state.selectionRect.x,
@@ -239,6 +273,9 @@ var app = app || {};
                     e.nativeEvent.preventDefault();
                 }
             }, background)
+
+
+
 
             var groupList = React.createElement(app.GroupSelectorComponent, {
                 focusedGroup: this.props.model.focusedGroup,

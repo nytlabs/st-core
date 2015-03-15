@@ -38,6 +38,8 @@ var app = app || {};
             }
         },
         documentMouseMove: function(e) {
+            // if we don't have a focus group we need to bail
+            if (this.props.model.focusedGroup === null) return;
             if (this.state.selectionRect.enabled === true) {
                 var x1 = this.state.selectionRect.x1;
                 var y1 = this.state.selectionRect.y1;
@@ -47,8 +49,8 @@ var app = app || {};
                 var rectY = y2 - y1 < 0 ? y2 : y1;
                 var width = Math.abs(x2 - x1);
                 var height = Math.abs(y2 - y1);
-                var translateX = this.props.model.entities[this.props.model.focusedGroup].translateX;
-                var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
+                var translateX = this.props.model.focusedGroup.translateX;
+                var translateY = this.props.model.focusedGroup.translateY;
                 var selected = [];
 
                 // check to see which nodes are currently in the selection box

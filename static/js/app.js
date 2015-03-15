@@ -1,5 +1,10 @@
 var app = app || {};
 
+// TODO 
+// This file desperately needs to be refactored. The portion of CoreApp that 
+// is related to the stage, the background lines, and the selection of nodes
+// can be put into its own component. 
+
 (function() {
     'use strict';
 
@@ -46,12 +51,14 @@ var app = app || {};
                 var translateY = this.props.model.entities[this.props.model.focusedGroup].translateY;
                 var selected = [];
 
+                // check to see which nodes are currently in the selection box
                 selected = this.props.model.focusedNodes.filter(function(node) {
                     if (!node.data.hasOwnProperty('position')) return false; // we may be able to get rid of this now.
                     var position = node.data.position;
                     return app.Utils.pointInRect(rectX, rectY, width, height, position.x + translateX, position.y + translateY);
                 }.bind(this));
 
+                // check to see which edges are in selection box
                 selected = selected.concat(this.props.model.focusedEdges.filter(function(node) {
                     if (!node.hasOwnProperty('from')) return false; // we may be able to get rid of this now.
                     var p1 = node.from;
@@ -60,6 +67,7 @@ var app = app || {};
                         app.Utils.pointInRect(rectX, rectY, width, height, p2.x + translateX, p2.y + translateY));
                 }.bind(this)));
 
+                // update the state of the selection box
                 this.setState({
                     selected: selected,
                     selectionRect: {
@@ -249,6 +257,14 @@ var app = app || {};
                 }
 
                 var lineGroup = React.createElement('g', {}, lines)
+
+                background.push(React.createElement('circle', {
+                    cx: translateX,
+                    cy: translateY,
+                    r: 5,
+                    fill: 'rgba(220,220,220,1)'
+                }, null))
+
                 background.push(lines);
             }
 

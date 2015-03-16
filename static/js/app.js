@@ -124,11 +124,6 @@ var app = app || {};
                 offY: e.pageY - this.props.model.focusedGroup.translateY,
                 selected: [],
             })
-            this.setState({
-                library: {
-                    enabled: false
-                }
-            })
         },
         onMouseUp: function(e) {
             if (this.state.selectionRect.enabled === true) {
@@ -143,6 +138,11 @@ var app = app || {};
                     dragging: false
                 })
             }
+            this.setState({
+                library: {
+                    enabled: false
+                }
+            })
         },
         nodeSelect: function(id) {
             var node = this.props.model.entities[id];
@@ -240,6 +240,7 @@ var app = app || {};
                 var vMax = Math.floor(this.state.height / 200.0);
                 for (var i = 0; i <= hMax; i++) {
                     lines.push(React.createElement('line', {
+                        key: 'h' + i,
                         x1: x + (i * 200),
                         y1: 0,
                         x2: x + (i * 200),
@@ -250,6 +251,7 @@ var app = app || {};
 
                 for (var i = 0; i <= vMax; i++) {
                     lines.push(React.createElement('line', {
+                        key: 'v' + i,
                         x1: 0,
                         y1: y + (i * 200),
                         x2: this.state.width,
@@ -258,13 +260,16 @@ var app = app || {};
                     }, null));
                 }
 
-                var lineGroup = React.createElement('g', {}, lines)
+                var lineGroup = React.createElement('g', {
+                    key: 'line_group',
+                }, lines)
 
                 background.push(React.createElement('circle', {
                     cx: translateX,
                     cy: translateY,
                     r: 5,
-                    fill: 'rgba(220,220,220,1)'
+                    fill: 'rgba(220,220,220,1)',
+                    key: 'origin',
                 }, null))
 
                 background.push(lines);
@@ -307,6 +312,14 @@ var app = app || {};
 
             var children = [stage, groupList, panelList];
 
+            if (this.state.library.enabled === true) {
+                children.push(React.createElement(app.AutoCompleteComponent, {
+                    key: 'autocomplete',
+                    x: this.state.library.x,
+                    y: this.state.library.y,
+                    options: this.props.model.blockLibrary
+                }, null));
+            }
 
 
             var container = React.createElement("div", {

@@ -101,6 +101,20 @@ var app = app || {};
                 }
             })
         },
+        createBlock: function(b) {
+            app.Utils.request(
+                'POST',
+                'blocks', {
+                    'type': b,
+                    'parent': this.props.model.focusedGroup.data.id,
+                    'position': {
+                        'x': this.state.library.x,
+                        'y': this.state.library.y
+                    }
+                },
+                null
+            )
+        },
         componentWillMount: function() {
             document.addEventListener('keydown', this.documentKeyDown);
             document.addEventListener('keyup', this.documentKeyUp);
@@ -317,7 +331,8 @@ var app = app || {};
                     key: 'autocomplete',
                     x: this.state.library.x,
                     y: this.state.library.y,
-                    options: this.props.model.blockLibrary
+                    options: this.props.model.blockLibrary,
+                    onChange: this.createBlock,
                 }, null));
             }
 

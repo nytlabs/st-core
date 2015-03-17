@@ -41,9 +41,15 @@ var app = app || {};
         handleChange: function(e) {
             this.autocomplete(e.target.value);
         },
+        handleKeyUp: function(e) {
+            if (e.nativeEvent.keyCode === 13) {
+                this.props.onChange(e.target.value);
+            }
+        },
         render: function() {
             var input = React.createElement('input', {
                 onChange: this.handleChange,
+                onKeyUp: this.handleKeyUp,
                 key: 'autocomplete_input'
             }, null);
 

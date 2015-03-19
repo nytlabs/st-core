@@ -7,8 +7,8 @@ import "math"
 func Exp() Spec {
 	return Spec{
 		Name:    "exp",
-		Inputs:  []Pin{Pin{"power"}},
-		Outputs: []Pin{Pin{"product"}},
+		Inputs:  []Pin{Pin{"power", NUMBER}},
+		Outputs: []Pin{Pin{"product", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -24,8 +24,8 @@ func Exp() Spec {
 func Log10() Spec {
 	return Spec{
 		Name:    "log10",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"log10"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"log10", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -40,8 +40,8 @@ func Log10() Spec {
 func Ln() Spec {
 	return Spec{
 		Name:    "ln",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"ln"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"ln", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -57,8 +57,8 @@ func Ln() Spec {
 func Sqrt() Spec {
 	return Spec{
 		Name:    "sqrt",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"squareRoot"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"squareRoot", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -74,8 +74,8 @@ func Sqrt() Spec {
 func Sin() Spec {
 	return Spec{
 		Name:    "sin",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"sin"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"sin", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -91,8 +91,8 @@ func Sin() Spec {
 func Cos() Spec {
 	return Spec{
 		Name:    "cos",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"cos"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"cos", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
@@ -108,8 +108,8 @@ func Cos() Spec {
 func Tan() Spec {
 	return Spec{
 		Name:    "tan",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"tan"}},
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"tan", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {

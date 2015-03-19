@@ -9,8 +9,8 @@ import (
 func UniformRandom() Spec {
 	return Spec{
 		Name:    "uniform",
-		Inputs:  []Pin{},
-		Outputs: []Pin{Pin{"draw"}},
+		Inputs:  []Pin{Pin{"trigger", ANY}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = rand.Float64()
 			return nil
@@ -23,17 +23,17 @@ func UniformRandom() Spec {
 func NormalRandom() Spec {
 	return Spec{
 		Name:    "normal",
-		Inputs:  []Pin{Pin{"mean"}, Pin{"variance"}},
-		Outputs: []Pin{Pin{"draw"}},
+		Inputs:  []Pin{Pin{"mean", NUMBER}, Pin{"variance", NUMBER}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			variance, ok := in[1].(float64)
 			if !ok {
-				out[0] = NewError("variance must be a float")
+				out[0] = NewError("variance must be a number")
 				return nil
 			}
 			mean, ok := in[0].(float64)
 			if !ok {
-				out[0] = NewError("mean must be a float")
+				out[0] = NewError("mean must be a number")
 				return nil
 			}
 			out[0] = rand.NormFloat64()*math.Sqrt(variance) + mean
@@ -49,24 +49,25 @@ var RAND *rand.Rand = rand.New(rand.NewSource(12345))
 // notation follows the wikipedia page http://en.wikipedia.org/wiki/Zipf%E2%80%93Mandelbrot_law not the golang Zipf parameters
 func ZipfRandom() Spec {
 	return Spec{
-		Name:    "Zipf",
-		Inputs:  []Pin{Pin{"q"}, Pin{"s"}, Pin{"N"}},
-		Outputs: []Pin{Pin{"draw"}},
+		Name: "Zipf",
+		Inputs: []Pin{
+			Pin{"q", NUMBER}, Pin{"s", NUMBER}, Pin{"N", NUMBER}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
 
 			q, ok := in[0].(float64)
 			if !ok {
-				out[0] = NewError("q must be a float")
+				out[0] = NewError("q must be a number")
 				return nil
 			}
 			s, ok := in[1].(float64)
 			if !ok {
-				out[0] = NewError("s must be a float")
+				out[0] = NewError("s must be a number")
 				return nil
 			}
-			N, ok := in[2].(int)
+			N, ok := in[2].(float64)
 			if !ok {
-				out[0] = NewError("N must be an int")
+				out[0] = NewError("N must be an number")
 				return nil
 			}
 
@@ -95,12 +96,12 @@ func poisson(λ float64) int {
 func PoissonRandom() Spec {
 	return Spec{
 		Name:    "Poisson",
-		Inputs:  []Pin{Pin{"rate"}},
-		Outputs: []Pin{Pin{"draw"}},
+		Inputs:  []Pin{Pin{"rate", NUMBER}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
 			λ, ok := in[0].(float64)
 			if !ok {
-				out[0] = NewError("rate must be a float")
+				out[0] = NewError("rate must be a number")
 				return nil
 			}
 			if λ < 0 {
@@ -117,13 +118,13 @@ func PoissonRandom() Spec {
 func BernoulliRandom() Spec {
 	return Spec{
 		Name:    "Bernoulli",
-		Inputs:  []Pin{Pin{"bias"}},
-		Outputs: []Pin{Pin{"draw"}},
+		Inputs:  []Pin{Pin{"bias", NUMBER}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			r := RAND.Float64()
 			p, ok := in[0].(float64)
 			if !ok {
-				out[0] = NewError("bias must be a float")
+				out[0] = NewError("bias must be a number")
 				return nil
 			}
 			if p < 0 || p > 1 {

@@ -6,8 +6,8 @@ import "strings"
 func InArray() Spec {
 	return Spec{
 		Name:    "inArray",
-		Inputs:  []Pin{Pin{"element"}, Pin{"array"}},
-		Outputs: []Pin{Pin{"inArray"}},
+		Inputs:  []Pin{Pin{"element", ANY}, Pin{"array", ARRAY}},
+		Outputs: []Pin{Pin{"inArray", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			arr, ok := in[1].([]interface{})
 			if !ok {
@@ -30,8 +30,8 @@ func InArray() Spec {
 func HasField() Spec {
 	return Spec{
 		Name:    "hasField",
-		Inputs:  []Pin{Pin{"field"}, Pin{"object"}},
-		Outputs: []Pin{Pin{"hasField"}},
+		Inputs:  []Pin{Pin{"field", STRING}, Pin{"object", OBJECT}},
+		Outputs: []Pin{Pin{"hasField", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			obj, ok := in[1].(map[string]interface{})
 			if !ok {
@@ -53,8 +53,8 @@ func HasField() Spec {
 func InString() Spec {
 	return Spec{
 		Name:    "inString",
-		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
-		Outputs: []Pin{Pin{"inString"}},
+		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
+		Outputs: []Pin{Pin{"inString", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
@@ -76,8 +76,8 @@ func InString() Spec {
 func HasPrefix() Spec {
 	return Spec{
 		Name:    "hasPrefix",
-		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
-		Outputs: []Pin{Pin{"inString"}},
+		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
+		Outputs: []Pin{Pin{"inString", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
@@ -99,8 +99,8 @@ func HasPrefix() Spec {
 func HasSuffix() Spec {
 	return Spec{
 		Name:    "hasSuffix",
-		Inputs:  []Pin{Pin{"substring"}, Pin{"string"}},
-		Outputs: []Pin{Pin{"inString"}},
+		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
+		Outputs: []Pin{Pin{"inString", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {

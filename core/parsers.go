@@ -5,8 +5,8 @@ import "encoding/json"
 func ParseJSON() Spec {
 	return Spec{
 		Name:    "parseJSON",
-		Inputs:  []Pin{Pin{"in"}},
-		Outputs: []Pin{Pin{"out"}},
+		Inputs:  []Pin{Pin{"in", STRING}},
+		Outputs: []Pin{Pin{"out", ANY}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			msgstring, ok := in[0].(string)
 			if !ok {

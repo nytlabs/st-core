@@ -13,6 +13,20 @@ const (
 	PRIORITY
 )
 
+// JSONType defines the possible types that variables in core can take
+type JSONType uint8
+
+const (
+	NUMBER JSONType = iota
+	STRING
+	ARRAY
+	OBJECT
+	BOOLEAN
+	NULL
+	ANY
+	ERROR
+)
+
 // MessageMap maps a block's inbound routes onto the Messages they contain
 type MessageMap map[RouteIndex]Message
 
@@ -39,6 +53,7 @@ type Kernel func(MessageMap, MessageMap, MessageMap, Source, chan Interrupt) Int
 // A Pin contains information about a particular input or output
 type Pin struct {
 	Name string
+	Type JSONType
 }
 
 // A Spec defines a block's input and output Pins, and the block's Kernel.

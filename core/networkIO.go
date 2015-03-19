@@ -16,8 +16,8 @@ import (
 func GET() Spec {
 	return Spec{
 		Name:    "GET",
-		Inputs:  []Pin{Pin{"URL"}, Pin{"header"}},
-		Outputs: []Pin{Pin{"response"}},
+		Inputs:  []Pin{Pin{"URL", STRING}, Pin{"header", OBJECT}},
+		Outputs: []Pin{Pin{"response", STRING}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 
 			url, ok := in[0].(string)

@@ -48,10 +48,10 @@ func listGet() Spec {
 	return Spec{
 		Name: "listGet",
 		Inputs: []Pin{
-			Pin{"index"},
+			Pin{"index", NUMBER},
 		},
 		Outputs: []Pin{
-			Pin{"element"},
+			Pin{"element", ANY},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -88,10 +88,10 @@ func listSet() Spec {
 	return Spec{
 		Name: "listSet",
 		Inputs: []Pin{
-			Pin{"index"}, Pin{"element"},
+			Pin{"index", NUMBER}, Pin{"element", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -129,10 +129,10 @@ func listAppend() Spec {
 	return Spec{
 		Name: "listAppend",
 		Inputs: []Pin{
-			Pin{"element"},
+			Pin{"element", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -149,10 +149,10 @@ func listPop() Spec {
 	return Spec{
 		Name: "listPop",
 		Inputs: []Pin{
-			Pin{"trigger"},
+			Pin{"trigger", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"element"},
+			Pin{"element", ANY},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -168,10 +168,10 @@ func listShift() Spec {
 	return Spec{
 		Name: "listShift",
 		Inputs: []Pin{
-			Pin{"element"},
+			Pin{"element", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out"},
+			Pin{"out", ANY},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -190,8 +190,8 @@ func listShift() Spec {
 func listDump() Spec {
 	return Spec{
 		Name:    "listDump",
-		Inputs:  []Pin{Pin{"trigger"}},
-		Outputs: []Pin{Pin{"list"}},
+		Inputs:  []Pin{Pin{"trigger", ANY}},
+		Outputs: []Pin{Pin{"list", ARRAY}},
 		Source:  LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			l := s.(*List)

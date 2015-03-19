@@ -108,12 +108,22 @@ var app = app || {};
                     'type': b,
                     'parent': this.props.model.focusedGroup.data.id,
                     'position': {
-                        'x': this.state.library.x,
-                        'y': this.state.library.y
+                        'x': this.state.library.x - this.props.model.focusedGroup.translateX,
+                        'y': this.state.library.y - this.props.model.focusedGroup.translateY
                     }
                 },
-                null
-            )
+                function(e) {
+                    if (e.status !== 200) {
+                        // error
+                    } else {
+                        this.setState({
+                            library: {
+                                enabled: false
+                            }
+                        })
+                    }
+                }.bind(this))
+
         },
         componentWillMount: function() {
             document.addEventListener('keydown', this.documentKeyDown);

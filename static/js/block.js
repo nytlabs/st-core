@@ -3,6 +3,9 @@ var app = app || {};
 (function() {
     app.RouteComponent = React.createClass({
         displayName: "RouteComponent",
+        handleMouseUp: function(e) {
+            console.log("Well, hello.");
+        },
         render: function() {
             var children = [];
 
@@ -20,11 +23,16 @@ var app = app || {};
                     cy: this.props.model.routeCircleY,
                     r: this.props.model.routeRadius,
                     className: "route_circle",
-                    key: "route_circle"
+                    key: "route_circle",
+                    onMouseUp: this.handleMouseUp,
                 }, null)
             )
 
-            if ((this.props.model.data.hasOwnProperty('value') && this.props.model.data.value !== null) || this.props.model.connections.length !== 0) {
+            // if this route has a value set for it OR we are connected to
+            // something, then fill the route.
+            if ((this.props.model.data.hasOwnProperty('value') &&
+                    this.props.model.data.value !== null) ||
+                this.props.model.connections.length !== 0) {
                 children.push(
                     React.createElement('circle', {
                         cx: this.props.model.routeCircleX,
@@ -37,7 +45,9 @@ var app = app || {};
             }
 
             return React.createElement('g', {
-                transform: 'translate(' + this.props.model.routeX + ', ' + this.props.model.routeY + ')',
+                transform: 'translate(' +
+                    this.props.model.routeX + ', ' +
+                    this.props.model.routeY + ')',
             }, children)
         },
     })

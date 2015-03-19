@@ -71,6 +71,7 @@ type Spec struct {
 type Input struct {
 	Name  string       `json:"name"`
 	Value *InputValue  `json:"value"`
+	Type  JSONType     `json:"type"`
 	C     chan Message `json:"-"`
 }
 
@@ -86,6 +87,7 @@ func (i *InputValue) Exists() bool {
 // mesage is sent on every Connection in the Connections set.
 type Output struct {
 	Name        string                  `json:"name"`
+	Type        JSONType                `json:"type"`
 	Connections map[Connection]struct{} `json:"-"`
 }
 

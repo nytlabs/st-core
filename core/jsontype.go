@@ -3,19 +3,21 @@ package core
 import "errors"
 
 func (j JSONType) MarshalJSON() ([]byte, error) {
-	switch {
-	case j == NUMBER:
-		return []byte("Number"), nil
-	case j == ARRAY:
-		return []byte("Array"), nil
-	case j == OBJECT:
-		return []byte("Object"), nil
-	case j == STRING:
-		return []byte("String"), nil
-	case j == BOOLEAN:
-		return []byte("Boolean"), nil
-	case j == ANY:
-		return []byte("Any"), nil
+	switch j {
+	case NUMBER:
+		return []byte(`"number"`), nil
+	case ARRAY:
+		return []byte(`"array"`), nil
+	case OBJECT:
+		return []byte(`"object"`), nil
+	case STRING:
+		return []byte(`"string"`), nil
+	case BOOLEAN:
+		return []byte(`"boolean"`), nil
+	case NULL:
+		return []byte(`"null"`), nil
+	case ANY:
+		return []byte(`"any"`), nil
 	}
 	return nil, errors.New("Unknown pin type")
 }

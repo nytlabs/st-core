@@ -30,7 +30,10 @@ var app = app || {};
                     height: 0,
                     enabled: false
                 },
-                connect: [],
+                connecting: null,
+                connectionFrom: null,
+                connectionTo: null,
+                connectionRoute: null,
                 library: {
                     x: null,
                     y: null,
@@ -199,6 +202,19 @@ var app = app || {};
             })
         },
         handleRouteEvent: function(r) {
+            if (r.direction == 'input') {
+                this.setState({
+                    connectionTo: this.props.model.entities[r.id],
+                    connectionRoute: r.route,
+                })
+            }
+
+            if (r.direction == 'output') {
+                this.setState({
+                    connectionFrom: this.props.model.entities[r.id],
+                    connectionRoute: r.route,
+                })
+            }
 
         },
         render: function() {
@@ -312,6 +328,16 @@ var app = app || {};
                     height: this.state.selectionRect.height,
                     className: 'selection_rect',
                     key: 'selection_rect'
+                }, null))
+            }
+
+            if (this.state.connectionFrom != null ||
+                this.state.connectionTo != null) {
+                background.push(React.createElement(app.ConnectionToolComponent, {
+                    key: 'tool',
+                    from: this.state.connectionFrom,
+                    to: this.state.connectionTo,
+                    route: this.state.connectionRoute
                 }, null))
             }
 

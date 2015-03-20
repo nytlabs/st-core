@@ -3,8 +3,8 @@ var app = app || {};
 (function() {
     app.RouteComponent = React.createClass({
         displayName: "RouteComponent",
-        handleMouseUp: function(e) {
-            console.log("Well, hello.");
+        handleMouseUp: function() {
+            this.props.onChange(this.props.model)
         },
         render: function() {
             var children = [];
@@ -17,14 +17,14 @@ var app = app || {};
                 }, this.props.model.data.name)
             )
 
+            var circleClass = "route_circle" + " " + this.props.model.data.type;
             children.push(
                 React.createElement('circle', {
                     cx: this.props.model.routeCircleX,
                     cy: this.props.model.routeCircleY,
                     r: this.props.model.routeRadius,
-                    className: "route_circle",
+                    className: circleClass,
                     key: "route_circle",
-                    onMouseUp: this.handleMouseUp,
                 }, null)
             )
 
@@ -45,6 +45,7 @@ var app = app || {};
             }
 
             return React.createElement('g', {
+                onMouseUp: this.handleMouseUp,
                 transform: 'translate(' +
                     this.props.model.routeX + ', ' +
                     this.props.model.routeY + ')',
@@ -56,6 +57,13 @@ var app = app || {};
 (function() {
     app.BlockComponent = React.createClass({
         displayName: "BlockComponent",
+        onChange: function(r) {
+            this.props.onRouteEvent({
+                id: this.props.model.data.id,
+                route: r.routeIndex,
+                direction: r.routeDirection
+            })
+        },
         render: function() {
             var classes = "block";
             if (this.props.selected === true) classes += " selected";
@@ -84,6 +92,7 @@ var app = app || {};
 
             children = children.concat(routes.map(function(r, i) {
                 return React.createElement(app.RouteComponent, {
+                    onChange: this.onChange,
                     model: r,
                     key: r.routeAlign + i
                 }, null)

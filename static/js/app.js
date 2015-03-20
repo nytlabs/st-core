@@ -30,6 +30,7 @@ var app = app || {};
                     height: 0,
                     enabled: false
                 },
+                connect: [],
                 library: {
                     x: null,
                     y: null,
@@ -197,6 +198,9 @@ var app = app || {};
                 }
             })
         },
+        handleRouteEvent: function(r) {
+
+        },
         render: function() {
             var nodes = {
                 'source': app.SourceComponent,
@@ -219,6 +223,7 @@ var app = app || {};
                 }, React.createElement(nodes[c.instance()], {
                     key: c.data.id,
                     model: c,
+                    onRouteEvent: this.handleRouteEvent,
                     selected: this.state.selected.indexOf(c) !== -1 ? true : false,
                 }, null))
             }.bind(this));

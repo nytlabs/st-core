@@ -10,6 +10,7 @@ func NewBlock(s Spec) *Block {
 	for _, v := range s.Inputs {
 		in = append(in, Input{
 			Name:  v.Name,
+			Type:  v.Type,
 			Value: nil,
 			C:     make(chan Message),
 		})
@@ -18,6 +19,7 @@ func NewBlock(s Spec) *Block {
 	for _, v := range s.Outputs {
 		out = append(out, Output{
 			Name:        v.Name,
+			Type:        v.Type,
 			Connections: make(map[Connection]struct{}),
 		})
 	}
@@ -140,6 +142,7 @@ func (b *Block) GetOutputs() []Output {
 	for id, out := range b.routing.Outputs {
 		m[id] = Output{
 			Name:        out.Name,
+			Type:        out.Type,
 			Connections: make(map[Connection]struct{}),
 		}
 		for k, _ := range out.Connections {

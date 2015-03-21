@@ -83,10 +83,11 @@ var app = app || {};
                     className: 'block_header',
                 }, this.props.model.data.type),
                 React.createElement('div', {
-                    className: "label"
+                    key: 'block_Label',
+                    className: "label",
                 }, "label"),
                 React.createElement(app.PanelEditableComponent, {
-                    key: 'label',
+                    key: 'route_label',
                     className: 'editable',
                     value: this.props.model.data.label,
                     onChange: function(value) {
@@ -104,6 +105,7 @@ var app = app || {};
                             className: 'label',
                         }, r.data.name),
                         React.createElement(app.PanelEditableComponent, {
+                                key: this.props.model.data.id + r.data.name,
                                 value: JSON.stringify(r.data.value),
                                 onChange: function(value) {
                                     app.Utils.request(

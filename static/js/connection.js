@@ -5,7 +5,10 @@ var app = app || {};
     app.ConnectionToolComponent = React.createClass({
         displayName: 'ConnectionToolComponent',
         componentWillMount: function() {
-            document.addEventListener('mousemove', this.handleMouseMove);
+            window.addEventListener('mousemove', this.handleMouseMove);
+        },
+        componentWillUnmount: function() {
+            window.removeEventListener('mousemove', this.handleMouseMove);
         },
         getInitialState: function() {
             return {
@@ -31,11 +34,13 @@ var app = app || {};
 
             var routeX = node.data.position.x +
                 node[routing.direction + 's'][routing.route].routeX +
-                node[routing.direction + 's'][routing.route].routeCircleX;
+                node[routing.direction + 's'][routing.route].routeCircleX +
+                this.props.translateX;
 
             var routeY = node.data.position.y +
                 node[routing.direction + 's'][routing.route].routeY +
-                node[routing.direction + 's'][routing.route].routeCircleY;
+                node[routing.direction + 's'][routing.route].routeCircleY +
+                this.props.translateY;
 
             // if the tool is enabled but the mouse has not moved, set null
             // state as route position

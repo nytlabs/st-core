@@ -127,7 +127,24 @@ var app = app || {};
 
         },
         createConnection: function(from, to) {
-            console.log(from, to);
+            app.Utils.request(
+                'POST',
+                'connections', {
+                    'from': {
+                        'id': from.direction === 'output' ? from.id : to.id,
+                        'route': from.direction === 'output' ? from.route : to.route,
+                    },
+                    'to': {
+                        'id': to.direction === 'input' ? to.id : from.id,
+                        'route': to.direction === 'input' ? to.route : from.route,
+                    }
+                },
+                function(e) {
+                    this.setState({
+                        connecting: null
+                    })
+                }.bind(this)
+            )
         },
         componentWillMount: function() {
             document.addEventListener('keydown', this.documentKeyDown);
@@ -328,15 +345,26 @@ var app = app || {};
                 }, null))
             }
 
-            if (this.state.connecting != null) {
-                background.push(React.createElement(app.ConnectionToolComponent, {
-                    key: 'tool',
-                    connecting: this.state.connecting,
-                    node: this.props.model.entities[this.state.connecting.id]
-                }, null))
-            }
 
             background.push(renderGroups);
+
+            if (this.props.model.focusedGroup !== null) {
+                var groupList = React.createElement(app.GroupSelectorComponent, {
+                    focusedGroup: this.props.model.focusedGroup.data.id,
+                    groups: this.props.model.groups,
+                    key: "group_list",
+                }, null);
+
+                if (this.state.connecting != null) {
+                    background.push(React.createElement(app.ConnectionToolComponent, {
+                        key: 'tool',
+                        connecting: this.state.connecting,
+                        node: this.props.model.entities[this.state.connecting.id],
+                        translateX: this.props.model.focusedGroup.translateX,
+                        translateY: this.props.model.focusedGroup.translateY
+                    }, null))
+                }
+            }
 
             var stage = React.createElement("svg", {
                 className: "stage",
@@ -346,14 +374,6 @@ var app = app || {};
                     e.nativeEvent.preventDefault();
                 }
             }, background)
-
-            if (this.props.model.focusedGroup !== null) {
-                var groupList = React.createElement(app.GroupSelectorComponent, {
-                    focusedGroup: this.props.model.focusedGroup.data.id,
-                    groups: this.props.model.groups,
-                    key: "group_list",
-                }, null);
-            }
 
             var panelList = React.createElement(app.PanelListComponent, {
                 nodes: this.state.selected,

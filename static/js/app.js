@@ -31,9 +31,6 @@ var app = app || {};
                     enabled: false
                 },
                 connecting: null,
-                connectionFrom: null,
-                connectionTo: null,
-                connectionRoute: null,
                 library: {
                     x: null,
                     y: null,
@@ -129,6 +126,9 @@ var app = app || {};
                 }.bind(this))
 
         },
+        createConnection: function(from, to) {
+            console.log(from, to);
+        },
         componentWillMount: function() {
             document.addEventListener('keydown', this.documentKeyDown);
             document.addEventListener('keyup', this.documentKeyUp);
@@ -145,12 +145,14 @@ var app = app || {};
                     y1: e.pageY,
                     enabled: true
                 },
-                selected: []
+                selected: [],
+                connecting: null
             }) : this.setState({
                 dragging: true,
                 offX: e.pageX - this.props.model.focusedGroup.translateX,
                 offY: e.pageY - this.props.model.focusedGroup.translateY,
                 selected: [],
+                connecting: null
             })
         },
         onMouseUp: function(e) {
@@ -202,18 +204,13 @@ var app = app || {};
             })
         },
         handleRouteEvent: function(r) {
-            if (r.direction == 'input') {
+            if (this.state.connecting === null) {
                 this.setState({
-                    connectionTo: this.props.model.entities[r.id],
-                    connectionRoute: r.route,
+                    connecting: r
                 })
             }
-
-            if (r.direction == 'output') {
-                this.setState({
-                    connectionFrom: this.props.model.entities[r.id],
-                    connectionRoute: r.route,
-                })
+            if (this.state.connecting !== null) {
+                this.createConnection(r, this.state.connecting)
             }
 
         },
@@ -331,13 +328,11 @@ var app = app || {};
                 }, null))
             }
 
-            if (this.state.connectionFrom != null ||
-                this.state.connectionTo != null) {
+            if (this.state.connecting != null) {
                 background.push(React.createElement(app.ConnectionToolComponent, {
                     key: 'tool',
-                    from: this.state.connectionFrom,
-                    to: this.state.connectionTo,
-                    route: this.state.connectionRoute
+                    connecting: this.state.connecting,
+                    node: this.props.model.entities[this.state.connecting.id]
                 }, null))
             }
 

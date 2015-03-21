@@ -274,14 +274,14 @@ var app = app || {};
         var from = this.model.entities[this.data.from.id];
         var to = this.model.entities[this.data.to.id];
 
-        var x1 = from.width + from.data.position.x + from.outputs[this.data.from.route].routeCircleX;
+        var x1 = from.data.position.x + from.outputs[this.data.from.route].routeX + from.outputs[this.data.from.route].routeCircleX;
         var y1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
-        var cx1 = from.width + 50 + from.data.position.x;
-        var cy1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
+        var cx1 = x1 + 50.0;
+        var cy1 = y1;
         var x2 = to.data.position.x + to.inputs[this.data.to.route].routeX + to.inputs[this.data.to.route].routeCircleX;
         var y2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;
-        var cx2 = -50 + to.data.position.x;
-        var cy2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;;
+        var cx2 = x2 - 50.0;
+        var cy2 = y2;
 
         this.from = {
             x: x1,

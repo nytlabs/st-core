@@ -1,3 +1,26 @@
+/*
+ * StageComponent
+ * - renders the background and grid
+ * - provides selection box and selection events
+ * - group's translation state is updated in model
+ *
+ *           +-----+ group               +---------------+
+ *           |     | width               |               |
+ *           | app | height              | stage         |
+ *           |     | +-----------------> | (no children) |
+ *           |     |                     |               |
+ *   +-----> |     | onSelectionChange() |               |
+ *   |       |     | OnDoubleClick()     |               |
+ *   |       |     | onMouseUp()         |               |
+ *   |       |     | <-----------------+ |               |
+ *   |       +-----+                     +---------------+
+ *   |
+ *   |       +-----+                     +
+ *   |       |model| group.setTranslation|
+ *   +-----+ |     | <-------------------+
+ *           +-----+
+ */
+
 var app = app || {};
 
 (function() {
@@ -9,12 +32,12 @@ var app = app || {};
         getInitialState: function() {
             return {
                 dragging: false,
-                offX: null,
+                offX: null, // initial mouse position when dragging starts
                 offY: null,
                 selectionRect: {
-                    x1: null,
+                    x1: null, // used for calculation
                     y1: null,
-                    x: null,
+                    x: null, // used for rendering
                     y: null,
                     width: null,
                     height: null,
@@ -36,6 +59,7 @@ var app = app || {};
             }
 
             if (this.state.selectionRect.enabled === true) {
+                // ensure that we don't have a negative width for the rect
                 var x1 = this.state.selectionRect.x1;
                 var y1 = this.state.selectionRect.y1;
                 var x2 = e.pageX;
@@ -57,6 +81,8 @@ var app = app || {};
                         height: height,
                     }
                 })
+
+                // update parent components about what we're selecting
                 this.props.onSelectionChange(rectX, rectY, width, height);
             }
 
@@ -100,11 +126,10 @@ var app = app || {};
                 });
             }
         },
-        handleDoubleClick: function(e) {
-
-        },
         render: function() {
             var nodes = [];
+
+            // the background rect
             var background = React.createElement('rect', {
                 className: 'background',
                 x: '0',
@@ -116,6 +141,7 @@ var app = app || {};
                 key: 'background'
             }, null);
 
+            // the grid
             var translateX = this.props.group.translateX;
             var translateY = this.props.group.translateY;
             var x = translateX % GRID_PX;
@@ -149,6 +175,7 @@ var app = app || {};
                 key: 'line_group',
             }, lines)
 
+            // the origin point
             var origin = React.createElement('circle', {
                 cx: translateX,
                 cy: translateY,
@@ -159,6 +186,7 @@ var app = app || {};
 
             var nodes = [background, lineGroup, origin];
 
+            // selection rect
             if (this.state.selectionRect.enabled === true) {
                 var selectionRect = React.createElement("rect", {
                     x: this.state.selectionRect.x,

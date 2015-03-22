@@ -20,6 +20,7 @@ var app = app || {};
             var circleClass = "route_circle" + " " + this.props.model.data.type;
             children.push(
                 React.createElement('circle', {
+                    onMouseUp: this.handleMouseUp,
                     cx: this.props.model.routeCircleX,
                     cy: this.props.model.routeCircleY,
                     r: this.props.model.routeRadius,
@@ -45,7 +46,6 @@ var app = app || {};
             }
 
             return React.createElement('g', {
-                onMouseUp: this.handleMouseUp,
                 transform: 'translate(' +
                     this.props.model.routeX + ', ' +
                     this.props.model.routeY + ')',

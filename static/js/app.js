@@ -223,6 +223,17 @@ var app = app || {};
 
             var background = [];
 
+            if (this.props.model.focusedGroup !== null) {
+                background.push(React.createElement(app.StageComponent, {
+                    key: 'bg',
+                    group: this.props.model.focusedGroup,
+                    onSelectionChange: this.handleSelectionChange,
+                    onDoubleClick: this.handleDoubleClick,
+                    onMouseUp: this.handleMouseUp,
+                    width: this.state.width,
+                    height: this.state.height,
+                }, null));
+            }
 
             if (this.props.model.focusedGroup !== null) {
                 var groupList = React.createElement(app.GroupSelectorComponent, {
@@ -240,18 +251,6 @@ var app = app || {};
                         translateY: this.props.model.focusedGroup.translateY
                     }, null))
                 }
-            }
-
-            if (this.props.model.focusedGroup !== null) {
-                background.push(React.createElement(app.StageComponent, {
-                    key: 'bg',
-                    group: this.props.model.focusedGroup,
-                    onSelectionChange: this.handleSelectionChange,
-                    onDoubleClick: this.handleDoubleClick,
-                    onMouseUp: this.handleMouseUp,
-                    width: this.state.width,
-                    height: this.state.height,
-                }, null));
             }
 
             background.push(renderGroups);

@@ -374,7 +374,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not read request body"})
+		writeJSON(w, Error{err.Error()})
 		return
 	}
 
@@ -389,7 +389,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &p)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarshal value"})
+		writeJSON(w, Error{err.Error()})
 		return
 	}
 

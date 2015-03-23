@@ -134,14 +134,36 @@ var app = app || {};
             window.addEventListener('keydown', this.documentKeyDown);
             window.addEventListener('keyup', this.documentKeyUp);
             window.addEventListener('resize', this.handleResize);
-
+            window.addEventListener('mousedown', this.handleMouseDown);
             this.handleResize();
+        },
+        componentWillUnmount: function() {
+            window.removeEventListener('keydown', this.documentKeyDown);
+            window.removeEventListener('keyup', this.documentKeyUp);
+            window.removeEventListener('resize', this.handleResize);
+            window.removeEventListener('mousedown', this.handleMouseDown);
         },
         handleResize: function() {
             this.setState({
                 width: document.body.clientWidth,
                 height: document.body.clientHeight
             })
+        },
+        handleMouseDown: function(e) {
+            /* TODO: ensure that we are clicking on something that is not a
+             * route.
+             *
+             * If we click anywhere other than a route, cancel the connection
+             * tool. This is kind of a hack because we're only checking the
+             * tag name. we don't know _for sure_ that we've clicked somewhere
+             * else other than a route. eg: clicking on the origin circle won't
+             * cancel the tool.
+             */
+            if (e.target.tagName !== 'circle') {
+                this.setState({
+                    connecting: null
+                })
+            }
         },
         handleMouseUp: function(e) {
             this.setState({

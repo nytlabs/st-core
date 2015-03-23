@@ -441,6 +441,10 @@ var app = app || {};
                 }
 
                 delete this.entities[m.data[m.type].id];
+
+                if (this.focusedGroup != null) {
+                    this.focusedGroup.refreshFocusedGroup();
+                }
                 break;
         }
 

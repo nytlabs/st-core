@@ -36,6 +36,7 @@ var app = app || {};
                 this.props.model.connections.length !== 0) {
                 children.push(
                     React.createElement('circle', {
+                        onMouseUp: this.handleMouseUp,
                         cx: this.props.model.routeCircleX,
                         cy: this.props.model.routeCircleY,
                         r: this.props.model.routeRadius - 2,

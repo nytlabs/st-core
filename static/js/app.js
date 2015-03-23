@@ -58,6 +58,12 @@ var app = app || {};
 
         },
         documentKeyDown: function(e) {
+            if (e.keyCode === 8 && e.target === document.body) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.deleteSelection();
+            }
+
             if (e.shiftKey === true) this.setState({
                 keys: {
                     shift: true
@@ -69,6 +75,15 @@ var app = app || {};
                 keys: {
                     shift: false
                 }
+            })
+        },
+        deleteSelection: function() {
+            this.state.selected.forEach(function(e) {
+                app.Utils.request(
+                    'DELETE',
+                    e.instance() + 's/' + e.data.id, {},
+                    null
+                )
             })
         },
         createBlock: function(b) {

@@ -177,6 +177,23 @@ func Head() Spec {
 	}
 }
 
+func Len() Spec {
+	return Spec{
+		Name:    "len",
+		Inputs:  []Pin{Pin{"in", ARRAY}},
+		Outputs: []Pin{Pin{"out", NUMBER}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			arr, ok := in[0].([]interface{})
+			if !ok {
+				out[0] = NewError("len requires an array")
+				return nil
+			}
+			out[0] = float64(len(arr))
+			return nil
+		},
+	}
+}
+
 // Tail emits the last element of the inbound array on one output,
 //and the head of the array on the other.
 func Tail() Spec {

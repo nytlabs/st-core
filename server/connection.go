@@ -101,10 +101,91 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		Id:     s.GetNextID(),
 	}
 
+	s.DetectCycles(conn)
+
 	s.connections[conn.Id] = conn
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{*conn}})
 	return conn, nil
+}
+
+func (s *Server) DetectCycles(newConn *ConnectionLedger) {
+	/*cacheST := make(map[int]map[int]struct{})
+	cacheTS := make(map[int]map[int]struct{})
+
+	cacheST[newConn.Source.Id] = map[int]struct{}{
+		newConn.Target.Id: struct{}{},
+	}
+
+	cacheTS[newConn.Target.Id] = map[int]struct{}{
+		newConn.Source.Id: struct{}{},
+	}
+
+	for _, c := range s.connections {
+		if _, ok := cacheST[c.Source.Id]; !ok {
+			cacheST[c.Source.Id] = make(map[int]struct{})
+		}
+		if _, ok := cacheTS[c.Target.Id]; !ok {
+			cacheTS[c.Target.Id] = make(map[int]struct{})
+		}
+		cacheTS[c.Target.Id][c.Source.Id] = struct{}{}
+		cacheST[c.Source.Id][c.Target.Id] = struct{}{}
+	}
+
+	foundSet := make(map[int]struct{})
+
+	var traverse func(int, map[int]struct{}) map[int]struct{}
+
+	traverse = func(id int, trail map[int]struct{}) map[int]struct{} {
+		// if we found the end
+		if _, ok := foundSet[id]; ok {
+			return trail
+		}
+
+		newMap := make(map[int]struct{})
+
+		// if there is nothing downstream
+		if _, ok := cacheST[id]; !ok {
+			return newMap
+		}
+
+		if _, ok := cacheTS[id]; !ok {
+			return newMap
+		}
+
+		foundSet[id] = struct{}{}
+
+		// we have children so traverse them
+		for k, _ := range trail {
+			newMap[k] = struct{}{}
+		}
+
+		newMap[id] = struct{}{}
+		for child, _ := range cacheST[id] {
+			nm := traverse(child, newMap)
+			for k, _ := range nm {
+				newMap[k] = struct{}{}
+			}
+		}
+
+		for child, _ := range cacheTS[id] {
+			nm := traverse(child, newMap)
+			for k, _ := range nm {
+				newMap[k] = struct{}{}
+			}
+		}
+
+		return newMap
+	}
+
+	fmt.Println("RUNNING")
+	m := traverse(newConn.Target.Id, make(map[int]struct{}))
+	fmt.Println("DONE")*/
+
+	for _, b := range s.blocks {
+		b.Block.Reset()
+		s.websocketBroadcast(Update{Action: RESET, Type: BLOCK, Data: wsBlock{wsId{b.Id}}})
+	}
 }
 
 // returns a description of the connection

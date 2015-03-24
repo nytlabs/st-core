@@ -217,6 +217,16 @@ func (b *Block) Disconnect(id RouteIndex, c Connection) error {
 	return <-returnVal
 }
 
+func (b *Block) Reset() error {
+	returnVal := make(chan error, 1)
+	b.routing.InterruptChan <- func() bool {
+		b.crank()
+		returnVal <- nil
+		return true
+	}
+	return <-returnVal
+}
+
 // suture: stop the block
 func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {

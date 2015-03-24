@@ -11,6 +11,7 @@ import (
 const (
 	// actions
 	DELETE = "delete"
+	RESET  = "reset"
 	UPDATE = "update"
 	CREATE = "create"
 	// nodes

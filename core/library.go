@@ -36,6 +36,7 @@ func GetLibrary() map[string]Spec {
 		Pusher(),
 		Merge(),
 
+		Len(),
 		// monads
 		Exp(),
 		Log10(),

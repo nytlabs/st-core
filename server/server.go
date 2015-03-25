@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/nytlabs/st-core/core"
-	"github.com/thejerf/suture"
 )
 
 const (
@@ -37,7 +36,6 @@ type Server struct {
 	links         map[int]*LinkLedger
 	library       map[string]core.Spec
 	sourceLibrary map[string]core.SourceSpec
-	supervisor    *suture.Supervisor
 	lastID        int
 	addSocket     chan *socket
 	delSocket     chan *socket
@@ -48,8 +46,6 @@ type Server struct {
 
 // NewServer starts a new Server. This object is immediately up and running.
 func NewServer() *Server {
-	supervisor := suture.NewSimple("st-core")
-	supervisor.ServeBackground()
 	groups := make(map[int]*Group)
 	groups[0] = &Group{
 		Label:    "root",
@@ -66,7 +62,6 @@ func NewServer() *Server {
 	sourceLibrary := core.GetSources()
 	parents := make(map[int]int)
 	s := &Server{
-		supervisor:    supervisor,
 		lastID:        0,
 		parents:       parents,
 		groups:        groups,

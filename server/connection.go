@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -101,7 +102,7 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		Id:     s.GetNextID(),
 	}
 
-	s.DetectCycles(conn)
+	s.ResetGraph(conn)
 
 	s.connections[conn.Id] = conn
 
@@ -109,17 +110,19 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 	return conn, nil
 }
 
-func (s *Server) DetectCycles(newConn *ConnectionLedger) {
-	/*cacheST := make(map[int]map[int]struct{})
+/*
+ResetGraph stops/resets/starts the entire connected subgraph related to
+connection Conn. It is a general approach that probably touches a lot more
+blocks than it needs to.
+
+TODO: This function should be replaced with language-level
+features that allow insight into stuck messages OR run in a more precise
+fashion (detecting branching/merging of streams).
+*/
+func (s *Server) ResetGraph(conn *ConnectionLedger) {
+	found := make(map[int]struct{})
+	cacheST := make(map[int]map[int]struct{})
 	cacheTS := make(map[int]map[int]struct{})
-
-	cacheST[newConn.Source.Id] = map[int]struct{}{
-		newConn.Target.Id: struct{}{},
-	}
-
-	cacheTS[newConn.Target.Id] = map[int]struct{}{
-		newConn.Source.Id: struct{}{},
-	}
 
 	for _, c := range s.connections {
 		if _, ok := cacheST[c.Source.Id]; !ok {
@@ -128,63 +131,57 @@ func (s *Server) DetectCycles(newConn *ConnectionLedger) {
 		if _, ok := cacheTS[c.Target.Id]; !ok {
 			cacheTS[c.Target.Id] = make(map[int]struct{})
 		}
-		cacheTS[c.Target.Id][c.Source.Id] = struct{}{}
 		cacheST[c.Source.Id][c.Target.Id] = struct{}{}
+		cacheTS[c.Target.Id][c.Source.Id] = struct{}{}
 	}
 
-	foundSet := make(map[int]struct{})
-
-	var traverse func(int, map[int]struct{}) map[int]struct{}
-
-	traverse = func(id int, trail map[int]struct{}) map[int]struct{} {
-		// if we found the end
-		if _, ok := foundSet[id]; ok {
-			return trail
-		}
-
-		newMap := make(map[int]struct{})
-
-		// if there is nothing downstream
-		if _, ok := cacheST[id]; !ok {
-			return newMap
-		}
-
-		if _, ok := cacheTS[id]; !ok {
-			return newMap
-		}
-
-		foundSet[id] = struct{}{}
-
-		// we have children so traverse them
-		for k, _ := range trail {
-			newMap[k] = struct{}{}
-		}
-
-		newMap[id] = struct{}{}
-		for child, _ := range cacheST[id] {
-			nm := traverse(child, newMap)
-			for k, _ := range nm {
-				newMap[k] = struct{}{}
-			}
-		}
-
-		for child, _ := range cacheTS[id] {
-			nm := traverse(child, newMap)
-			for k, _ := range nm {
-				newMap[k] = struct{}{}
-			}
-		}
-
-		return newMap
+	if _, ok := cacheST[conn.Source.Id]; !ok {
+		cacheST[conn.Source.Id] = make(map[int]struct{})
 	}
 
-	fmt.Println("RUNNING")
-	m := traverse(newConn.Target.Id, make(map[int]struct{}))
-	fmt.Println("DONE")*/
+	if _, ok := cacheTS[conn.Target.Id]; !ok {
+		cacheTS[conn.Target.Id] = make(map[int]struct{})
+	}
 
-	for _, b := range s.blocks {
-		b.Block.Reset()
-		s.websocketBroadcast(Update{Action: RESET, Type: BLOCK, Data: wsBlock{wsId{b.Id}}})
+	cacheST[conn.Source.Id][conn.Target.Id] = struct{}{}
+	cacheTS[conn.Target.Id][conn.Source.Id] = struct{}{}
+
+	var traverse func(int)
+
+	// make a set of all nodes connecting to this connection
+	traverse = func(id int) {
+		found[id] = struct{}{}
+		if _, ok := cacheST[id]; ok {
+			for k, _ := range cacheST[id] {
+				if _, ok = found[k]; !ok {
+					traverse(k)
+				}
+			}
+		}
+		if _, ok := cacheTS[id]; ok {
+			for k, _ := range cacheTS[id] {
+				if _, ok = found[k]; !ok {
+					traverse(k)
+				}
+			}
+		}
+	}
+
+	traverse(conn.Source.Id)
+
+	for k, _ := range found {
+		log.Println("tidy: stopping id", k)
+		s.blocks[k].Block.Stop()
+	}
+
+	for k, _ := range found {
+		log.Println("tidy: resetting id", k)
+		s.blocks[k].Block.Reset()
+	}
+
+	for k, _ := range found {
+		log.Println("tidy: starting id", k)
+		go s.blocks[k].Block.Serve()
 	}
 }
 
@@ -239,6 +236,8 @@ func (s *Server) DeleteConnection(id int) error {
 	}
 
 	delete(s.connections, id)
+
+	s.ResetGraph(c)
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: wsConnection{wsId{id}}})
 	return nil

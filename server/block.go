@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/nytlabs/st-core/core"
-	"github.com/thejerf/suture"
 )
 
 type Position struct {
@@ -25,16 +24,15 @@ type ProtoBlock struct {
 }
 
 type BlockLedger struct {
-	Label       string              `json:"label"`
-	Type        string              `json:"type"`
-	Id          int                 `json:"id"`
-	Block       *core.Block         `json:"-"`
-	Parent      *Group              `json:"-"`
-	Token       suture.ServiceToken `json:"-"`
-	Composition int                 `json:"composition,omitempty"`
-	Inputs      []core.Input        `json:"inputs"`
-	Outputs     []core.Output       `json:"outputs"`
-	Position    Position            `json:"position"`
+	Label       string        `json:"label"`
+	Type        string        `json:"type"`
+	Id          int           `json:"id"`
+	Block       *core.Block   `json:"-"`
+	Parent      *Group        `json:"-"`
+	Composition int           `json:"composition,omitempty"`
+	Inputs      []core.Input  `json:"inputs"`
+	Outputs     []core.Output `json:"outputs"`
+	Position    Position      `json:"position"`
 }
 
 func (bl *BlockLedger) GetID() int {
@@ -150,7 +148,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		return nil, errors.New("invalid group, could not create block")
 	}
 
-	m.Token = s.supervisor.Add(block)
+	go block.Serve()
 	m.Inputs = block.GetInputs()
 	m.Outputs = block.GetOutputs()
 	s.blocks[m.Id] = m
@@ -262,7 +260,7 @@ func (s *Server) DeleteBlock(id int) error {
 	s.DetachChild(b)
 
 	// stop and delete the block
-	s.supervisor.Remove(b.Token)
+	b.Block.Stop()
 	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: wsBlock{wsId{id}}})
 	delete(s.blocks, id)
 	return nil

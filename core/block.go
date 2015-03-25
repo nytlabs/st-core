@@ -69,6 +69,7 @@ func (b *Block) Serve() {
 		b.routing.RUnlock()
 		b.routing.Lock()
 		if ok := interrupt(); !ok {
+			b.routing.Unlock()
 			return
 		}
 		b.routing.Unlock()
@@ -217,17 +218,11 @@ func (b *Block) Disconnect(id RouteIndex, c Connection) error {
 	return <-returnVal
 }
 
-func (b *Block) Reset() error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		b.crank()
-		returnVal <- nil
-		return true
-	}
-	return <-returnVal
+func (b *Block) Reset() {
+	b.crank()
+	return
 }
 
-// suture: stop the block
 func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false

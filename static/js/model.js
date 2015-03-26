@@ -94,6 +94,7 @@ var app = app || {};
 
     app.Group = function(data, model) {
         app.Entity.call(this);
+        //        app.Block.call(this);
         this.data = data;
         this.model = model;
 
@@ -101,6 +102,7 @@ var app = app || {};
         // not synced with server.
         this.translateX = 0;
         this.translateY = 0;
+        this.refresh();
     }
 
     app.Group.prototype = new app.Entity();
@@ -113,6 +115,83 @@ var app = app || {};
         this.translateX = x;
         this.translateY = y;
         this.model.inform();
+    }
+
+    app.Group.prototype.refresh = function() {
+        console.log("iiii neeed to refresssshhhhhhhhh")
+        this.data.outputs = [];
+        this.data.inputs = [];
+        this.inputs = [];
+        this.outputs = [];
+        for (var i in this.data.children) {
+            this.data.outputs = this.data.outputs.concat(this.model.entities[this.data.children[i]].data.outputs)
+            this.data.inputs = this.data.inputs.concat(this.model.entities[this.data.children[i]].data.inputs)
+        }
+
+        this.data.type = 'group'
+
+        this.inputs = this.data.inputs.map(function(i) {
+            return app.Utils.measureText(i.name, "route_label");
+        }.bind(this))
+        this.outputs = this.data.outputs.map(function(o) {
+            return app.Utils.measureText(o.name, "route_label");
+        }.bind(this));
+
+        var inputMaxWidth = [{
+            width: 0
+        }].concat(this.inputs).reduce(function(p, v) {
+            return (p.width > v.width ? p : v);
+        })
+
+        var outputMaxWidth = [{
+            width: 0
+        }].concat(this.outputs).reduce(function(p, v) {
+            return (p.width > v.width ? p : v);
+        })
+
+        var inputMaxHeight = [{
+            height: 0
+        }].concat(this.inputs).reduce(function(p, v) {
+            return (p.height > v.height ? p : v);
+        })
+
+        var outputMaxHeight = [{
+            height: 0
+        }].concat(this.outputs).reduce(function(p, v) {
+            return (p.height > v.height ? p : v);
+        })
+
+        this.width = inputMaxWidth.width + outputMaxWidth.width;
+        this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
+        this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
+
+        this.routeRadius = 5;
+
+        this.inputs.forEach(function(e, i) {
+            e.routeY = (i + 1) * this.routeHeight;
+            e.routeX = 0;
+            e.routeCircleX = -this.routeRadius * .5;
+            e.routeCircleY = -this.routeHeight * .5;
+            e.routeAlign = "start"; // this should be deleted & derived from routeDirection
+            e.routeIndex = i;
+            e.routeDirection = 'input';
+            e.routeRadius = this.routeRadius;
+            e.data = this.data.inputs[i];
+            e.connections = [];
+        }.bind(this));
+
+        this.outputs.forEach(function(e, i) {
+            e.routeY = (i + 1) * this.routeHeight;
+            e.routeX = this.width;
+            e.routeCircleX = this.routeRadius * .5;
+            e.routeCircleY = -this.routeHeight * .5;
+            e.routeDirection = 'output';
+            e.routeIndex = i;
+            e.routeAlign = "end";
+            e.routeRadius = this.routeRadius;
+            e.data = this.data.outputs[i];
+            e.connections = [];
+        }.bind(this));
     }
 
     // when a group changes, this swaps out references in focusedNodes and focusedEdges
@@ -274,6 +353,19 @@ var app = app || {};
         var from = this.model.entities[this.data.from.id];
         var to = this.model.entities[this.data.to.id];
 
+        var topLevel = this.model.focusedGroup.data.children.map(function(id) {
+            return this.model.entities[id]
+        }.bind(this)).filter(function(e) {
+            return e.instance() == 'group'
+        })
+
+        function search(group, id) {
+            var found = group.data.children.filter(function(child) {
+                return child === id
+            })
+            return
+        }
+
         var x1 = from.data.position.x + from.outputs[this.data.from.route].routeX + from.outputs[this.data.from.route].routeCircleX;
         var y1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
         var cx1 = x1 + 50.0;
@@ -330,12 +422,16 @@ var app = app || {};
 
     app.CoreModel.prototype.addChild = function(groupId, id) {
         this.entities[groupId].data.children.push(id);
+        this.entities[groupId].refresh();
+
         if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
         this.inform();
     }
 
     app.CoreModel.prototype.removeChild = function(groupId, id) {
         this.entities[groupId].data.children.splice(this.entities[groupId].data.children.indexOf(id), 1);
+        this.entities[groupId].refresh();
+
         if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
         this.inform();
     }

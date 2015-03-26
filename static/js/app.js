@@ -69,6 +69,8 @@ var app = app || {};
                     shift: true
                 }
             })
+
+            if (e.keyCode === 71 && e.target === document.body) this.handleGroup()
         },
         documentKeyUp: function(e) {
             if (e.shiftKey === false) this.setState({
@@ -212,10 +214,47 @@ var app = app || {};
             }
 
         },
+        handleGroup: function() {
+            console.log("grouping", this.state.selected)
+            var bounds = {
+                x1: Number.POSITIVE_INFINITY,
+                x2: Number.NEGATIVE_INFINITY,
+                y1: Number.POSITIVE_INFINITY,
+                y2: Number.NEGATIVE_INFINITY
+            }
+
+            var ids = this.state.selected.filter(function(e) {
+                return (e instanceof app.Entity)
+            }).map(function(e) {
+                //                console.log(e)
+                if (e.data.position.x < bounds.x1) bounds.x1 = e.data.position.x;
+                if (e.data.position.y < bounds.y1) bounds.y1 = e.data.position.y;
+                if (e.data.position.x > bounds.x2) bounds.x2 = e.data.position.x;
+                if (e.data.position.y > bounds.y2) bounds.y2 = e.data.position.y;
+                return e.data.id
+            });
+
+            var position = {
+                x: (bounds.x2 - bounds.x1) * .5 + bounds.x1,
+                y: (bounds.y2 - bounds.y1) * .5 + bounds.y1
+            }
+            console.log(bounds)
+
+            app.Utils.request(
+                'post',
+                'groups', {
+                    'parent': this.props.model.focusedGroup.data.id,
+                    'children': ids,
+                    'position': position
+                },
+                null
+            )
+        },
+        handleUngroup: function() {},
         render: function() {
             var nodes = {
                 'source': app.SourceComponent,
-                'group': app.GroupComponent,
+                'group': app.BlockComponent,
                 'block': app.BlockComponent
             }
 
@@ -302,12 +341,18 @@ var app = app || {};
                 }
             }, background)
 
+            var tools = React.createElement(app.ToolsComponent, {
+                key: 'tool_list',
+                onGroup: this.handleGroup,
+                OnUngroup: this.handleUngroup
+            });
+
             var panelList = React.createElement(app.PanelListComponent, {
                 nodes: this.state.selected,
                 key: 'panel_list',
             });
 
-            var children = [stage, groupList, panelList];
+            var children = [stage, groupList, panelList, tools];
 
             if (this.state.library.enabled === true) {
                 children.push(React.createElement(app.AutoCompleteComponent, {

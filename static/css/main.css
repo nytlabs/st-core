@@ -153,3 +153,15 @@ body {
     background: rgba(240, 240, 240, 1);
     font-family: "Anonymous Pro";
 }
+.tools {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+}
+.tool_button {
+    padding: 5px;
+    background: rgba(200, 200, 200, 1);
+}
+.tool_button:hover {
+    background: rgba(100, 100, 100, 1);
+}

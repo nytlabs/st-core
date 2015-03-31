@@ -30,17 +30,15 @@ var app = app || {};
             }
 
             var node = this.props.node;
-            var routing = this.props.connecting;
+            var route = this.props.connecting;
 
-            var routeX = node.data.position.x +
-                node[routing.direction + 's'][routing.route].routeX +
-                node[routing.direction + 's'][routing.route].routeCircleX +
-                this.props.translateX;
+            var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);
+            var cy = node.geometry.routeRadius * -.5;
 
-            var routeY = node.data.position.y +
-                node[routing.direction + 's'][routing.route].routeY +
-                node[routing.direction + 's'][routing.route].routeCircleY +
-                this.props.translateY;
+            var routeX = (route.direction === 'input' ? 0 : node.geometry.width) +
+                cx + this.props.translateX + node.data.position.x;
+            var routeY = (1 + route.displayIndex) * node.geometry.routeHeight +
+                cy + this.props.translateY + node.data.position.y;
 
             // if the tool is enabled but the mouse has not moved, set null
             // state as route position
@@ -49,9 +47,12 @@ var app = app || {};
                 y: this.state.y === null ? routeY : this.state.y,
             }
 
-            var c = [routeX, routeY, routeX, routeY, target.x, target.y, target.x, target.y];
+            var c = [
+                routeX, routeY, routeX, routeY,
+                target.x, target.y, target.x, target.y
+            ];
 
-            if (routing.direction === 'output') {
+            if (route.direction === 'output') {
                 c[2] += 50.0;
                 c[4] -= 50.0;
             } else {
@@ -62,10 +63,33 @@ var app = app || {};
             return React.createElement('path', {
                 style: lineStyle,
                 strokeDasharray: "5,5",
-                d: ['M', c[0], ' ', c[1], ' C ', c[2], ' ', c[3], ' ', c[4], ' ', c[5], ' ', c[6], ' ', c[7]].join(''),
+                d: [
+                    'M',
+                    c[0], ' ',
+                    c[1], ' C ',
+                    c[2], ' ',
+                    c[3], ' ',
+                    c[4], ' ',
+                    c[5], ' ',
+                    c[6], ' ',
+                    c[7]
+                ].join(''),
             }, null)
         }
     })
+
+    function getCoords(node, route) {
+        var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);
+        var cy = node.geometry.routeRadius * -.5;
+        var routeX = (route.direction === 'input' ? 0 : node.geometry.width) +
+            cx + node.data.position.x;
+        var routeY = (1 + route.displayIndex) * node.geometry.routeHeight +
+            cy + node.data.position.y;
+        return {
+            x: routeX,
+            y: routeY
+        }
+    }
 
     app.ConnectionComponent = React.createClass({
         displayName: "ConnectionComponent",
@@ -78,10 +102,28 @@ var app = app || {};
                 strokeWidth: 2,
                 fill: 'none'
             }
+
+            var from = getCoords(this.props.model.from.node, this.props.model.from.route)
+            var to = getCoords(this.props.model.to.node, this.props.model.to.route)
+
+            c = [from.x, from.y, from.x, from.y, to.x, to.y, to.x, to.y];
+            c[2] += 50.0;
+            c[4] -= 50.0;
+
             if (this.props.selected === true) lineStyle.stroke = "blue";
             return React.createElement("path", {
                 style: lineStyle,
-                d: this.props.model.path,
+                d: [
+                    'M',
+                    c[0], ' ',
+                    c[1], ' C ',
+                    c[2], ' ',
+                    c[3], ' ',
+                    c[4], ' ',
+                    c[5], ' ',
+                    c[6], ' ',
+                    c[7]
+                ].join(''),
                 onMouseUp: this.onMouseUp,
             }, null)
         }

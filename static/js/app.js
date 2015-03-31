@@ -113,16 +113,17 @@ var app = app || {};
 
         },
         createConnection: function(from, to) {
+            console.log(from, to)
             app.Utils.request(
                 'POST',
                 'connections', {
                     'from': {
                         'id': from.direction === 'output' ? from.id : to.id,
-                        'route': from.direction === 'output' ? from.route : to.route,
+                        'route': from.direction === 'output' ? from.index : to.index,
                     },
                     'to': {
                         'id': to.direction === 'input' ? to.id : from.id,
-                        'route': to.direction === 'input' ? to.route : from.route,
+                        'route': to.direction === 'input' ? to.index : from.index,
                     }
                 },
                 function(e) {

@@ -99,18 +99,20 @@ var app = app || {};
                         )
                     }.bind(this)
                 }, null),
-                this.props.model.inputs.map(function(r, i) {
+                this.props.model.routes.filter(function(r) {
+                    return r.direction === 'input'
+                }).map(function(r, i) {
                     return [
                         React.createElement('div', {
                             className: 'label',
                         }, r.data.name),
                         React.createElement(app.PanelEditableComponent, {
-                                key: this.props.model.data.id + r.data.name,
+                                key: r.id + r.data.name + r.index,
                                 value: JSON.stringify(r.data.value),
                                 onChange: function(value) {
                                     app.Utils.request(
                                         "PUT",
-                                        this.props.model.instance() + "s/" + this.props.model.data.id + "/routes/" + i,
+                                        this.props.model.instance() + "s/" + r.id + "/routes/" + r.index,
                                         JSON.parse(value),
                                         null
                                     )

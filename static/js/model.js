@@ -77,7 +77,8 @@ var app = app || {};
         // this function refreshes all connection geometry in view
         // it may be better to have a specific call for just connections that
         // are touching this particular entity.
-        this.model.refreshFocusedEdgeGeometry();
+        //this.model.refreshFocusedEdgeGeometry();
+        this.model.inform()
         dm.push(this.id, function() {
             app.Utils.request(
                 "PUT",
@@ -91,6 +92,166 @@ var app = app || {};
     app.Entity.prototype.setDragging = function(e) {
         this.isDragging = e;
     }
+
+
+    app.Block = function(data, model) {
+        app.Entity.call(this);
+
+        this.routes = [];
+        this.geometry = [];
+        this.data = data;
+        this.model = model;
+
+        this.buildRoutes();
+        this.buildGeometry();
+    }
+
+    app.Block.prototype = new app.Entity();
+
+    app.Block.prototype.instance = function() {
+        return "block";
+    }
+
+
+    app.Block.prototype.buildRoutes = function() {
+        this.routes = this.data.inputs.map(function(input, index) {
+            return {
+                'direction': 'input',
+                'index': index,
+                'displayIndex': index
+            };
+        })
+
+        this.routes = this.routes.concat(this.data.outputs.map(function(output, index) {
+            return {
+                'direction': 'output',
+                'index': index,
+                'displayIndex': index
+            }
+        }))
+
+        this.routes = this.routes.map(function(r, index) {
+            r.id = this.data.id;
+            r.connections = [];
+            r.data = this.data[r.direction + 's'][r.index];
+            r.routesIndex = index;
+            return r
+        }.bind(this));
+
+    }
+
+    app.Block.prototype.buildGeometry = function() {
+        var textMeasures,
+            maxWidth = {
+                input: 0,
+                output: 0
+            },
+            routeHeight = 0,
+            routeRadius = 5,
+            routeGeometry = [],
+            num = {
+                input: 0,
+                output: 0
+            };
+
+        textMeasures = this.routes.map(function(r) {
+            var measure = app.Utils.measureText(r.data.name, 'route_label');
+
+            if (measure.width > maxWidth[r.direction]) {
+                maxWidth[r.direction] = measure.width;
+            }
+            if (measure.height > routeHeight) {
+                routeHeight = measure.height;
+            }
+            num[r.direction]++;
+
+            return measure
+        });
+
+        this.geometry = {
+            'width': maxWidth.input + maxWidth.output,
+            'height': Math.max(num.input, num.output) * routeHeight,
+            'routeHeight': routeHeight,
+            'routeRadius': routeRadius,
+        }
+    }
+
+    /* app.Block.prototype.refresh = function() {
+
+         this.routes = this.data.inputs.map(function(i){
+             return {"geometry": app.Utils.measureText(i.name, "route_label");
+         }.bind(this))
+         
+         this.inputs = this.data.inputs.map(function(i) {
+             return app.Utils.measureText(i.name, "route_label");
+         }.bind(this))
+         this.outputs = this.data.outputs.map(function(o) {
+             return app.Utils.measureText(o.name, "route_label");
+         }.bind(this));
+
+         var inputMaxWidth = [{
+             width: 0
+         }].concat(this.inputs).reduce(function(p, v) {
+             return (p.width > v.width ? p : v);
+         })
+
+         var outputMaxWidth = [{
+             width: 0
+         }].concat(this.outputs).reduce(function(p, v) {
+             return (p.width > v.width ? p : v);
+         })
+
+         var inputMaxHeight = [{
+             height: 0
+         }].concat(this.inputs).reduce(function(p, v) {
+             return (p.height > v.height ? p : v);
+         })
+
+         var outputMaxHeight = [{
+             height: 0
+         }].concat(this.outputs).reduce(function(p, v) {
+             return (p.height > v.height ? p : v);
+         })
+
+         this.width = inputMaxWidth.width + outputMaxWidth.width;
+         this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
+         this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
+
+         this.routeRadius = 5;
+
+         this.inputs.forEach(function(e, i) {
+             e.routeY = (i + 1) * this.routeHeight;
+             e.routeX = 0;
+             e.routeCircleX = -this.routeRadius * .5;
+             e.routeCircleY = -this.routeHeight * .5;
+             e.routeAlign = "start"; // this should be deleted & derived from routeDirection
+             e.routeIndex = i;
+             e.routeDirection = 'input';
+             e.routeRadius = this.routeRadius;
+             e.data = this.data.inputs[i];
+             e.connections = [];
+             e.blockId = this.data.id;
+         }.bind(this));
+
+         this.outputs.forEach(function(e, i) {
+             e.routeY = (i + 1) * this.routeHeight;
+             e.routeX = this.width;
+             e.routeCircleX = this.routeRadius * .5;
+             e.routeCircleY = -this.routeHeight * .5;
+             e.routeDirection = 'output';
+             e.routeIndex = i;
+             e.routeAlign = "end";
+             e.routeRadius = this.routeRadius;
+             e.data = this.data.outputs[i];
+             e.connections = [];
+             e.blockId = this.data.id;
+         }.bind(this));
+     }*/
+
+    /*app.Group = function(data, model, children) {
+        app.Block.call(this, data, model)
+        this.children = children
+    }*/
 
     app.Group = function(data, model) {
         app.Entity.call(this);
@@ -123,75 +284,76 @@ var app = app || {};
         this.data.inputs = [];
         this.inputs = [];
         this.outputs = [];
-        for (var i in this.data.children) {
-            this.data.outputs = this.data.outputs.concat(this.model.entities[this.data.children[i]].data.outputs)
-            this.data.inputs = this.data.inputs.concat(this.model.entities[this.data.children[i]].data.inputs)
-        }
+        /* for (var i in this.data.children) {
+             this.data.outputs = this.data.outputs.concat(this.model.entities[this.data.children[i]].data.outputs)
+             this.data.inputs = this.data.inputs.concat(this.model.entities[this.data.children[i]].data.inputs)
+         }
 
-        this.data.type = 'group'
+         this.data.type = 'group'
 
-        this.inputs = this.data.inputs.map(function(i) {
-            return app.Utils.measureText(i.name, "route_label");
-        }.bind(this))
-        this.outputs = this.data.outputs.map(function(o) {
-            return app.Utils.measureText(o.name, "route_label");
-        }.bind(this));
+         this.inputs = this.data.inputs.map(function(i) {
+             return app.Utils.measureText(i.name, "route_label");
+         }.bind(this))
+         this.outputs = this.data.outputs.map(function(o) {
+             return app.Utils.measureText(o.name, "route_label");
+         }.bind(this));
 
-        var inputMaxWidth = [{
-            width: 0
-        }].concat(this.inputs).reduce(function(p, v) {
-            return (p.width > v.width ? p : v);
-        })
+         var inputMaxWidth = [{
+             width: 0
+         }].concat(this.inputs).reduce(function(p, v) {
+             return (p.width > v.width ? p : v);
+         })
 
-        var outputMaxWidth = [{
-            width: 0
-        }].concat(this.outputs).reduce(function(p, v) {
-            return (p.width > v.width ? p : v);
-        })
+         var outputMaxWidth = [{
+             width: 0
+         }].concat(this.outputs).reduce(function(p, v) {
+             return (p.width > v.width ? p : v);
+         })
 
-        var inputMaxHeight = [{
-            height: 0
-        }].concat(this.inputs).reduce(function(p, v) {
-            return (p.height > v.height ? p : v);
-        })
+         var inputMaxHeight = [{
+             height: 0
+         }].concat(this.inputs).reduce(function(p, v) {
+             return (p.height > v.height ? p : v);
+         })
 
-        var outputMaxHeight = [{
-            height: 0
-        }].concat(this.outputs).reduce(function(p, v) {
-            return (p.height > v.height ? p : v);
-        })
+         var outputMaxHeight = [{
+             height: 0
+         }].concat(this.outputs).reduce(function(p, v) {
+             return (p.height > v.height ? p : v);
+         })
 
-        this.width = inputMaxWidth.width + outputMaxWidth.width;
-        this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
-        this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
+         this.width = inputMaxWidth.width + outputMaxWidth.width;
+         this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
+         this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
 
-        this.routeRadius = 5;
+         this.routeRadius = 5;
 
-        this.inputs.forEach(function(e, i) {
-            e.routeY = (i + 1) * this.routeHeight;
-            e.routeX = 0;
-            e.routeCircleX = -this.routeRadius * .5;
-            e.routeCircleY = -this.routeHeight * .5;
-            e.routeAlign = "start"; // this should be deleted & derived from routeDirection
-            e.routeIndex = i;
-            e.routeDirection = 'input';
-            e.routeRadius = this.routeRadius;
-            e.data = this.data.inputs[i];
-            e.connections = [];
-        }.bind(this));
+         this.inputs.forEach(function(e, i) {
+             e.routeY = (i + 1) * this.routeHeight;
+             e.routeX = 0;
+             e.routeCircleX = -this.routeRadius * .5;
+             e.routeCircleY = -this.routeHeight * .5;
+             e.routeAlign = "start"; // this should be deleted & derived from routeDirection
+             e.routeIndex = i;
+             e.routeDirection = 'input';
+             e.routeRadius = this.routeRadius;
+             e.data = this.data.inputs[i];
+             e.connections = this.data.inputs[i].connections;
+             console.log(this.data.inputs[i])
+         }.bind(this));
 
-        this.outputs.forEach(function(e, i) {
-            e.routeY = (i + 1) * this.routeHeight;
-            e.routeX = this.width;
-            e.routeCircleX = this.routeRadius * .5;
-            e.routeCircleY = -this.routeHeight * .5;
-            e.routeDirection = 'output';
-            e.routeIndex = i;
-            e.routeAlign = "end";
-            e.routeRadius = this.routeRadius;
-            e.data = this.data.outputs[i];
-            e.connections = [];
-        }.bind(this));
+         this.outputs.forEach(function(e, i) {
+             e.routeY = (i + 1) * this.routeHeight;
+             e.routeX = this.width;
+             e.routeCircleX = this.routeRadius * .5;
+             e.routeCircleY = -this.routeHeight * .5;
+             e.routeDirection = 'output';
+             e.routeIndex = i;
+             e.routeAlign = "end";
+             e.routeRadius = this.routeRadius;
+             e.data = this.data.outputs[i];
+             e.connections = this.data.outputs[i].connections;
+         }.bind(this));*/
     }
 
     // when a group changes, this swaps out references in focusedNodes and focusedEdges
@@ -219,7 +381,8 @@ var app = app || {};
             return false;
         }.bind(model));
 
-        model.refreshFocusedEdgeGeometry();
+        //model.refreshFocusedEdgeGeometry();
+        model.inform()
     }
 
     // setFocusedGroup sets takes a group id and prepares that group to be 
@@ -231,7 +394,7 @@ var app = app || {};
         this.model.inform();
     }
 
-    app.Block = function(data, model) {
+    /*app.Block = function(data, model) {
         app.Entity.call(this);
         this.data = data;
         this.model = model;
@@ -293,6 +456,7 @@ var app = app || {};
             e.routeRadius = this.routeRadius;
             e.data = this.data.inputs[i];
             e.connections = [];
+            e.blockId = this.data.id;
         }.bind(this));
 
         this.outputs.forEach(function(e, i) {
@@ -306,8 +470,9 @@ var app = app || {};
             e.routeRadius = this.routeRadius;
             e.data = this.data.outputs[i];
             e.connections = [];
+            e.blockId = this.data.id;
         }.bind(this));
-    }
+    }*/
 
     app.Source = function(data, model) {
         app.Entity.call(this);
@@ -322,25 +487,48 @@ var app = app || {};
     }
 
     app.Connection = function(data, model) {
-        //app.Entity.call(this);
         this.data = data;
         this.model = model;
-        this.refreshGeometry();
+        this.from = {
+            node: model.entities[data.from.id],
+            route: model.entities[data.from.id].routes.filter(function(r) {
+                return (r.index === data.from.route) && (r.direction === 'output');
+            })[0]
+        }
+
+        this.to = {
+            node: model.entities[data.to.id],
+            route: model.entities[data.to.id].routes.filter(function(r) {
+                return (r.index === data.to.route) && (r.direction === 'input');
+            })[0]
+        }
+
         this.attach();
     }
 
 
     // attach() and detach() adds/removes a reference to this connection the route on the block entity.
     app.Connection.prototype.attach = function() {
-        this.model.entities[this.data.from.id].outputs[this.data.from.route].connections.push(this);
-        this.model.entities[this.data.to.id].inputs[this.data.to.route].connections.push(this);
+        this.model.entities[this.data.from.id].routes.filter(function(r) {
+            return (r.index === this.data.from.route) && (r.direction === 'output')
+        }.bind(this))[0].connections.push(this);
+
+        this.model.entities[this.data.to.id].routes.filter(function(r) {
+            return (r.index === this.data.to.route) && (r.direction === 'input')
+        }.bind(this))[0].connections.push(this);
     }
 
     app.Connection.prototype.detach = function() {
-        var fromRoute = this.model.entities[this.data.from.id].outputs[this.data.from.route];
-        var toRoute = this.model.entities[this.data.to.id].inputs[this.data.to.route];
-        fromRoute.connections.splice(fromRoute.connections.indexOf(this), 1);
-        toRoute.connections.splice(toRoute.connections.indexOf(this), 1);
+        var fromConnections = this.model.entities[this.data.from.id].routes.filter(function(r) {
+            return (r.index === this.data.from.route) && (r.direction === 'output')
+        }.bind(this))[0].connections;
+
+        var toConnections = this.model.entities[this.data.to.id].routes.filter(function(r) {
+            return (r.index === this.data.to.route) && (r.direction === 'input')
+        }.bind(this))[0].connections;
+
+        fromConnections.splice(fromConnections.indexOf(this), 1);
+        toConnections.splice(toConnections.indexOf(this), 1);
     }
 
     //app.Connection.prototype = new app.Entity();
@@ -349,46 +537,33 @@ var app = app || {};
         return "connection";
     }
 
-    app.Connection.prototype.refreshGeometry = function() {
-        var from = this.model.entities[this.data.from.id];
-        var to = this.model.entities[this.data.to.id];
+    /*    app.Connection.prototype.refreshGeometry = function() {
+            var from = this.model.entities[this.data.from.id];
+            var to = this.model.entities[this.data.to.id];
 
-        var topLevel = this.model.focusedGroup.data.children.map(function(id) {
-            return this.model.entities[id]
-        }.bind(this)).filter(function(e) {
-            return e.instance() == 'group'
-        })
+            var x1 = from.data.position.x + from.outputs[this.data.from.route].routeX + from.outputs[this.data.from.route].routeCircleX;
+            var y1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
+            var cx1 = x1 + 50.0;
+            var cy1 = y1;
+            var x2 = to.data.position.x + to.inputs[this.data.to.route].routeX + to.inputs[this.data.to.route].routeCircleX;
+            var y2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;
+            var cx2 = x2 - 50.0;
+            var cy2 = y2;
 
-        function search(group, id) {
-            var found = group.data.children.filter(function(child) {
-                return child === id
-            })
-            return
-        }
+            this.from = {
+                x: x1,
+                y: y1
+            };
 
-        var x1 = from.data.position.x + from.outputs[this.data.from.route].routeX + from.outputs[this.data.from.route].routeCircleX;
-        var y1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
-        var cx1 = x1 + 50.0;
-        var cy1 = y1;
-        var x2 = to.data.position.x + to.inputs[this.data.to.route].routeX + to.inputs[this.data.to.route].routeCircleX;
-        var y2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;
-        var cx2 = x2 - 50.0;
-        var cy2 = y2;
+            this.to = {
+                x: x2,
+                y: y2
+            };
 
-        this.from = {
-            x: x1,
-            y: y1
-        };
+            this.routeRadius = 3;
 
-        this.to = {
-            x: x2,
-            y: y2
-        };
-
-        this.routeRadius = 3;
-
-        this.path = ['M', x1, ' ', y1, ' C ', cx1, ' ', cy1, ' ', cx2, ' ', cy2, ' ', x2, ' ', y2].join('');
-    }
+            this.path = ['M', x1, ' ', y1, ' C ', cx1, ' ', cy1, ' ', cx2, ' ', cy2, ' ', x2, ' ', y2].join('');
+        }*/
 
     app.Link = function(data, model) {
         //app.Entity.call(this);
@@ -436,12 +611,12 @@ var app = app || {};
         this.inform();
     }
 
-    app.CoreModel.prototype.refreshFocusedEdgeGeometry = function() {
+    /*app.CoreModel.prototype.refreshFocusedEdgeGeometry = function() {
         this.focusedEdges.forEach(function(e) {
             e.refreshGeometry();
         })
         this.inform();
-    }
+    }*/
 
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
@@ -466,10 +641,11 @@ var app = app || {};
                             //
                             // The following updates all node geometry for nodes that are NOT 
                             // currently being dragged in this client state. 
-                            if (!this.entities[m.data[m.type].id].isDragging) {
-                                this.refreshFocusedEdgeGeometry();
-                                return;
-                            }
+                            //if (!this.entities[m.data[m.type].id].isDragging) {
+                            //   console.log(m)
+                            //this.refreshFocusedEdgeGeometry();
+                            //   return;
+                            // }
                         }
                     }
                 } else if (m.type === 'route') {

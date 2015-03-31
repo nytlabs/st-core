@@ -8,22 +8,26 @@ var app = app || {};
         },
         render: function() {
             var children = [];
+            var direction = this.props.model.direction;
 
             children.push(
                 React.createElement('text', {
                     className: "route_label unselectable",
-                    textAnchor: this.props.model.routeAlign,
+                    textAnchor: direction === 'input' ? 'start' : 'end',
                     key: "route_label",
                 }, this.props.model.data.name)
             )
 
             var circleClass = "route_circle" + " " + this.props.model.data.type;
+            var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
+            var cy = this.props.geometry.routeRadius * -.5;
+
             children.push(
                 React.createElement('circle', {
                     onMouseUp: this.handleMouseUp,
-                    cx: this.props.model.routeCircleX,
-                    cy: this.props.model.routeCircleY,
-                    r: this.props.model.routeRadius,
+                    cx: cx,
+                    cy: cy,
+                    r: this.props.geometry.routeRadius,
                     className: circleClass,
                     key: "route_circle",
                 }, null)
@@ -37,9 +41,9 @@ var app = app || {};
                 children.push(
                     React.createElement('circle', {
                         onMouseUp: this.handleMouseUp,
-                        cx: this.props.model.routeCircleX,
-                        cy: this.props.model.routeCircleY,
-                        r: this.props.model.routeRadius - 2,
+                        cx: cx,
+                        cy: cy,
+                        r: this.props.geometry.routeRadius - 2,
                         className: "route_circle_filled",
                         key: "route_circle_filled"
                     }, null)
@@ -48,8 +52,8 @@ var app = app || {};
 
             return React.createElement('g', {
                 transform: 'translate(' +
-                    this.props.model.routeX + ', ' +
-                    this.props.model.routeY + ')',
+                    (direction === 'input' ? 0 : this.props.geometry.width) + ', ' +
+                    ((1 + this.props.model.displayIndex) * this.props.geometry.routeHeight) + ')',
             }, children)
         },
     })
@@ -59,11 +63,7 @@ var app = app || {};
     app.BlockComponent = React.createClass({
         displayName: "BlockComponent",
         onChange: function(r) {
-            this.props.onRouteEvent({
-                id: this.props.model.data.id,
-                route: r.routeIndex,
-                direction: r.routeDirection
-            })
+            this.props.onRouteEvent(r)
         },
         render: function() {
             var classes = "block";
@@ -72,8 +72,8 @@ var app = app || {};
             children.push(React.createElement('rect', {
                 x: 0,
                 y: 0,
-                width: this.props.model.width,
-                height: this.props.model.height,
+                width: this.props.model.geometry.width,
+                height: this.props.model.geometry.height,
                 className: classes,
                 key: 'bg'
             }, null));
@@ -89,14 +89,13 @@ var app = app || {};
                 key: 'type'
             }, title));
 
-            var routes = this.props.model.inputs.concat(this.props.model.outputs);
-
-            children = children.concat(routes.map(function(r, i) {
+            children = children.concat(this.props.model.routes.map(function(r, i) {
                 return React.createElement(app.RouteComponent, {
                     onChange: this.onChange,
                     model: r,
-                    key: r.routeAlign + i
-                }, null)
+                    geometry: this.props.model.geometry,
+                    key: i
+                })
             }.bind(this)));
 
             return React.createElement('g', {}, children);

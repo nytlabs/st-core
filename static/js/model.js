@@ -176,184 +176,59 @@ var app = app || {};
         }
     }
 
-    /* app.Block.prototype.refresh = function() {
-
-         this.routes = this.data.inputs.map(function(i){
-             return {"geometry": app.Utils.measureText(i.name, "route_label");
-         }.bind(this))
-         
-         this.inputs = this.data.inputs.map(function(i) {
-             return app.Utils.measureText(i.name, "route_label");
-         }.bind(this))
-         this.outputs = this.data.outputs.map(function(o) {
-             return app.Utils.measureText(o.name, "route_label");
-         }.bind(this));
-
-         var inputMaxWidth = [{
-             width: 0
-         }].concat(this.inputs).reduce(function(p, v) {
-             return (p.width > v.width ? p : v);
-         })
-
-         var outputMaxWidth = [{
-             width: 0
-         }].concat(this.outputs).reduce(function(p, v) {
-             return (p.width > v.width ? p : v);
-         })
-
-         var inputMaxHeight = [{
-             height: 0
-         }].concat(this.inputs).reduce(function(p, v) {
-             return (p.height > v.height ? p : v);
-         })
-
-         var outputMaxHeight = [{
-             height: 0
-         }].concat(this.outputs).reduce(function(p, v) {
-             return (p.height > v.height ? p : v);
-         })
-
-         this.width = inputMaxWidth.width + outputMaxWidth.width;
-         this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
-         this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
-
-         this.routeRadius = 5;
-
-         this.inputs.forEach(function(e, i) {
-             e.routeY = (i + 1) * this.routeHeight;
-             e.routeX = 0;
-             e.routeCircleX = -this.routeRadius * .5;
-             e.routeCircleY = -this.routeHeight * .5;
-             e.routeAlign = "start"; // this should be deleted & derived from routeDirection
-             e.routeIndex = i;
-             e.routeDirection = 'input';
-             e.routeRadius = this.routeRadius;
-             e.data = this.data.inputs[i];
-             e.connections = [];
-             e.blockId = this.data.id;
-         }.bind(this));
-
-         this.outputs.forEach(function(e, i) {
-             e.routeY = (i + 1) * this.routeHeight;
-             e.routeX = this.width;
-             e.routeCircleX = this.routeRadius * .5;
-             e.routeCircleY = -this.routeHeight * .5;
-             e.routeDirection = 'output';
-             e.routeIndex = i;
-             e.routeAlign = "end";
-             e.routeRadius = this.routeRadius;
-             e.data = this.data.outputs[i];
-             e.connections = [];
-             e.blockId = this.data.id;
-         }.bind(this));
-     }*/
-
-    /*app.Group = function(data, model, children) {
-        app.Block.call(this, data, model)
-        this.children = children
-    }*/
-
     app.Group = function(data, model) {
         app.Entity.call(this);
         //        app.Block.call(this);
         this.data = data;
         this.model = model;
 
+        this.routes = [];
+        this.geometry = [];
+
         // translation coords for each group workspace.
         // not synced with server.
         this.translateX = 0;
         this.translateY = 0;
+
         this.refresh();
     }
 
-    app.Group.prototype = new app.Entity();
+    app.Group.prototype = Object.create(app.Block.prototype, {});
+
+    app.Group.prototype.refresh = function() {
+        this.buildRoutes();
+        this.buildGeometry();
+    }
 
     app.Group.prototype.instance = function() {
         return "group";
+    }
+
+    app.Group.prototype.buildRoutes = function() {
+        var displayIndex = {
+            'input': 0,
+            'output': 0
+        }
+
+        this.data.children.forEach(function(child) {
+            this.model.entities[child].routes.forEach(function(r, index) {
+                this.routes.push({
+                    id: r.id,
+                    connections: r.connections,
+                    data: r.data,
+                    routesIndex: index,
+                    direction: r.direction,
+                    index: r.index,
+                    displayIndex: displayIndex[r.direction]++,
+                })
+            }.bind(this))
+        }.bind(this))
     }
 
     app.Group.prototype.setTranslation = function(x, y) {
         this.translateX = x;
         this.translateY = y;
         this.model.inform();
-    }
-
-    app.Group.prototype.refresh = function() {
-        console.log("iiii neeed to refresssshhhhhhhhh")
-        this.data.outputs = [];
-        this.data.inputs = [];
-        this.inputs = [];
-        this.outputs = [];
-        /* for (var i in this.data.children) {
-             this.data.outputs = this.data.outputs.concat(this.model.entities[this.data.children[i]].data.outputs)
-             this.data.inputs = this.data.inputs.concat(this.model.entities[this.data.children[i]].data.inputs)
-         }
-
-         this.data.type = 'group'
-
-         this.inputs = this.data.inputs.map(function(i) {
-             return app.Utils.measureText(i.name, "route_label");
-         }.bind(this))
-         this.outputs = this.data.outputs.map(function(o) {
-             return app.Utils.measureText(o.name, "route_label");
-         }.bind(this));
-
-         var inputMaxWidth = [{
-             width: 0
-         }].concat(this.inputs).reduce(function(p, v) {
-             return (p.width > v.width ? p : v);
-         })
-
-         var outputMaxWidth = [{
-             width: 0
-         }].concat(this.outputs).reduce(function(p, v) {
-             return (p.width > v.width ? p : v);
-         })
-
-         var inputMaxHeight = [{
-             height: 0
-         }].concat(this.inputs).reduce(function(p, v) {
-             return (p.height > v.height ? p : v);
-         })
-
-         var outputMaxHeight = [{
-             height: 0
-         }].concat(this.outputs).reduce(function(p, v) {
-             return (p.height > v.height ? p : v);
-         })
-
-         this.width = inputMaxWidth.width + outputMaxWidth.width;
-         this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
-         this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
-
-         this.routeRadius = 5;
-
-         this.inputs.forEach(function(e, i) {
-             e.routeY = (i + 1) * this.routeHeight;
-             e.routeX = 0;
-             e.routeCircleX = -this.routeRadius * .5;
-             e.routeCircleY = -this.routeHeight * .5;
-             e.routeAlign = "start"; // this should be deleted & derived from routeDirection
-             e.routeIndex = i;
-             e.routeDirection = 'input';
-             e.routeRadius = this.routeRadius;
-             e.data = this.data.inputs[i];
-             e.connections = this.data.inputs[i].connections;
-             console.log(this.data.inputs[i])
-         }.bind(this));
-
-         this.outputs.forEach(function(e, i) {
-             e.routeY = (i + 1) * this.routeHeight;
-             e.routeX = this.width;
-             e.routeCircleX = this.routeRadius * .5;
-             e.routeCircleY = -this.routeHeight * .5;
-             e.routeDirection = 'output';
-             e.routeIndex = i;
-             e.routeAlign = "end";
-             e.routeRadius = this.routeRadius;
-             e.data = this.data.outputs[i];
-             e.connections = this.data.outputs[i].connections;
-         }.bind(this));*/
     }
 
     // when a group changes, this swaps out references in focusedNodes and focusedEdges
@@ -393,86 +268,6 @@ var app = app || {};
         this.refreshFocusedGroup();
         this.model.inform();
     }
-
-    /*app.Block = function(data, model) {
-        app.Entity.call(this);
-        this.data = data;
-        this.model = model;
-        this.refreshGeometry();
-    }
-
-    app.Block.prototype = new app.Entity();
-
-    app.Block.prototype.instance = function() {
-        return "block";
-    }
-
-    app.Block.prototype.refreshGeometry = function() {
-        this.inputs = this.data.inputs.map(function(i) {
-            return app.Utils.measureText(i.name, "route_label");
-        }.bind(this))
-        this.outputs = this.data.outputs.map(function(o) {
-            return app.Utils.measureText(o.name, "route_label");
-        }.bind(this));
-
-        var inputMaxWidth = [{
-            width: 0
-        }].concat(this.inputs).reduce(function(p, v) {
-            return (p.width > v.width ? p : v);
-        })
-
-        var outputMaxWidth = [{
-            width: 0
-        }].concat(this.outputs).reduce(function(p, v) {
-            return (p.width > v.width ? p : v);
-        })
-
-        var inputMaxHeight = [{
-            height: 0
-        }].concat(this.inputs).reduce(function(p, v) {
-            return (p.height > v.height ? p : v);
-        })
-
-        var outputMaxHeight = [{
-            height: 0
-        }].concat(this.outputs).reduce(function(p, v) {
-            return (p.height > v.height ? p : v);
-        })
-
-        this.width = inputMaxWidth.width + outputMaxWidth.width;
-        this.routeHeight = Math.max(inputMaxHeight.height, outputMaxHeight.height);
-        this.height = Math.max(this.inputs.length, this.outputs.length) * this.routeHeight;
-
-        this.routeRadius = 5;
-
-        this.inputs.forEach(function(e, i) {
-            e.routeY = (i + 1) * this.routeHeight;
-            e.routeX = 0;
-            e.routeCircleX = -this.routeRadius * .5;
-            e.routeCircleY = -this.routeHeight * .5;
-            e.routeAlign = "start"; // this should be deleted & derived from routeDirection
-            e.routeIndex = i;
-            e.routeDirection = 'input';
-            e.routeRadius = this.routeRadius;
-            e.data = this.data.inputs[i];
-            e.connections = [];
-            e.blockId = this.data.id;
-        }.bind(this));
-
-        this.outputs.forEach(function(e, i) {
-            e.routeY = (i + 1) * this.routeHeight;
-            e.routeX = this.width;
-            e.routeCircleX = this.routeRadius * .5;
-            e.routeCircleY = -this.routeHeight * .5;
-            e.routeDirection = 'output';
-            e.routeIndex = i;
-            e.routeAlign = "end";
-            e.routeRadius = this.routeRadius;
-            e.data = this.data.outputs[i];
-            e.connections = [];
-            e.blockId = this.data.id;
-        }.bind(this));
-    }*/
 
     app.Source = function(data, model) {
         app.Entity.call(this);
@@ -536,34 +331,6 @@ var app = app || {};
     app.Connection.prototype.instance = function() {
         return "connection";
     }
-
-    /*    app.Connection.prototype.refreshGeometry = function() {
-            var from = this.model.entities[this.data.from.id];
-            var to = this.model.entities[this.data.to.id];
-
-            var x1 = from.data.position.x + from.outputs[this.data.from.route].routeX + from.outputs[this.data.from.route].routeCircleX;
-            var y1 = from.data.position.y + from.outputs[this.data.from.route].routeY + from.outputs[this.data.from.route].routeCircleY;
-            var cx1 = x1 + 50.0;
-            var cy1 = y1;
-            var x2 = to.data.position.x + to.inputs[this.data.to.route].routeX + to.inputs[this.data.to.route].routeCircleX;
-            var y2 = to.data.position.y + to.inputs[this.data.to.route].routeY + to.inputs[this.data.to.route].routeCircleY;
-            var cx2 = x2 - 50.0;
-            var cy2 = y2;
-
-            this.from = {
-                x: x1,
-                y: y1
-            };
-
-            this.to = {
-                x: x2,
-                y: y2
-            };
-
-            this.routeRadius = 3;
-
-            this.path = ['M', x1, ' ', y1, ' C ', cx1, ' ', cy1, ' ', cx2, ' ', cy2, ' ', x2, ' ', y2].join('');
-        }*/
 
     app.Link = function(data, model) {
         //app.Entity.call(this);

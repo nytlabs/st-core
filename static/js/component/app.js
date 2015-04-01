@@ -198,7 +198,7 @@ var app = app || {};
                         })
                     })
                 }
-            } else if (this.state.selected.length === 0) {
+            } else if (this.state.selected.indexOf(node) === -1) {
                 this.setState({
                     selected: [node],
                 })

@@ -71,6 +71,7 @@ var app = app || {};
             })
 
             if (e.keyCode === 71 && e.target === document.body) this.handleGroup()
+            if (e.keyCode === 85 && e.target === document.body) this.handleUngroup()
         },
         documentKeyUp: function(e) {
             if (e.shiftKey === false) this.setState({
@@ -215,7 +216,6 @@ var app = app || {};
 
         },
         handleGroup: function() {
-            console.log('grouping', this.state.selected)
             var bounds = {
                 x1: Number.POSITIVE_INFINITY,
                 x2: Number.NEGATIVE_INFINITY,
@@ -234,11 +234,17 @@ var app = app || {};
                 return e.data.id
             });
 
+            // prevent us from grouping nothing
+            if (ids.length === 0) return;
+
             var position = {
                 x: (bounds.x2 - bounds.x1) * .5 + bounds.x1,
                 y: (bounds.y2 - bounds.y1) * .5 + bounds.y1
             }
-            console.log(bounds)
+
+            this.setState({
+                selected: []
+            })
 
             app.Utils.request(
                 'post',
@@ -250,7 +256,48 @@ var app = app || {};
                 null
             )
         },
-        handleUngroup: function() {},
+        handleUngroup: function() {
+            var groups = this.state.selected.filter(function(e) {
+                return (e.instance() === 'group') && (e.parentNode !== null)
+            })
+
+            if (groups.length === 0) return;
+
+            var wait = {
+                'jobs': 0,
+                'done': 0,
+            }
+
+            groups.forEach(function(group) {
+                wait.jobs += group.data.children.length
+            })
+
+            // wait for all children to be moved before deleting the group
+            Object.observe(wait, function(change) {
+                if (wait.jobs === wait.done) {
+                    groups.forEach(function(group) {
+                        app.Utils.request(
+                            'delete',
+                            'groups/' + group.data.id, {},
+                            null
+                        )
+                    })
+                }
+            })
+
+            groups.forEach(function(group) {
+                group.data.children.forEach(function(childId) {
+                    app.Utils.request(
+                        'put',
+                        'groups/' + group.parentNode.data.id + '/children/' + childId, {},
+                        function() {
+                            wait.done++;
+                        }
+                    )
+                })
+
+            }.bind(this))
+        },
         render: function() {
             var nodes = {
                 'source': app.SourceComponent,
@@ -344,7 +391,7 @@ var app = app || {};
             var tools = React.createElement(app.ToolsComponent, {
                 key: 'tool_list',
                 onGroup: this.handleGroup,
-                OnUngroup: this.handleUngroup
+                onUngroup: this.handleUngroup
             });
 
             var panelList = React.createElement(app.PanelListComponent, {

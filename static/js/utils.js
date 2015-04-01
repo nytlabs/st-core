@@ -39,6 +39,10 @@ var app = app || {};
         return length
     }
 
+    app.Utils.escape = function(value) {
+        return value.replace(/([.*+?^${}()|\[\]\/\\])/g, "\\$1");
+    };
+
     /* apps.Utils.pointInRect checks to see if (px, py) is in rect defined by
      * x,y,w,h.
      */

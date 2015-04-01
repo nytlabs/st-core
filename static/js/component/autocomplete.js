@@ -17,11 +17,11 @@ var app = app || {};
             }
         },
         componentWillMount: function() {
-            this.autocomplete(this.state.options);
+            this.autocomplete(this.state.text);
         },
         autocomplete: function(s) {
-            var reBegin = new RegExp('^' + s, 'i');
-            var reIn = new RegExp(s, 'i');
+            var reBegin = new RegExp('^' + app.Utils.escape(s), 'i');
+            var reIn = new RegExp(app.Utils.escape(s), 'i');
 
             var beginList = this.props.options.filter(function(o) {
                 return o.type.match(reBegin)

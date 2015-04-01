@@ -23,6 +23,7 @@
 var app = app || {};
 
 (function() {
+    'use strict';
 
     var GRID_PX = 200.0;
 

@@ -6,6 +6,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.DragContainer = React.createClass({
         displayName: 'DragContainer',
         getInitialState: function() {

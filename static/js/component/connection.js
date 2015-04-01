@@ -7,6 +7,7 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
 
     app.ConnectionToolComponent = React.createClass({
         displayName: 'ConnectionToolComponent',

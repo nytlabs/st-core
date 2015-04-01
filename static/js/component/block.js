@@ -12,6 +12,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.RouteComponent = React.createClass({
         displayName: 'RouteComponent',
         handleMouseUp: function() {
@@ -71,6 +73,8 @@ var app = app || {};
 })();
 
 (function() {
+    'use strict';
+
     app.BlockComponent = React.createClass({
         displayName: 'BlockComponent',
         onChange: function(r) {

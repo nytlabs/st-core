@@ -5,6 +5,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.ToolButton = React.createClass({
         displayName: 'ToolButton',
         render: function() {
@@ -18,6 +20,8 @@ var app = app || {};
 
 
 (function() {
+    'use strict';
+
     app.ToolsComponent = React.createClass({
         displayName: 'ToolsComponent',
         render: function() {

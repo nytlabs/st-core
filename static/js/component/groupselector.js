@@ -8,6 +8,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.GroupSelectorComponent = React.createClass({
         displayName: 'GroupSelectorComponent',
         onClick: function(group) {

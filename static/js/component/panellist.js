@@ -5,6 +5,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.PanelListComponent = React.createClass({
         displayName: 'PanelListComponent',
         render: function() {

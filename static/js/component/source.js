@@ -3,6 +3,8 @@ var app = app || {};
 /* TODO: SOURCES */
 
 (function() {
+    'use strict';
+
     app.SourceComponent = React.createClass({
         displayName: 'SourceComponent',
         render: function() {

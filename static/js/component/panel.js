@@ -8,6 +8,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.PanelEditableComponent = React.createClass({
         displayName: 'PanelEditableComponent',
         getInitialState: function() {

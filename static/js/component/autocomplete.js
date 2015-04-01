@@ -6,6 +6,8 @@ var app = app || {};
  */
 
 (function() {
+    'use strict';
+
     app.AutoCompleteComponent = React.createClass({
         displayName: 'AutoCompleteComponent',
         getInitialState: function() {

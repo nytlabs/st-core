@@ -3,6 +3,8 @@ var app = app || {};
 /* TODO: SOURCES */
 
 (function() {
+    'use strict';
+
     app.LinkComponent = React.createClass({
         displayName: 'LinkComponent',
         render: function() {

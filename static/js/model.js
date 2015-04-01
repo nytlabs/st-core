@@ -403,6 +403,7 @@ var app = app || {};
         this.inform();
     }
 
+    // TODO: make addchild set parentNode and propagate "refresh" upwards to parentNode.
     app.CoreModel.prototype.addChild = function(groupId, id) {
         this.entities[groupId].data.children.push(id);
         this.entities[groupId].refresh();

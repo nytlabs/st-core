@@ -1,8 +1,10 @@
 var app = app || {};
 
-// TODO:
-// props.node no longer needed for this component, replaced with parentNode
-//
+/* ConnectionComponent
+ *
+ * TODO:
+ * props.node no longer needed for this component, replaced with parentNode
+ */
 
 (function() {
 

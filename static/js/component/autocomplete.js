@@ -1,5 +1,10 @@
 var app = app || {};
 
+/* AutoCompleteComponenet
+ * Given a list of items and a position by parent.
+ * Fires onChange event to parent node when item is selected.
+ */
+
 (function() {
     app.AutoCompleteComponent = React.createClass({
         displayName: "AutoCompleteComponent",

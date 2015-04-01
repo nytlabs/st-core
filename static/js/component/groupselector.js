@@ -1,7 +1,6 @@
 var app = app || {};
 
-/* 
- * GroupSelectorComponent
+/* GroupSelectorComponent
  * Displays menu that lists all groups.
  * Clicking a group updates CoreModel with the currently in-view group.
  * Changes to CoreModel update which group is selected, and which nods are

@@ -1,6 +1,8 @@
 var app = app || {};
 
-(function(){
+/* TODO: SOURCES */
+
+(function() {
     app.LinkComponent = React.createClass({
         displayName: "LinkComponent",
         render: function() {

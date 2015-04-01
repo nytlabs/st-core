@@ -1,5 +1,9 @@
 var app = app || {};
 
+/* ToolComponent & ToolButtonComponent
+ * Simple toolbar (lower left)  that may go away at some point
+ */
+
 (function() {
     app.ToolButton = React.createClass({
         displayName: 'ToolButton',

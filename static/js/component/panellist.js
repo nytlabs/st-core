@@ -1,5 +1,9 @@
 var app = app || {};
 
+/* PanelListComponent
+ * The right sidebar that is contains a series of panels.
+ */
+
 (function() {
     app.PanelListComponent = React.createClass({
         displayName: "PanelListComponent",

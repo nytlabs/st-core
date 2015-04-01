@@ -1,3 +1,34 @@
+var app = app || {};
+
+/* Group Model
+ *
+ * Extended from Block
+ * {
+ *      isDragging: <boolean>,              //
+ *      parentNode: <app.Entity>,           //
+ *      data: <server/types/blockLedger>    //
+ *      routes: [                           //
+ *          {                               //
+ *
+ *              direction: 'input', 'output',   //
+ *              index: <int>                    //
+ *              displayIndex: <int>             // Nth input or output for display
+ *              id: <int>                       //
+ *              connections: [<app.Connection>] // inherited from parent route
+ *              data:{core/input}               //
+ *              routesIndex: <int>              //
+ *              parentNode: <app.Entity>        //
+ *          }, ...
+ *      ],
+ *      geometry:{                              //
+ *          width: <number>                     //
+ *          height: <number>                    //
+ *          routeRadius: <number>               //
+ *          routeHeight: <number>               //
+ *      }
+ * }
+ *
+ */
 (function() {
     'use strict';
 

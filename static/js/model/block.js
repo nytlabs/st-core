@@ -1,8 +1,37 @@
 var app = app || {};
 
+/* Block Model
+ *
+ * {
+ *      isDragging: <boolean>,              // provided by app.Entity
+ *      parentNode: <app.Entity>,           // provided by app.Entity
+ *      data: <server/types/blockLedger>    // exact server state
+ *      routes: [                           // flattened version of .data.inputs/.data.outputs
+ *          {                               // contains state specifically for the interface
+ *
+ *              direction: 'input', 'output',   // is route from .data.input or.data.output
+ *              index: <int>                    // from .data.input/.data.output route index (for state)
+ *              displayIndex: <int>             // from .data.input/.data.output route index (for display)
+ *              id: <int>                       // from .data.id
+ *              connections: [<app.Connection>] // list of of connections attached to this route
+ *              data:{core/input}               // data.inputs[N]/data.outputs[N]
+ *              routesIndex: <int>              // the index of this element in routes:[]
+ *              parentNode: <app.Entity>        // the Group or Block this route is attachd to
+ *          }, ...
+ *      ],
+ *      geometry:{                              // display data derived from routes{}
+ *          width: <number>                     // the block width calculated from route widths
+ *          height: <number>                    // the block height calculated from route height
+ *          routeRadius: <number>               // the radius of the route, a constant
+ *          routeHeight: <number>               // the max height of a route label
+ *      }
+ * }
+ *
+ */
+
 (function() {
     'use strict';
-    console.log(app)
+
     app.Block = function(data, model) {
         app.Entity.call(this);
 
@@ -21,6 +50,7 @@ var app = app || {};
         return "block";
     }
 
+    // transmogrify routes from .data to .routes
     app.Block.prototype.buildRoutes = function() {
         this.routes = this.data.inputs.map(function(input, index) {
             return {

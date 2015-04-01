@@ -113,7 +113,6 @@ var app = app || {};
 
         },
         createConnection: function(from, to) {
-            console.log(from, to)
             app.Utils.request(
                 'POST',
                 'connections', {

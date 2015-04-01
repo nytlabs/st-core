@@ -1,5 +1,4 @@
-/*
- * StageComponent
+/* StageComponent
  * - renders the background and grid
  * - provides selection box and selection events
  * - group's translation state is updated in model

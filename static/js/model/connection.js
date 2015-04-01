@@ -1,5 +1,23 @@
 var app = app || {};
 
+/* Connection Model
+ *
+ * {
+ *      data: <core/ConnectionLedger,
+ *      model: app.CoreModel (we may be able to get rid of this at this point)
+ *      from: {
+ *              node: <app.Entity>      // source node
+ *              route: <route>          // source node's route
+ *      },
+ *      to: {
+ *              node: <app.Entity>      // target node
+ *              route: <route>          // target node's route
+ *      }
+ * }
+ *
+ * this.to/this.from change based on what group is focussed.
+ */
+
 (function() {
     'use strict';
     app.Connection = function(data, model) {
@@ -52,8 +70,6 @@ var app = app || {};
         fromConnections.splice(fromConnections.indexOf(this), 1);
         toConnections.splice(toConnections.indexOf(this), 1);
     }
-
-    //app.Connection.prototype = new app.Entity();
 
     app.Connection.prototype.instance = function() {
         return "connection";

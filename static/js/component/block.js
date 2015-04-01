@@ -1,5 +1,16 @@
 var app = app || {};
 
+/* BlockComponent and RouteComponent
+ * BlockComponent renders both Block and Group models. (Group is just an
+ * extended version of Block). BlockComponent creates RouteComponents to
+ * render each individual route. Routes can almost work entirely
+ * independantly of Blocks/Groups, as they are self-contained in state
+ * and the nodes that they reference. The only bit of data that they depend
+ * on from their parent node (block or group) is the geometry information
+ * that is required for laying out in that particular blockor group (width,
+ * height # of total routes, etc).
+ */
+
 (function() {
     app.RouteComponent = React.createClass({
         displayName: "RouteComponent",

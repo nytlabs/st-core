@@ -1,6 +1,8 @@
 var app = app || {};
 
-(function(){
+/* TODO: SOURCES */
+
+(function() {
     app.SourceComponent = React.createClass({
         displayName: "SourceComponent",
         render: function() {

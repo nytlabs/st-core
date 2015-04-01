@@ -1,5 +1,10 @@
 var app = app || {};
 
+/* DragContainerComponent
+ * This component wraps around an element of model Entity and provides
+ * mouse-drag functionality.
+ */
+
 (function() {
     app.DragContainer = React.createClass({
         displayName: "DragContainer",

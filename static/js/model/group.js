@@ -57,7 +57,7 @@ var app = app || {};
     }
 
     app.Group.prototype.instance = function() {
-        return "group";
+        return 'group';
     }
 
     app.Group.prototype.buildRoutes = function() {

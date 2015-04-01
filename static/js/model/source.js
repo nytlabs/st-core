@@ -12,7 +12,7 @@ var app = app || {};
     app.Source.prototype = new app.Entity();
 
     app.Source.prototype.instance = function() {
-        return "source";
+        return 'source';
     }
 
 })();

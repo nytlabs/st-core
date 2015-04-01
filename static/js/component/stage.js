@@ -27,7 +27,7 @@ var app = app || {};
     var GRID_PX = 200.0;
 
     app.StageComponent = React.createClass({
-        displayName: "StageComponent",
+        displayName: 'StageComponent',
         getInitialState: function() {
             return {
                 dragging: false,
@@ -187,7 +187,7 @@ var app = app || {};
 
             // selection rect
             if (this.state.selectionRect.enabled === true) {
-                var selectionRect = React.createElement("rect", {
+                var selectionRect = React.createElement('rect', {
                     x: this.state.selectionRect.x,
                     y: this.state.selectionRect.y,
                     width: this.state.selectionRect.width,

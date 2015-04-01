@@ -4,12 +4,12 @@ var app = app || {};
  * Produces a list of fields that are the current representation of input
  * values for blocks/groups that are sent to the component.
  *
- * TODO: fix the {"data": ...} nonsense
+ * TODO: fix the {'data': ...} nonsense
  */
 
 (function() {
     app.PanelEditableComponent = React.createClass({
-        displayName: "PanelEditableComponent",
+        displayName: 'PanelEditableComponent',
         getInitialState: function() {
             return {
                 isEditing: false,
@@ -55,8 +55,8 @@ var app = app || {};
                     onKeyUp: this.handleKeyUp,
                     onBlur: this.handleBlur,
                     style: inputStyle,
-                    ref: "editableInput",
-                    key: "editableInput"
+                    ref: 'editableInput',
+                    key: 'editableInput'
                 }, null),
                 React.createElement('div', {
                     onClick: this.handleClick,
@@ -71,7 +71,7 @@ var app = app || {};
 
 (function() {
     app.PanelComponent = React.createClass({
-        displayName: "PanelComponent",
+        displayName: 'PanelComponent',
         render: function() {
             return React.createElement('div', {
                 className: 'panel'
@@ -82,16 +82,16 @@ var app = app || {};
                 }, this.props.model.data.type),
                 React.createElement('div', {
                     key: 'block_Label',
-                    className: "label",
-                }, "label"),
+                    className: 'label',
+                }, 'label'),
                 React.createElement(app.PanelEditableComponent, {
                     key: 'route_label',
                     className: 'editable',
                     value: this.props.model.data.label,
                     onChange: function(value) {
                         app.Utils.request(
-                            "PUT",
-                            this.props.model.instance() + "s/" + this.props.model.data.id + "/label",
+                            'PUT',
+                            this.props.model.instance() + 's/' + this.props.model.data.id + '/label',
                             value,
                             null
                         )
@@ -109,8 +109,8 @@ var app = app || {};
                                 value: JSON.stringify(r.data.value),
                                 onChange: function(value) {
                                     app.Utils.request(
-                                        "PUT",
-                                        "blocks/" + r.id + "/routes/" + r.index,
+                                        'PUT',
+                                        'blocks/' + r.id + '/routes/' + r.index,
                                         JSON.parse(value),
                                         null
                                     )

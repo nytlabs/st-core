@@ -11,7 +11,7 @@ var app = app || {};
     //app.Link.prototype = new app.Entity();
 
     app.Link.prototype.instance = function() {
-        return "link";
+        return 'link';
     }
 
     app.Link.prototype.refreshGeometry = function() {

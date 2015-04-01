@@ -7,10 +7,10 @@ var app = app || {};
 
 (function() {
     app.AutoCompleteComponent = React.createClass({
-        displayName: "AutoCompleteComponent",
+        displayName: 'AutoCompleteComponent',
         getInitialState: function() {
             return {
-                text: "",
+                text: '',
                 options: [],
             }
         },

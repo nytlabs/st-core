@@ -6,7 +6,7 @@ var app = app || {};
 
 (function() {
     app.PanelListComponent = React.createClass({
-        displayName: "PanelListComponent",
+        displayName: 'PanelListComponent',
         render: function() {
             return React.createElement('div', {
                 className: 'panel_list'

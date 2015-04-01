@@ -21,8 +21,8 @@ var app = app || {};
         this.model.inform()
         dm.push(this.id, function() {
             app.Utils.request(
-                "PUT",
-                this.instance() + "s/" + this.data.id + "/position", // would be nice to change API to not have the "S" in it!
+                'PUT',
+                this.instance() + 's/' + this.data.id + '/position', // would be nice to change API to not have the 'S' in it!
                 p,
                 null
             );

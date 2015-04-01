@@ -82,7 +82,7 @@ var app = app || {};
         this.focusedNodes = []; // nodes apart of the focused group
         this.focusedEdges = []; // nedges that are apart of the focused group
 
-        var ws = new WebSocket("ws://localhost:7071/updates");
+        var ws = new WebSocket('ws://localhost:7071/updates');
 
         ws.onmessage = function(m) {
             this.update(JSON.parse(m.data));
@@ -93,8 +93,8 @@ var app = app || {};
         }
 
         app.Utils.request(
-            "GET",
-            "blocks/library",
+            'GET',
+            'blocks/library',
             null,
             function(req) {
                 this.blockLibrary = JSON.parse(req.response);
@@ -102,8 +102,8 @@ var app = app || {};
         )
 
         app.Utils.request(
-            "GET",
-            "sources/library",
+            'GET',
+            'sources/library',
             null,
             function(req) {
                 this.sourceLibrary = JSON.parse(req.response);
@@ -135,7 +135,7 @@ var app = app || {};
         this.inform();
     }
 
-    // TODO: make addchild set parentNode and propagate "refresh" upwards to parentNode.
+    // TODO: make addchild set parentNode and propagate 'refresh' upwards to parentNode.
     app.CoreModel.prototype.addChild = function(groupId, id) {
         this.entities[id].parentNode = this.entities[groupId]
         this.entities[groupId].data.children.push(id);
@@ -187,7 +187,7 @@ var app = app || {};
                 break;
             case 'create':
                 // create seperate action for child.
-                if (m.type === "child") {
+                if (m.type === 'child') {
                     this.addChild(m.data.group.id, m.data.child.id);
                     return;
                 }
@@ -201,7 +201,7 @@ var app = app || {};
                 // if we currently don't have a focus group, we wait for the 
                 // first group to arrive from the server. We then set that
                 // group as our currently focused group.
-                if (m.type === "group") {
+                if (m.type === 'group') {
                     this.groups.push(n);
                     if (this.focusedGroup === null) {
                         n.setFocusedGroup();
@@ -211,7 +211,7 @@ var app = app || {};
                 }
 
 
-                if (m.type === "connection" || m.type === "link") {
+                if (m.type === 'connection' || m.type === 'link') {
                     this.edges.push(n);
                 }
 
@@ -225,24 +225,24 @@ var app = app || {};
 
                 break;
             case 'delete':
-                if (m.type === "child") {
+                if (m.type === 'child') {
                     this.removeChild(m.data.group.id, m.data.child.id); // this child nonsense is a mess
                     return
                 }
 
-                if (m.type === "connection") {
+                if (m.type === 'connection') {
                     this.entities[m.data[m.type].id].detach();
                 }
 
                 var i = this.list.indexOf(this.entities[m.data[m.type].id]);
                 this.list.splice(i, 1);
 
-                if (m.type === "group") {
+                if (m.type === 'group') {
                     var i = this.groups.indexOf(this.entities[m.data[m.type].id]);
                     this.groups.splice(i, 1);
                 }
 
-                if (m.type === "connection" || m.type == "link") {
+                if (m.type === 'connection' || m.type == 'link') {
                     var i = this.edges.indexOf(this.entities[m.data[m.type].id]);
                     this.edges.splice(i, 1);
                 }

@@ -9,7 +9,7 @@ var app = app || {};
     'use strict';
 
     app.CoreApp = React.createClass({
-        displayName: "CoreApp",
+        displayName: 'CoreApp',
         getInitialState: function() {
             return {
                 width: null,
@@ -215,7 +215,7 @@ var app = app || {};
 
         },
         handleGroup: function() {
-            console.log("grouping", this.state.selected)
+            console.log('grouping', this.state.selected)
             var bounds = {
                 x1: Number.POSITIVE_INFINITY,
                 x2: Number.NEGATIVE_INFINITY,
@@ -315,7 +315,7 @@ var app = app || {};
                 var groupList = React.createElement(app.GroupSelectorComponent, {
                     focusedGroup: this.props.model.focusedGroup.data.id,
                     groups: this.props.model.groups,
-                    key: "group_list",
+                    key: 'group_list',
                 }, null);
 
                 if (this.state.connecting != null) {
@@ -331,9 +331,9 @@ var app = app || {};
 
             background.push(renderGroups);
 
-            var stage = React.createElement("svg", {
-                className: "stage",
-                key: "stage",
+            var stage = React.createElement('svg', {
+                className: 'stage',
+                key: 'stage',
                 width: this.state.width,
                 height: this.state.height,
                 onContextMenu: function(e) {
@@ -365,8 +365,8 @@ var app = app || {};
             }
 
 
-            var container = React.createElement("div", {
-                className: "app",
+            var container = React.createElement('div', {
+                className: 'app',
             }, children);
 
             return container

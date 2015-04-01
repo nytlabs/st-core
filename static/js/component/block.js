@@ -13,7 +13,7 @@ var app = app || {};
 
 (function() {
     app.RouteComponent = React.createClass({
-        displayName: "RouteComponent",
+        displayName: 'RouteComponent',
         handleMouseUp: function() {
             this.props.onChange(this.props.model)
         },
@@ -23,13 +23,13 @@ var app = app || {};
 
             children.push(
                 React.createElement('text', {
-                    className: "route_label unselectable",
+                    className: 'route_label unselectable',
                     textAnchor: direction === 'input' ? 'start' : 'end',
-                    key: "route_label",
+                    key: 'route_label',
                 }, this.props.model.data.name)
             )
 
-            var circleClass = "route_circle" + " " + this.props.model.data.type;
+            var circleClass = 'route_circle' + ' ' + this.props.model.data.type;
             var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
             var cy = this.props.geometry.routeRadius * -.5;
 
@@ -40,7 +40,7 @@ var app = app || {};
                     cy: cy,
                     r: this.props.geometry.routeRadius,
                     className: circleClass,
-                    key: "route_circle",
+                    key: 'route_circle',
                 }, null)
             )
 
@@ -55,8 +55,8 @@ var app = app || {};
                         cx: cx,
                         cy: cy,
                         r: this.props.geometry.routeRadius - 2,
-                        className: this.props.model.connections.length !== 0 ? "route_circle_filled" : "route_circle_white",
-                        key: "route_circle_filled"
+                        className: this.props.model.connections.length !== 0 ? 'route_circle_filled' : 'route_circle_white',
+                        key: 'route_circle_filled'
                     }, null)
                 )
             }
@@ -72,13 +72,13 @@ var app = app || {};
 
 (function() {
     app.BlockComponent = React.createClass({
-        displayName: "BlockComponent",
+        displayName: 'BlockComponent',
         onChange: function(r) {
             this.props.onRouteEvent(r)
         },
         render: function() {
-            var classes = "block";
-            if (this.props.selected === true) classes += " selected";
+            var classes = 'block';
+            if (this.props.selected === true) classes += ' selected';
             var children = [];
             children.push(React.createElement('rect', {
                 x: 0,

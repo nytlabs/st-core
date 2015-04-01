@@ -7,7 +7,7 @@ var app = app || {};
 
 (function() {
     app.DragContainer = React.createClass({
-        displayName: "DragContainer",
+        displayName: 'DragContainer',
         getInitialState: function() {
             return {
                 dragging: false,
@@ -63,7 +63,7 @@ var app = app || {};
         },
         render: function() {
             return (
-                React.createElement("g", {
+                React.createElement('g', {
                         transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
                         onMouseMove: this.onMouseMove,
                         onMouseDown: this.onMouseDown,

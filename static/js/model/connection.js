@@ -72,6 +72,6 @@ var app = app || {};
     }
 
     app.Connection.prototype.instance = function() {
-        return "connection";
+        return 'connection';
     }
 })();

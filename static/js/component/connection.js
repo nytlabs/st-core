@@ -30,7 +30,7 @@ var app = app || {};
         },
         render: function() {
             var lineStyle = {
-                stroke: "black",
+                stroke: 'black',
                 strokeWidth: 2,
                 fill: 'none'
             }
@@ -68,7 +68,7 @@ var app = app || {};
 
             return React.createElement('path', {
                 style: lineStyle,
-                strokeDasharray: "5,5",
+                strokeDasharray: '5,5',
                 d: [
                     'M',
                     c[0], ' ',
@@ -98,13 +98,13 @@ var app = app || {};
     }
 
     app.ConnectionComponent = React.createClass({
-        displayName: "ConnectionComponent",
+        displayName: 'ConnectionComponent',
         onMouseUp: function(e) {
             this.props.nodeSelect(this.props.model.data.id);
         },
         render: function() {
             var lineStyle = {
-                stroke: "black",
+                stroke: 'black',
                 strokeWidth: 2,
                 fill: 'none'
             }
@@ -116,8 +116,8 @@ var app = app || {};
             c[2] += 50.0;
             c[4] -= 50.0;
 
-            if (this.props.selected === true) lineStyle.stroke = "blue";
-            return React.createElement("path", {
+            if (this.props.selected === true) lineStyle.stroke = 'blue';
+            return React.createElement('path', {
                 style: lineStyle,
                 d: [
                     'M',

@@ -50,20 +50,22 @@ var app = app || {};
             }
 
             var coord = getCoords(this.props.connecting.parentNode, this.props.connecting);
+            coord.x += this.props.translateX;
+            coord.y += this.props.translateY;
 
             // if the tool is enabled but the mouse has not moved, set null
             // state as route position
             var target = {
-                x: this.state.x === null ? routeX : this.state.x,
-                y: this.state.y === null ? routeY : this.state.y,
+                x: this.state.x === null ? coord.x : this.state.x,
+                y: this.state.y === null ? coord.y : this.state.y,
             }
 
             var c = [
-                coord.x, courd.y, coord.x, coord.y,
+                coord.x, coord.y, coord.x, coord.y,
                 target.x, target.y, target.x, target.y
             ];
 
-            if (route.direction === 'output') {
+            if (this.props.connecting.direction === 'output') {
                 c[2] += 50.0;
                 c[4] -= 50.0;
             } else {

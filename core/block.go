@@ -224,7 +224,7 @@ func (b *Block) Reset() {
 	// reset block's state as well. currently this only applies to a handful of
 	// blocks, like GET and first.
 	for k, _ := range b.state.internalValues {
-		delete(b.state.inputValues, k)
+		delete(b.state.internalValues, k)
 	}
 
 	return

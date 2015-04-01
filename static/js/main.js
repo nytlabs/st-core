@@ -1,4 +1,6 @@
 (function() {
+    'use strict';
+
     var m = new app.CoreModel();
 
     function render() {

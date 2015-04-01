@@ -9,6 +9,19 @@ var app = app || {};
 (function() {
     'use strict';
 
+    function getCoords(node, route) {
+        var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);
+        var cy = node.geometry.routeRadius * -.5;
+        var routeX = (route.direction === 'input' ? 0 : node.geometry.width) +
+            cx + node.data.position.x;
+        var routeY = (1 + route.displayIndex) * node.geometry.routeHeight +
+            cy + node.data.position.y;
+        return {
+            x: routeX,
+            y: routeY
+        }
+    }
+
     app.ConnectionToolComponent = React.createClass({
         displayName: 'ConnectionToolComponent',
         componentWillMount: function() {
@@ -36,16 +49,7 @@ var app = app || {};
                 fill: 'none'
             }
 
-            var node = this.props.connecting.parentNode;
-            var route = this.props.connecting;
-
-            var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);
-            var cy = node.geometry.routeRadius * -.5;
-
-            var routeX = (route.direction === 'input' ? 0 : node.geometry.width) +
-                cx + this.props.translateX + node.data.position.x;
-            var routeY = (1 + route.displayIndex) * node.geometry.routeHeight +
-                cy + this.props.translateY + node.data.position.y;
+            var coord = getCoords(this.props.connecting.parentNode, this.props.connecting);
 
             // if the tool is enabled but the mouse has not moved, set null
             // state as route position
@@ -55,7 +59,7 @@ var app = app || {};
             }
 
             var c = [
-                routeX, routeY, routeX, routeY,
+                coord.x, courd.y, coord.x, coord.y,
                 target.x, target.y, target.x, target.y
             ];
 
@@ -85,19 +89,6 @@ var app = app || {};
         }
     })
 
-    function getCoords(node, route) {
-        var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);
-        var cy = node.geometry.routeRadius * -.5;
-        var routeX = (route.direction === 'input' ? 0 : node.geometry.width) +
-            cx + node.data.position.x;
-        var routeY = (1 + route.displayIndex) * node.geometry.routeHeight +
-            cy + node.data.position.y;
-        return {
-            x: routeX,
-            y: routeY
-        }
-    }
-
     app.ConnectionComponent = React.createClass({
         displayName: 'ConnectionComponent',
         onMouseUp: function(e) {
@@ -113,7 +104,7 @@ var app = app || {};
             var from = getCoords(this.props.model.from.node, this.props.model.from.route)
             var to = getCoords(this.props.model.to.node, this.props.model.to.route)
 
-            c = [from.x, from.y, from.x, from.y, to.x, to.y, to.x, to.y];
+            var c = [from.x, from.y, from.x, from.y, to.x, to.y, to.x, to.y];
             c[2] += 50.0;
             c[4] -= 50.0;
 

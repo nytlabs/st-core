@@ -8,6 +8,9 @@ var app = app || {};
 // it makes an appearance is, as it causes horrendous snake calls that refresh
 // the UI too many times.
 
+// TODO:
+// organize  refreshFocusedGroup
+
 (function() {
     'use strict';
 
@@ -135,6 +138,7 @@ var app = app || {};
             r.connections = [];
             r.data = this.data[r.direction + 's'][r.index];
             r.routesIndex = index;
+            r.parentNode = this;
             return r
         }.bind(this));
 
@@ -210,6 +214,8 @@ var app = app || {};
             'output': 0
         }
 
+        this.routes = [];
+
         this.data.children.forEach(function(child) {
             this.model.entities[child].routes.forEach(function(r, index) {
                 this.routes.push({
@@ -220,6 +226,7 @@ var app = app || {};
                     direction: r.direction,
                     index: r.index,
                     displayIndex: displayIndex[r.direction]++,
+                    parentNode: this,
                 })
             }.bind(this))
         }.bind(this))
@@ -232,10 +239,10 @@ var app = app || {};
     }
 
     // when a group changes, this swaps out references in focusedNodes and focusedEdges
-    app.Group.prototype.refreshFocusedGroup = function() {
-        var model = this.model;
-        var id = this.data.id;
-
+    function refreshFocusedGroup(g, model) {
+        //        var model = this.model;
+        //        var id = this.data.id;
+        var id = g.data.id;
         model.focusedNodes = model.entities[id].data.children.map(function(id) {
             return this.entities[id];
         }.bind(model))
@@ -243,9 +250,36 @@ var app = app || {};
         model.focusedEdges = model.edges.filter(function(e) {
             switch (e.instance()) {
                 case 'connection':
-                    if (this.entities[id].data.children.indexOf(e.data.to.id) !== -1) {
-                        return true;
+                    var toRoute, fromRoute;
+
+                    var to = model.focusedNodes.filter(function(n) {
+                        return !!(n.routes.filter(function(r) {
+                            if ((r.id === e.data.to.id) && (r.index === e.data.to.route) && r.direction === 'input') {
+                                toRoute = r
+                                return true
+                            }
+                            return false
+                        }).length)
+                    })
+
+                    var from = model.focusedNodes.filter(function(n) {
+                        return !!(n.routes.filter(function(r) {
+                            if ((r.id === e.data.from.id) && (r.index === e.data.from.route) && r.direction === 'output') {
+                                fromRoute = r
+                                return true
+                            }
+                            return false
+                        }).length)
+                    })
+
+                    if (!!to.length && !!from.length && to[0] !== from[0]) {
+                        e.setNodes(from[0], fromRoute, to[0], toRoute);
+                        return true
                     }
+
+                    //if (this.entities[id].data.children.indexOf(e.data.to.id) !== -1) {
+                    //   return true;
+                    //}
                     break;
                 case 'link':
                     if (this.entities[id].data.children.indexOf(e.data.block.id) !== -1) {
@@ -265,7 +299,8 @@ var app = app || {};
     // preparing focusedNodes and focusedEdges.
     app.Group.prototype.setFocusedGroup = function() {
         this.model.focusedGroup = this;
-        this.refreshFocusedGroup();
+
+        refreshFocusedGroup(this, this.model);
         this.model.inform();
     }
 
@@ -301,6 +336,12 @@ var app = app || {};
         this.attach();
     }
 
+    app.Connection.prototype.setNodes = function(fromNode, fromRoute, toNode, toRoute) {
+        this.from.node = fromNode
+        this.from.route = fromRoute
+        this.to.node = toNode
+        this.to.route = toRoute
+    }
 
     // attach() and detach() adds/removes a reference to this connection the route on the block entity.
     app.Connection.prototype.attach = function() {
@@ -366,7 +407,7 @@ var app = app || {};
         this.entities[groupId].data.children.push(id);
         this.entities[groupId].refresh();
 
-        if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
+        refreshFocusedGroup(this.focusedGroup, this);
         this.inform();
     }
 
@@ -374,7 +415,7 @@ var app = app || {};
         this.entities[groupId].data.children.splice(this.entities[groupId].data.children.indexOf(id), 1);
         this.entities[groupId].refresh();
 
-        if (groupId === this.focusedGroup.data.id) this.entities[groupId].refreshFocusedGroup();
+        refreshFocusedGroup(this.focusedGroup, this);
         this.inform();
     }
 
@@ -451,7 +492,8 @@ var app = app || {};
                 // if we have a focused group we need to have a way to update the 
                 // conections that are currently on display. 
                 if (this.focusedGroup != null) {
-                    this.focusedGroup.refreshFocusedGroup();
+                    refreshFocusedGroup(this.focusedGroup, this);
+                    //this.focusedGroup.refreshFocusedGroup();
                     return;
                 }
 
@@ -482,7 +524,8 @@ var app = app || {};
                 delete this.entities[m.data[m.type].id];
 
                 if (this.focusedGroup != null) {
-                    this.focusedGroup.refreshFocusedGroup();
+                    refreshFocusedGroup(this.focusedGroup, this);
+                    //this.focusedGroup.refreshFocusedGroup();
                 }
                 break;
         }

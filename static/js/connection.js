@@ -1,5 +1,9 @@
 var app = app || {};
 
+// TODO:
+// props.node no longer needed for this component, replaced with parentNode
+//
+
 (function() {
 
     app.ConnectionToolComponent = React.createClass({
@@ -29,7 +33,7 @@ var app = app || {};
                 fill: 'none'
             }
 
-            var node = this.props.node;
+            var node = this.props.connecting.parentNode;
             var route = this.props.connecting;
 
             var cx = node.geometry.routeRadius * (route.direction === 'input' ? -.5 : .5);

@@ -93,7 +93,7 @@ var app = app || {};
                 return React.createElement(app.RouteComponent, {
                     onChange: this.onChange,
                     model: r,
-                    geometry: this.props.model.geometry,
+                    geometry: r.parentNode.geometry, //this.props.model.geometry,
                     key: i
                 })
             }.bind(this)));

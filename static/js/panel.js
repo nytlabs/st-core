@@ -112,7 +112,7 @@ var app = app || {};
                                 onChange: function(value) {
                                     app.Utils.request(
                                         "PUT",
-                                        this.props.model.instance() + "s/" + r.id + "/routes/" + r.index,
+                                        "blocks/" + r.id + "/routes/" + r.index,
                                         JSON.parse(value),
                                         null
                                     )

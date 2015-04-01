@@ -53,6 +53,11 @@
     fill: black;
     stroke: none;
 }
+.route_circle_white {
+    fill: rgba(180, 180, 180, 1);
+    stroke: black;
+    stroke-width: 1px;
+}
 .focused {
     background: rgba(100, 100, 100, 1);
     color: white;

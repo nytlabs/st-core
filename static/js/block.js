@@ -44,7 +44,7 @@ var app = app || {};
                         cx: cx,
                         cy: cy,
                         r: this.props.geometry.routeRadius - 2,
-                        className: "route_circle_filled",
+                        className: this.props.model.connections.length !== 0 ? "route_circle_filled" : "route_circle_white",
                         key: "route_circle_filled"
                     }, null)
                 )

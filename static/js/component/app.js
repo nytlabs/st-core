@@ -51,6 +51,15 @@ var app = app || {};
                         p2.y + this.props.model.focusedGroup.translateY));
             }.bind(this)));
 
+            // allow appending of multiple shift-selects
+            if (this.state.keys.shift === true) {
+                this.state.selected.forEach(function(e) {
+                    if (selected.indexOf(e) === -1) {
+                        selected.push(e);
+                    }
+                })
+            }
+
             // update the state of the selection box
             this.setState({
                 selected: selected,
@@ -189,7 +198,7 @@ var app = app || {};
                         })
                     })
                 }
-            } else {
+            } else if (this.state.selected.length === 0) {
                 this.setState({
                     selected: [node],
                 })
@@ -242,10 +251,6 @@ var app = app || {};
                 y: (bounds.y2 - bounds.y1) * .5 + bounds.y1
             }
 
-            this.setState({
-                selected: []
-            })
-
             app.Utils.request(
                 'post',
                 'groups', {
@@ -253,8 +258,22 @@ var app = app || {};
                     'children': ids,
                     'position': position
                 },
-                null
+                function(resp) {
+                    this.setState({
+                        selected: [this.props.model.entities[JSON.parse(resp.response).id]]
+                    })
+                }.bind(this)
             )
+        },
+        handleDrag: function(x, y) {
+            this.state.selected.filter(function(e) {
+                return (e instanceof app.Entity)
+            }).forEach(function(n) {
+                n.setPosition({
+                    x: n.data.position.x + x,
+                    y: n.data.position.y + y
+                });
+            })
         },
         handleUngroup: function() {
             var groups = this.state.selected.filter(function(e) {
@@ -268,6 +287,8 @@ var app = app || {};
                 'done': 0,
             }
 
+            var selected = [];
+
             groups.forEach(function(group) {
                 wait.jobs += group.data.children.length
             })
@@ -275,6 +296,14 @@ var app = app || {};
             // wait for all children to be moved before deleting the group
             Object.observe(wait, function(change) {
                 if (wait.jobs === wait.done) {
+
+                    // make children of ungrouped group all selected
+                    this.setState({
+                        selected: selected.map(function(id) {
+                            return this.props.model.entities[id]
+                        }.bind(this))
+                    })
+
                     groups.forEach(function(group) {
                         app.Utils.request(
                             'delete',
@@ -283,10 +312,11 @@ var app = app || {};
                         )
                     })
                 }
-            })
+            }.bind(this))
 
             groups.forEach(function(group) {
                 group.data.children.forEach(function(childId) {
+                    selected.push(childId)
                     app.Utils.request(
                         'put',
                         'groups/' + group.parentNode.data.id + '/children/' + childId, {},
@@ -316,7 +346,8 @@ var app = app || {};
                     model: c,
                     x: c.data.position.x,
                     y: c.data.position.y,
-                    nodeSelect: this.nodeSelect
+                    nodeSelect: this.nodeSelect,
+                    onDrag: this.handleDrag,
                 }, React.createElement(nodes[c.instance()], {
                     key: c.data.id,
                     model: c,

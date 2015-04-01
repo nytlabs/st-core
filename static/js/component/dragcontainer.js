@@ -57,9 +57,14 @@ var app = app || {};
         },
         onMouseMove: function(e) {
             if (this.state.dragging) {
+                var diffX = e.pageX - this.state.offX;
+                var diffY = e.pageY - this.state.offY;
+
+                this.props.onDrag(-1 * (this.props.model.data.position.x - diffX), -1 * (this.props.model.data.position.y - diffY));
+
                 this.props.model.setPosition({
-                    x: e.pageX - this.state.offX,
-                    y: e.pageY - this.state.offY
+                    x: diffX,
+                    y: diffY
                 })
             }
         },

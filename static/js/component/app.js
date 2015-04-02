@@ -40,9 +40,9 @@ var app = app || {};
 
             // check to see which edges are in selection box
             selected = selected.concat(this.props.model.focusedEdges.filter(function(node) {
-                if (!node.hasOwnProperty('from')) return false; // we may be able to get rid of this now.
-                var p1 = node.from;
-                var p2 = node.to;
+                if (!node.hasOwnProperty('from')) return false; // we may be able to get rid of this now
+                var p1 = node.from.node.data.position;
+                var p2 = node.to.node.data.position;
                 return (app.Utils.pointInRect(rectX, rectY, width, height,
                         p1.x + this.props.model.focusedGroup.translateX,
                         p1.y + this.props.model.focusedGroup.translateY) &&

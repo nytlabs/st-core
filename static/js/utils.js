@@ -50,36 +50,4 @@ var app = app || {};
         return (px >= x) && (px < x + w) && (py >= y) && (py < y + h);
     }
 
-    app.Utils.Debounce = function() {
-        this.func = null;
-        this.fire = null;
-        this.last = null;
-    }
-
-    app.Utils.Debounce.prototype.push = function(e, duration) {
-        if (this.last === null || this.last + duration < +new Date()) {
-            this.last = +new Date();
-            e();
-            return;
-        }
-        this.func = e;
-        if (this.fire != null) clearInterval(this.fire);
-        this.fire = setTimeout(function() {
-            this.func();
-            this.last = +new Date()
-        }.bind(this), duration);
-    }
-
-    app.Utils.DebounceManager = function() {
-        this.entities = {};
-    }
-
-    app.Utils.DebounceManager.prototype.push = function(id, f, duration) {
-        if (!this.entities.hasOwnProperty(id)) {
-            this.entities[id] = new app.Utils.Debounce();
-        }
-        this.entities[id].push(f, duration)
-
-    }
-
 })();

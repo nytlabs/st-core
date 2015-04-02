@@ -275,6 +275,13 @@ var app = app || {};
                 });
             })
         },
+        handleDragStop: function() {
+            this.state.selected.filter(function(e) {
+                return (e instanceof app.Entity)
+            }).forEach(function(n) {
+                n.postPosition();
+            })
+        },
         handleUngroup: function() {
             var groups = this.state.selected.filter(function(e) {
                 return (e.instance() === 'group') && (e.parentNode !== null)
@@ -348,6 +355,7 @@ var app = app || {};
                     y: c.data.position.y,
                     nodeSelect: this.nodeSelect,
                     onDrag: this.handleDrag,
+                    onDragStop: this.handleDragStop
                 }, React.createElement(nodes[c.instance()], {
                     key: c.data.id,
                     model: c,

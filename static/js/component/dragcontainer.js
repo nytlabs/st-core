@@ -54,6 +54,7 @@ var app = app || {};
             // this is to protect our model from receiving updates
             // would like to do away with this...
             this.props.model.setDragging(false);
+            this.props.onDragStop();
         },
         onMouseMove: function(e) {
             if (this.state.dragging) {
@@ -61,11 +62,6 @@ var app = app || {};
                 var diffY = e.pageY - this.state.offY;
 
                 this.props.onDrag(-1 * (this.props.model.data.position.x - diffX), -1 * (this.props.model.data.position.y - diffY));
-
-                this.props.model.setPosition({
-                    x: diffX,
-                    y: diffY
-                })
             }
         },
         render: function() {

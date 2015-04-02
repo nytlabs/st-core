@@ -160,16 +160,17 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	newGroup := &Group{
-		Children: g.Children,
+		Children: []int{},
 		Label:    g.Label,
+		Position: g.Position,
 		Id:       s.GetNextID(),
 	}
 
-	if newGroup.Children == nil {
-		newGroup.Children = []int{}
-	}
+	//if newGroup.Children == nil {
+	//	newGroup.Children = []int{}
+	//}
 
-	for _, c := range newGroup.Children {
+	for _, c := range g.Children {
 		_, okb := s.blocks[c]
 		_, okg := s.groups[c]
 		_, oks := s.sources[c]
@@ -186,7 +187,7 @@ func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 		return nil, err
 	}
 
-	for _, c := range newGroup.Children {
+	for _, c := range g.Children {
 		if cb, ok := s.blocks[c]; ok {
 			err = s.AddChildToGroup(newGroup.Id, cb)
 		}
@@ -374,7 +375,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not read request body"})
+		writeJSON(w, Error{err.Error()})
 		return
 	}
 
@@ -389,7 +390,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &p)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarshal value"})
+		writeJSON(w, Error{err.Error()})
 		return
 	}
 

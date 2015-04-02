@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -101,10 +102,87 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		Id:     s.GetNextID(),
 	}
 
+	s.ResetGraph(conn)
+
 	s.connections[conn.Id] = conn
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: CONNECTION, Data: wsConnection{*conn}})
 	return conn, nil
+}
+
+/*
+ResetGraph stops/resets/starts the entire connected subgraph related to
+connection Conn. It is a general approach that probably touches a lot more
+blocks than it needs to.
+
+TODO: This function should be replaced with language-level
+features that allow insight into stuck messages OR run in a more precise
+fashion (detecting branching/merging of streams).
+*/
+func (s *Server) ResetGraph(conn *ConnectionLedger) {
+	found := make(map[int]struct{})
+	cacheST := make(map[int]map[int]struct{})
+	cacheTS := make(map[int]map[int]struct{})
+
+	for _, c := range s.connections {
+		if _, ok := cacheST[c.Source.Id]; !ok {
+			cacheST[c.Source.Id] = make(map[int]struct{})
+		}
+		if _, ok := cacheTS[c.Target.Id]; !ok {
+			cacheTS[c.Target.Id] = make(map[int]struct{})
+		}
+		cacheST[c.Source.Id][c.Target.Id] = struct{}{}
+		cacheTS[c.Target.Id][c.Source.Id] = struct{}{}
+	}
+
+	if _, ok := cacheST[conn.Source.Id]; !ok {
+		cacheST[conn.Source.Id] = make(map[int]struct{})
+	}
+
+	if _, ok := cacheTS[conn.Target.Id]; !ok {
+		cacheTS[conn.Target.Id] = make(map[int]struct{})
+	}
+
+	cacheST[conn.Source.Id][conn.Target.Id] = struct{}{}
+	cacheTS[conn.Target.Id][conn.Source.Id] = struct{}{}
+
+	var traverse func(int)
+
+	// make a set of all nodes connecting to this connection
+	traverse = func(id int) {
+		found[id] = struct{}{}
+		if _, ok := cacheST[id]; ok {
+			for k, _ := range cacheST[id] {
+				if _, ok = found[k]; !ok {
+					traverse(k)
+				}
+			}
+		}
+		if _, ok := cacheTS[id]; ok {
+			for k, _ := range cacheTS[id] {
+				if _, ok = found[k]; !ok {
+					traverse(k)
+				}
+			}
+		}
+	}
+
+	traverse(conn.Source.Id)
+
+	for k, _ := range found {
+		log.Println("tidy: stopping id", k)
+		s.blocks[k].Block.Stop()
+	}
+
+	for k, _ := range found {
+		log.Println("tidy: resetting id", k)
+		s.blocks[k].Block.Reset()
+	}
+
+	for k, _ := range found {
+		log.Println("tidy: starting id", k)
+		go s.blocks[k].Block.Serve()
+	}
 }
 
 // returns a description of the connection
@@ -158,6 +236,8 @@ func (s *Server) DeleteConnection(id int) error {
 	}
 
 	delete(s.connections, id)
+
+	s.ResetGraph(c)
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: CONNECTION, Data: wsConnection{wsId{id}}})
 	return nil

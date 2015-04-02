@@ -10,6 +10,7 @@ func NewBlock(s Spec) *Block {
 	for _, v := range s.Inputs {
 		in = append(in, Input{
 			Name:  v.Name,
+			Type:  v.Type,
 			Value: nil,
 			C:     make(chan Message),
 		})
@@ -18,6 +19,7 @@ func NewBlock(s Spec) *Block {
 	for _, v := range s.Outputs {
 		out = append(out, Output{
 			Name:        v.Name,
+			Type:        v.Type,
 			Connections: make(map[Connection]struct{}),
 		})
 	}
@@ -67,6 +69,7 @@ func (b *Block) Serve() {
 		b.routing.RUnlock()
 		b.routing.Lock()
 		if ok := interrupt(); !ok {
+			b.routing.Unlock()
 			return
 		}
 		b.routing.Unlock()
@@ -140,6 +143,7 @@ func (b *Block) GetOutputs() []Output {
 	for id, out := range b.routing.Outputs {
 		m[id] = Output{
 			Name:        out.Name,
+			Type:        out.Type,
 			Connections: make(map[Connection]struct{}),
 		}
 		for k, _ := range out.Connections {
@@ -214,7 +218,18 @@ func (b *Block) Disconnect(id RouteIndex, c Connection) error {
 	return <-returnVal
 }
 
-// suture: stop the block
+func (b *Block) Reset() {
+	b.crank()
+
+	// reset block's state as well. currently this only applies to a handful of
+	// blocks, like GET and first.
+	for k, _ := range b.state.internalValues {
+		delete(b.state.internalValues, k)
+	}
+
+	return
+}
+
 func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false

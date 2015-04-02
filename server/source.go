@@ -98,7 +98,7 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	if i, ok := source.(core.Interface); ok {
 		// Describe() is not thread-safe it must be put ahead of supervior...
 		sl.Parameters = i.Describe()
-		sl.Token = s.supervisor.Add(i)
+		go i.Serve()
 	}
 
 	s.sources[sl.Id] = sl
@@ -128,8 +128,8 @@ func (s *Server) DeleteSource(id int) error {
 		}
 	}
 
-	if _, ok := source.Source.(core.Interface); ok {
-		s.supervisor.Remove(source.Token)
+	if si, ok := source.Source.(core.Interface); ok {
+		si.Stop()
 	}
 
 	s.DetachChild(source)
@@ -180,7 +180,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		return errors.New("cannot modify store")
 	}
 
-	s.supervisor.Remove(source.Token)
+	i.Stop()
 	for k, _ := range source.Parameters {
 		if v, ok := m[k]; ok {
 			i.SetSourceParameter(k, v)
@@ -188,7 +188,7 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 			s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, k, v}})
 		}
 	}
-	source.Token = s.supervisor.Add(i)
+	go i.Serve()
 	return nil
 }
 

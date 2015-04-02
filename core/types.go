@@ -71,6 +71,7 @@ type Spec struct {
 type Input struct {
 	Name  string       `json:"name"`
 	Value *InputValue  `json:"value"`
+	Type  JSONType     `json:"type"`
 	C     chan Message `json:"-"`
 }
 
@@ -78,10 +79,15 @@ type InputValue struct {
 	Data interface{} `json:"data"`
 }
 
+func (i *InputValue) Exists() bool {
+	return i != nil
+}
+
 // An Output holds a set of Connections. Each Connection refers to a Input.C. Every outbound
 // mesage is sent on every Connection in the Connections set.
 type Output struct {
 	Name        string                  `json:"name"`
+	Type        JSONType                `json:"type"`
 	Connections map[Connection]struct{} `json:"-"`
 }
 

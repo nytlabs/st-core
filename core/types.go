@@ -2,7 +2,10 @@
 // one another by passing Messages.
 package core
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 const (
 	NONE = iota
@@ -38,6 +41,45 @@ type RouteIndex int
 
 // SourceType is used to indicate what kind of source a block can connect to
 type SourceType int
+
+func (s *SourceType) UnmarshalJSON(data []byte) error {
+	st := string(data)
+	switch st {
+	case `null`:
+		*s = SourceType(NONE)
+	case `"key_value"`:
+		*s = SourceType(KEY_VALUE)
+	case `"stream"`:
+		*s = SourceType(STREAM)
+	case `"list"`:
+		*s = SourceType(LIST)
+	case `"value"`:
+		*s = SourceType(VALUE_PRIMITIVE)
+	case `"priority"`:
+		*s = SourceType(PRIORITY)
+	default:
+		return errors.New("Error unmarshalling source type")
+	}
+	return nil
+}
+
+func (s SourceType) MarshalJSON() ([]byte, error) {
+	switch s {
+	case NONE:
+		return []byte(`null`), nil
+	case KEY_VALUE:
+		return []byte(`"key_value"`), nil
+	case STREAM:
+		return []byte(`"stream"`), nil
+	case LIST:
+		return []byte(`"list"`), nil
+	case VALUE_PRIMITIVE:
+		return []byte(`"value"`), nil
+	case PRIORITY:
+		return []byte(`"priority"`), nil
+	}
+	return nil, errors.New("Unknown source type")
+}
 
 // Connections are used to connect blocks together
 type Connection chan Message
@@ -94,7 +136,7 @@ type Output struct {
 // A SourceSpec defines a source's name and type
 type SourceSpec struct {
 	Name string
-	Type int
+	Type SourceType
 	New  SourceFunc
 }
 

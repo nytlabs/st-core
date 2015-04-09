@@ -24,15 +24,16 @@ type ProtoBlock struct {
 }
 
 type BlockLedger struct {
-	Label       string        `json:"label"`
-	Type        string        `json:"type"`
-	Id          int           `json:"id"`
-	Block       *core.Block   `json:"-"`
-	Parent      *Group        `json:"-"`
-	Composition int           `json:"composition,omitempty"`
-	Inputs      []core.Input  `json:"inputs"`
-	Outputs     []core.Output `json:"outputs"`
-	Position    Position      `json:"position"`
+	Label       string          `json:"label"`
+	Type        string          `json:"type"`
+	Id          int             `json:"id"`
+	Block       *core.Block     `json:"-"`
+	Parent      *Group          `json:"-"`
+	Composition int             `json:"composition,omitempty"`
+	Inputs      []core.Input    `json:"inputs"`
+	Outputs     []core.Output   `json:"outputs"`
+	Source      core.SourceType `json:"source"`
+	Position    Position        `json:"position"`
 }
 
 func (bl *BlockLedger) GetID() int {
@@ -141,6 +142,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		Position: p.Position,
 		Type:     p.Type,
 		Block:    block,
+		Source:   blockSpec.Source,
 		Id:       s.GetNextID(),
 	}
 

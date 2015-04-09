@@ -97,7 +97,6 @@ var app = app || {};
             'blocks/library',
             null,
             function(req) {
-                console.log(req.response);
                 this.blockLibrary = JSON.parse(req.response);
             }.bind(this)
         )

@@ -66,7 +66,7 @@ var app = app || {};
                 'index': index,
                 'displayIndex': index
             }
-        }))
+        }));
 
         this.routes = this.routes.map(function(r, index) {
             r.id = this.data.id;
@@ -74,9 +74,28 @@ var app = app || {};
             r.data = this.data[r.direction + 's'][r.index];
             r.routesIndex = index;
             r.parentNode = this;
+            r.source = null;
             return r
         }.bind(this));
 
+
+        if (this.data.source != null) {
+            this.routes.push({
+                'direction': 'input',
+                'index': this.data.inputs.length,
+                'displayIndex': this.data.inputs.length,
+                'id': this.data.id,
+                'connections': [],
+                'data': {
+                    'name': this.data.source,
+                    'value': null,
+                    'type': 'any',
+                },
+                'routesIndex': this.routes.length,
+                'parentNode': this,
+                'source': this.data.source,
+            })
+        }
     }
 
     app.Block.prototype.buildGeometry = function() {

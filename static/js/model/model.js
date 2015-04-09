@@ -23,6 +23,7 @@ var app = app || {};
 
         model.focusedEdges = model.edges.filter(function(e) {
             switch (e.instance()) {
+                case 'link':
                 case 'connection':
                     var toRoute, fromRoute;
 
@@ -55,11 +56,11 @@ var app = app || {};
                     //   return true;
                     //}
                     break;
-                case 'link':
-                    if (this.entities[id].data.children.indexOf(e.data.block.id) !== -1) {
-                        return true;
-                    }
-                    break;
+                    /*case 'link':
+                        if (this.entities[id].data.children.indexOf(e.data.block.id) !== -1) {
+                            return true;
+                        }
+                        break;*/
             }
             return false;
         }.bind(model));
@@ -73,8 +74,7 @@ var app = app || {};
         this.list = [];
         this.groups = [];
         this.edges = [];
-        this.blockLibrary = [];
-        this.sourceLibrary = [];
+        this.library = [];
 
         this.onChanges = [];
 
@@ -97,7 +97,13 @@ var app = app || {};
             'blocks/library',
             null,
             function(req) {
-                this.blockLibrary = JSON.parse(req.response);
+                this.library = this.library.concat(JSON.parse(req.response).map(function(entry) {
+                    return {
+                        type: entry.type,
+                        source: entry.source,
+                        nodeClass: 'blocks'
+                    }
+                }));
             }.bind(this)
         )
 
@@ -106,7 +112,13 @@ var app = app || {};
             'sources/library',
             null,
             function(req) {
-                this.sourceLibrary = JSON.parse(req.response);
+                this.library = this.library.concat(JSON.parse(req.response).map(function(entry) {
+                    return {
+                        type: entry.type,
+                        source: entry.source,
+                        nodeClass: 'sources'
+                    }
+                }));
             }.bind(this)
         )
     }

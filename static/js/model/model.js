@@ -23,6 +23,40 @@ var app = app || {};
 
         model.focusedEdges = model.edges.filter(function(e) {
             switch (e.instance()) {
+                case 'link':
+                    // TODO: possibly combine 'link' and 'connection' cases
+                    // into one. The only difference is that links don't care
+                    // about route indices. 
+
+                    var toRoute, fromRoute;
+
+                    var to = model.focusedNodes.filter(function(n) {
+                        return !!(n.routes.filter(function(r) {
+                            if (r.id === e.data.source.id) {
+                                toRoute = r
+                                return true
+                            }
+                            return false
+                        }).length)
+                    })
+
+                    var from = model.focusedNodes.filter(function(n) {
+                        return !!(n.routes.filter(function(r) {
+                            if (r.id === e.data.block.id) {
+                                fromRoute = r
+                                return true
+                            }
+                            return false
+                        }).length)
+                    })
+
+                    if (!!to.length && !!from.length && to[0] !== from[0]) {
+                        e.setNodes(to[0], toRoute, from[0], fromRoute);
+                        return true
+                    }
+
+
+                    break;
                 case 'connection':
                     var toRoute, fromRoute;
 
@@ -51,14 +85,6 @@ var app = app || {};
                         return true
                     }
 
-                    //if (this.entities[id].data.children.indexOf(e.data.to.id) !== -1) {
-                    //   return true;
-                    //}
-                    break;
-                case 'link':
-                    if (this.entities[id].data.children.indexOf(e.data.block.id) !== -1) {
-                        return true;
-                    }
                     break;
             }
             return false;
@@ -73,8 +99,7 @@ var app = app || {};
         this.list = [];
         this.groups = [];
         this.edges = [];
-        this.blockLibrary = [];
-        this.sourceLibrary = [];
+        this.library = [];
 
         this.onChanges = [];
 
@@ -97,7 +122,13 @@ var app = app || {};
             'blocks/library',
             null,
             function(req) {
-                this.blockLibrary = JSON.parse(req.response);
+                this.library = this.library.concat(JSON.parse(req.response).map(function(entry) {
+                    return {
+                        type: entry.type,
+                        source: entry.source,
+                        nodeClass: 'blocks'
+                    }
+                }));
             }.bind(this)
         )
 
@@ -106,7 +137,13 @@ var app = app || {};
             'sources/library',
             null,
             function(req) {
-                this.sourceLibrary = JSON.parse(req.response);
+                this.library = this.library.concat(JSON.parse(req.response).map(function(entry) {
+                    return {
+                        type: entry.type,
+                        source: entry.source,
+                        nodeClass: 'sources'
+                    }
+                }));
             }.bind(this)
         )
     }

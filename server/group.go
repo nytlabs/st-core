@@ -608,8 +608,13 @@ func (s *Server) GroupModifyChildHandler(w http.ResponseWriter, r *http.Request)
 	if b, ok := s.blocks[child]; ok {
 		n = b
 	}
+
 	if g, ok := s.groups[child]; ok {
 		n = g
+	}
+
+	if so, ok := s.sources[child]; ok {
+		n = so
 	}
 
 	if n == nil {

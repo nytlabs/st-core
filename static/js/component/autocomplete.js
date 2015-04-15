@@ -50,7 +50,12 @@ var app = app || {};
         },
         handleKeyUp: function(e) {
             if (e.nativeEvent.keyCode === 13) {
-                this.props.onChange(e.target.value);
+                var match = this.props.options.filter(function(o) {
+                    return o.type === e.target.value
+                });
+                if (match.length === 1) {
+                    this.props.onChange(match[0]);
+                }
             }
         },
         render: function() {

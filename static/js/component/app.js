@@ -98,11 +98,11 @@ var app = app || {};
                 )
             })
         },
-        createBlock: function(b) {
+        createNode: function(b) {
             app.Utils.request(
                 'POST',
-                'blocks', {
-                    'type': b,
+                b.nodeClass, {
+                    'type': b.type,
                     'parent': this.props.model.focusedGroup.data.id,
                     'position': {
                         'x': this.state.library.x - this.props.model.focusedGroup.translateX,
@@ -123,24 +123,45 @@ var app = app || {};
 
         },
         createConnection: function(from, to) {
-            app.Utils.request(
-                'POST',
-                'connections', {
-                    'from': {
-                        'id': from.direction === 'output' ? from.id : to.id,
-                        'route': from.direction === 'output' ? from.index : to.index,
+            if (from.source != null && from.source == to.source) {
+                var source = from.direction === 'output' ? from : to;
+                var block = from.direction === 'output' ? to : from;
+                app.Utils.request(
+                    'POST',
+                    'links', {
+                        'source': {
+                            'id': source.id,
+                        },
+                        'block': {
+                            'id': block.id,
+                        }
                     },
-                    'to': {
-                        'id': to.direction === 'input' ? to.id : from.id,
-                        'route': to.direction === 'input' ? to.index : from.index,
-                    }
-                },
-                function(e) {
-                    this.setState({
-                        connecting: null
-                    })
-                }.bind(this)
-            )
+                    function(e) {
+                        this.setState({
+                            connecting: null
+                        })
+                    }.bind(this)
+                )
+            } else {
+                app.Utils.request(
+                    'POST',
+                    'connections', {
+                        'from': {
+                            'id': from.direction === 'output' ? from.id : to.id,
+                            'route': from.direction === 'output' ? from.index : to.index,
+                        },
+                        'to': {
+                            'id': to.direction === 'input' ? to.id : from.id,
+                            'route': to.direction === 'input' ? to.index : from.index,
+                        }
+                    },
+                    function(e) {
+                        this.setState({
+                            connecting: null
+                        })
+                    }.bind(this)
+                )
+            }
         },
         componentWillMount: function() {
             window.addEventListener('keydown', this.documentKeyDown);
@@ -337,13 +358,13 @@ var app = app || {};
         },
         render: function() {
             var nodes = {
-                'source': app.SourceComponent,
+                'source': app.BlockComponent,
                 'group': app.BlockComponent,
                 'block': app.BlockComponent
             }
 
             var edges = {
-                'link': app.LinkComponent,
+                'link': app.ConnectionComponent,
                 'connection': app.ConnectionComponent
             }
 
@@ -445,8 +466,8 @@ var app = app || {};
                     key: 'autocomplete',
                     x: this.state.library.x,
                     y: this.state.library.y,
-                    options: this.props.model.blockLibrary,
-                    onChange: this.createBlock,
+                    options: this.props.model.library,
+                    onChange: this.createNode,
                 }, null));
             }
 

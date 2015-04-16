@@ -79,6 +79,7 @@ var app = app || {};
                     index: r.index,
                     displayIndex: displayIndex[r.direction]++,
                     parentNode: this,
+                    source: r.source
                 })
             }.bind(this))
         }.bind(this))

@@ -78,6 +78,27 @@ func Set() Spec {
 	}
 }
 
+func Get() Spec {
+	return Spec{
+		Name:    "get",
+		Inputs:  []Pin{Pin{"in", OBJECT}, Pin{"key", STRING}},
+		Outputs: []Pin{Pin{"out", ANY}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			obj, ok := in[0].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("inbound message must be an object")
+			}
+			key, ok := in[1].(string)
+			if !ok {
+				out[0] = NewError("key must be a string")
+				return nil
+			}
+			out[0] = obj[key]
+			return nil
+		},
+	}
+}
+
 // Log writes the inbound message to stdout
 // TODO where should this write exactly?
 func Log() Spec {

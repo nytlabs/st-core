@@ -342,7 +342,7 @@ func Multiplication() Spec {
 	return Spec{
 		Name:    "*",
 		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
-		Outputs: []Pin{Pin{"x * y", NUMBER}},
+		Outputs: []Pin{Pin{"x*y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {

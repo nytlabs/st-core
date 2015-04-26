@@ -274,8 +274,8 @@ func Merge() Spec {
 func Addition() Spec {
 	return Spec{
 		Name:    "+",
-		Inputs:  []Pin{Pin{"addend", NUMBER}, Pin{"addend", NUMBER}},
-		Outputs: []Pin{Pin{"sum", NUMBER}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x+y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			a1, ok := in[0].(float64)
 			if !ok {
@@ -297,8 +297,8 @@ func Addition() Spec {
 func Subtraction() Spec {
 	return Spec{
 		Name:    "-",
-		Inputs:  []Pin{Pin{"minuend", NUMBER}, Pin{"subtrahend", NUMBER}},
-		Outputs: []Pin{Pin{"difference", NUMBER}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x-y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			minuend, ok := in[0].(float64)
 			if !ok {
@@ -319,9 +319,9 @@ func Subtraction() Spec {
 // Multiplication returns the product of the multiplicanda
 func Multiplication() Spec {
 	return Spec{
-		Name:    "×",
-		Inputs:  []Pin{Pin{"multiplicand", NUMBER}, Pin{"multiplicand", NUMBER}},
-		Outputs: []Pin{Pin{"product", NUMBER}},
+		Name:    "*",
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x * y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {
@@ -342,9 +342,9 @@ func Multiplication() Spec {
 // Division returns the quotient of the dividend / divisor
 func Division() Spec {
 	return Spec{
-		Name:    "÷",
-		Inputs:  []Pin{Pin{"dividend", NUMBER}, Pin{"divisor", NUMBER}},
-		Outputs: []Pin{Pin{"quotient", NUMBER}},
+		Name:    "/",
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x/y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {

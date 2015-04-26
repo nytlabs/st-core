@@ -39,7 +39,9 @@
 .route_label {
     font-family: verdana;
     font-size: 12px;
-    user-select: none
+    user-select: none;
+    margin-left: 1px;
+    margin-right: 1px;
 }
 .route_circle {
     fill: none;

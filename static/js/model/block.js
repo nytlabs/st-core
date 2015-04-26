@@ -105,6 +105,10 @@ var app = app || {};
                 output: 0
             },
             routeHeight = 0,
+            padding = {
+              horizontal: 6,
+              vertical: 6
+            },
             routeRadius = 5,
             routeGeometry = [],
             num = {
@@ -127,8 +131,8 @@ var app = app || {};
         });
 
         this.geometry = {
-            'width': maxWidth.input + maxWidth.output,
-            'height': Math.max(num.input, num.output) * routeHeight,
+            'width': maxWidth.input + maxWidth.output + padding.horizontal,
+            'height': Math.max(num.input, num.output) * routeHeight + padding.vertical,
             'routeHeight': routeHeight,
             'routeRadius': routeRadius,
         }

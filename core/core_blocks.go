@@ -135,7 +135,8 @@ func Latch() Spec {
 	return Spec{
 		Name:    "latch",
 		Inputs:  []Pin{Pin{"in", ANY}, Pin{"ctrl", BOOLEAN}},
-		Outputs: []Pin{Pin{"out", ANY}, Pin{"out", ANY}},
+		Outputs: []Pin{Pin{"true", ANY}, Pin{"false", ANY}},
+
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			controlSignal, ok := in[1].(bool)
 			if !ok {
@@ -433,8 +434,8 @@ func Modulation() Spec {
 func GreaterThan() Spec {
 	return Spec{
 		Name:    ">",
-		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
-		Outputs: []Pin{Pin{"IsGreaterThan", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x>y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -456,8 +457,8 @@ func GreaterThan() Spec {
 func LessThan() Spec {
 	return Spec{
 		Name:    "<",
-		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
-		Outputs: []Pin{Pin{"IsLessThan", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x<y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -479,8 +480,8 @@ func LessThan() Spec {
 func EqualTo() Spec {
 	return Spec{
 		Name:    "==",
-		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
-		Outputs: []Pin{Pin{"IsEqualTo", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
+		Outputs: []Pin{Pin{"x==y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] == in[1]
 			return nil
@@ -492,8 +493,8 @@ func EqualTo() Spec {
 func NotEqualTo() Spec {
 	return Spec{
 		Name:    "!=",
-		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
-		Outputs: []Pin{Pin{"IsNotEqualTo", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
+		Outputs: []Pin{Pin{"x!=y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] != in[1]
 			return nil

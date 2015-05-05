@@ -473,8 +473,8 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 
 	for _, l := range p.Links {
 		pl := ProtoLink{}
-		pl.Source.Id = newIds[l.Block.Id]
-		pl.Block.Id = newIds[l.Source.Id]
+		pl.Block.Id = newIds[l.Block.Id]
+		pl.Source.Id = newIds[l.Source.Id]
 		_, err := s.CreateLink(pl)
 		if err != nil {
 			return err
@@ -482,9 +482,11 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	}
 
 	for _, source := range p.Sources {
-		err := s.ModifySource(newIds[source.Id], source.Parameters)
-		if err != nil {
-			return err
+		if source.Parameters != nil {
+			err := s.ModifySource(newIds[source.Id], source.Parameters)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

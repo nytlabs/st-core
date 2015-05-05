@@ -23,10 +23,11 @@ type SourceLedger struct {
 }
 
 type ProtoSource struct {
-	Label    string   `json:"label"`
-	Type     string   `json:"type"`
-	Position Position `json:"position"`
-	Parent   int      `json:"parent"`
+	Label      string            `json:"label"`
+	Type       string            `json:"type"`
+	Position   Position          `json:"position"`
+	Parent     int               `json:"parent"`
+	Parameters map[string]string `json:"params,omitempty"`
 }
 
 func (sl *SourceLedger) GetID() int {

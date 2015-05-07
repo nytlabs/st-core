@@ -57,8 +57,6 @@ var app = app || {};
                     return o.type === e.target.value
                 });
                 if (match.length === 1) {
-                  console.log(this.props)
-                    console.log(match[0])
                     this.props.onChange(match[0]);
                 }
             }

@@ -8,7 +8,6 @@ var app = app || {};
     app.SourceComponent = React.createClass({
         displayName: 'SourceComponent',
         render: function() {
-              console.log("hello!")
             return (
                 React.createElement('circle', {
                     className: 'source',

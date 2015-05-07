@@ -21,11 +21,11 @@ func TestSimpleBlocks(t *testing.T) {
 			in:       MessageMap{0: 1.0, 1: 2.0},
 			expected: MessageMap{0: -1.0},
 		},
-		"×": blockTest{
+		"*": blockTest{
 			in:       MessageMap{0: 3.0, 1: 2.0},
 			expected: MessageMap{0: 6.0},
 		},
-		"÷": blockTest{
+		"/": blockTest{
 			in:       MessageMap{0: 6.0, 1: 2.0},
 			expected: MessageMap{0: 3.0},
 		},

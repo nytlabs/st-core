@@ -65,3 +65,9 @@ type wsSourceModify struct {
 	Param string `json:"param"`
 	Value string `json:"value"`
 }
+
+//type ALERT
+type wsAlert struct {
+	Id    int    `json:"id"`
+	Alert string `json:"alert"`
+}

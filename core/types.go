@@ -5,6 +5,7 @@ package core
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 const (
@@ -28,6 +29,14 @@ const (
 	NULL
 	ANY
 	ERROR
+)
+
+// BlockAlert defines the possible messages a block can emit about its runnig state
+type BlockAlert uint8
+
+const (
+	BLOCKED BlockAlert = iota
+	UNBLOCKED
 )
 
 // MessageMap maps a block's inbound routes onto the Messages they contain
@@ -193,10 +202,12 @@ type BlockRouting struct {
 	sync.RWMutex
 }
 
-// A Block is comprised of a state, a set of routes, and a kernel
+// A Block describes the block's components
 type Block struct {
-	state      BlockState
-	routing    BlockRouting
-	kernel     Kernel
-	sourceType SourceType
+	state         BlockState
+	routing       BlockRouting
+	kernel        Kernel
+	sourceType    SourceType
+	Monitor       chan BlockAlert
+	blockageTimer *time.Timer
 }

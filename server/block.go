@@ -163,6 +163,9 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	}
 
+	// begin monitor
+	go s.MonitorMux(m.Id, block.Monitor)
+
 	return m, nil
 }
 

@@ -1,6 +1,9 @@
 package core
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // NewBlock creates a new block from a spec
 func NewBlock(s Spec) *Block {
@@ -37,8 +40,10 @@ func NewBlock(s Spec) *Block {
 			Outputs:       out,
 			InterruptChan: make(chan Interrupt),
 		},
-		kernel:     s.Kernel,
-		sourceType: s.Source,
+		kernel:        s.Kernel,
+		sourceType:    s.Source,
+		Monitor:       make(chan BlockAlert, 1),
+		blockageTimer: time.NewTimer(time.Duration(1 * time.Hour)),
 	}
 }
 
@@ -357,4 +362,21 @@ func (b *Block) crank() {
 		delete(b.state.manifest, k)
 	}
 	b.state.Processed = false
+	// stop the blockage timer
+	if !b.blockageTimer.Stop() {
+		select {
+		case b.Monitor <- UNBLOCKED:
+		default:
+		}
+	}
+	// start a new blocked timer
+	b.blockageTimer = time.AfterFunc(
+		time.Duration(1*time.Second),
+		func() {
+			select {
+			case b.Monitor <- BLOCKED:
+			default:
+			}
+		},
+	)
 }

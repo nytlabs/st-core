@@ -173,7 +173,7 @@ func TestEndpoints(t *testing.T) {
 	put("/groups/0/children/2", "", 204)
 
 	// create a keyvalue source (10)
-	post("/sources", `{"type":"key-value"}`, 200)
+	post("/sources", `{"type":"key_value"}`, 200)
 
 	// get the keyvalue source
 	get("/sources/10", 200)

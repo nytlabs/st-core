@@ -68,6 +68,6 @@ type wsSourceModify struct {
 
 //type ALERT
 type wsAlert struct {
-	Id    int    `json:"id"`
+	wsId
 	Alert string `json:"alert"`
 }

@@ -38,6 +38,7 @@ var app = app || {};
         this.routes = [];
         this.geometry = [];
         this.data = data;
+        console.log(data)
         this.model = model;
 
         this.buildRoutes();

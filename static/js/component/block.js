@@ -83,6 +83,7 @@ var app = app || {};
         render: function() {
             var classes = 'block';
             if (this.props.selected === true) classes += ' selected';
+            if (this.props.model.data.alert === "blocked") classes += ' blocked';
             var children = [];
             children.push(React.createElement('rect', {
                 x: 0,

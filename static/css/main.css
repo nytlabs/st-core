@@ -25,6 +25,9 @@
     stroke-width: 1px;
     fill: rgba(230, 230, 230, .5);
 }
+.blocked {
+    fill: grey;
+}
 .selected {
     stroke-width: 2px;
     stroke: rgba(50, 50, 240, 1);

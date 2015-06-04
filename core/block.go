@@ -371,7 +371,7 @@ func (b *Block) crank() {
 	}
 	// start a new blocked timer
 	b.blockageTimer = time.AfterFunc(
-		time.Duration(1*time.Second),
+		time.Duration(300*time.Millisecond),
 		func() {
 			select {
 			case b.Monitor <- BLOCKED:

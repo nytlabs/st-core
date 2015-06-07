@@ -1,6 +1,9 @@
 package core
 
-import "errors"
+import (
+	"errors"
+	"log"
+)
 
 // NewBlock creates a new block from a spec
 func NewBlock(s Spec) *Block {
@@ -269,8 +272,10 @@ func (b *Block) process() Interrupt {
 	// block until an interrupt connects us to a shared external state.
 
 	if b.sourceType != NONE && b.routing.Source == nil {
+		log.Println("blocking waiting for source")
 		select {
 		case f := <-b.routing.InterruptChan:
+			log.Println("received source, unblocking")
 			return f
 		}
 	}

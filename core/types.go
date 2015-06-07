@@ -14,6 +14,7 @@ const (
 	LIST
 	VALUE_PRIMITIVE
 	PRIORITY
+	SERVER
 )
 
 // JSONType defines the possible types that variables in core can take
@@ -57,6 +58,8 @@ func (s *SourceType) UnmarshalJSON(data []byte) error {
 		*s = SourceType(VALUE_PRIMITIVE)
 	case `"priority-queue"`:
 		*s = SourceType(PRIORITY)
+	case `"server"`:
+		*s = SourceType(SERVER)
 	default:
 		return errors.New("Error unmarshalling source type")
 	}
@@ -69,6 +72,8 @@ func (s SourceType) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	case KEY_VALUE:
 		return []byte(`"key_value"`), nil
+	case SERVER:
+		return []byte(`"server"`), nil
 	case STREAM:
 		return []byte(`"stream"`), nil
 	case LIST:

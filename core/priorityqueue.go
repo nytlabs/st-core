@@ -83,7 +83,7 @@ func pqPush() Spec {
 			Pin{"priority", NUMBER},
 		},
 		Outputs: []Pin{
-			Pin{"out", ANY},
+			Pin{"out", BOOLEAN},
 		},
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

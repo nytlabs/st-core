@@ -55,7 +55,7 @@ func (s *SourceType) UnmarshalJSON(data []byte) error {
 		*s = SourceType(LIST)
 	case `"value"`:
 		*s = SourceType(VALUE_PRIMITIVE)
-	case `"priority"`:
+	case `"priority-queue"`:
 		*s = SourceType(PRIORITY)
 	default:
 		return errors.New("Error unmarshalling source type")
@@ -76,7 +76,7 @@ func (s SourceType) MarshalJSON() ([]byte, error) {
 	case VALUE_PRIMITIVE:
 		return []byte(`"value"`), nil
 	case PRIORITY:
-		return []byte(`"priority"`), nil
+		return []byte(`"priority-queue"`), nil
 	}
 	return nil, errors.New("Unknown source type")
 }

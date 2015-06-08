@@ -78,6 +78,27 @@ func Set() Spec {
 	}
 }
 
+func Get() Spec {
+	return Spec{
+		Name:    "get",
+		Inputs:  []Pin{Pin{"in", OBJECT}, Pin{"key", STRING}},
+		Outputs: []Pin{Pin{"out", ANY}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			obj, ok := in[0].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("inbound message must be an object")
+			}
+			key, ok := in[1].(string)
+			if !ok {
+				out[0] = NewError("key must be a string")
+				return nil
+			}
+			out[0] = obj[key]
+			return nil
+		},
+	}
+}
+
 // Log writes the inbound message to stdout
 // TODO where should this write exactly?
 func Log() Spec {
@@ -114,7 +135,8 @@ func Latch() Spec {
 	return Spec{
 		Name:    "latch",
 		Inputs:  []Pin{Pin{"in", ANY}, Pin{"ctrl", BOOLEAN}},
-		Outputs: []Pin{Pin{"out", ANY}, Pin{"out", ANY}},
+		Outputs: []Pin{Pin{"true", ANY}, Pin{"false", ANY}},
+
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			controlSignal, ok := in[1].(bool)
 			if !ok {
@@ -274,8 +296,8 @@ func Merge() Spec {
 func Addition() Spec {
 	return Spec{
 		Name:    "+",
-		Inputs:  []Pin{Pin{"addend", NUMBER}, Pin{"addend", NUMBER}},
-		Outputs: []Pin{Pin{"sum", NUMBER}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x+y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			a1, ok := in[0].(float64)
 			if !ok {
@@ -297,8 +319,8 @@ func Addition() Spec {
 func Subtraction() Spec {
 	return Spec{
 		Name:    "-",
-		Inputs:  []Pin{Pin{"minuend", NUMBER}, Pin{"subtrahend", NUMBER}},
-		Outputs: []Pin{Pin{"difference", NUMBER}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x-y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			minuend, ok := in[0].(float64)
 			if !ok {
@@ -319,9 +341,9 @@ func Subtraction() Spec {
 // Multiplication returns the product of the multiplicanda
 func Multiplication() Spec {
 	return Spec{
-		Name:    "×",
-		Inputs:  []Pin{Pin{"multiplicand", NUMBER}, Pin{"multiplicand", NUMBER}},
-		Outputs: []Pin{Pin{"product", NUMBER}},
+		Name:    "*",
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x*y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {
@@ -342,9 +364,9 @@ func Multiplication() Spec {
 // Division returns the quotient of the dividend / divisor
 func Division() Spec {
 	return Spec{
-		Name:    "÷",
-		Inputs:  []Pin{Pin{"dividend", NUMBER}, Pin{"divisor", NUMBER}},
-		Outputs: []Pin{Pin{"quotient", NUMBER}},
+		Name:    "/",
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x/y", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -412,8 +434,8 @@ func Modulation() Spec {
 func GreaterThan() Spec {
 	return Spec{
 		Name:    ">",
-		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
-		Outputs: []Pin{Pin{"IsGreaterThan", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x>y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -435,8 +457,8 @@ func GreaterThan() Spec {
 func LessThan() Spec {
 	return Spec{
 		Name:    "<",
-		Inputs:  []Pin{Pin{"value", NUMBER}, Pin{"value", NUMBER}},
-		Outputs: []Pin{Pin{"IsLessThan", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
+		Outputs: []Pin{Pin{"x<y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
@@ -458,8 +480,8 @@ func LessThan() Spec {
 func EqualTo() Spec {
 	return Spec{
 		Name:    "==",
-		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
-		Outputs: []Pin{Pin{"IsEqualTo", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
+		Outputs: []Pin{Pin{"x==y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] == in[1]
 			return nil
@@ -471,8 +493,8 @@ func EqualTo() Spec {
 func NotEqualTo() Spec {
 	return Spec{
 		Name:    "!=",
-		Inputs:  []Pin{Pin{"value", ANY}, Pin{"value", ANY}},
-		Outputs: []Pin{Pin{"IsNotEqualTo", BOOLEAN}},
+		Inputs:  []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
+		Outputs: []Pin{Pin{"x!=y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] != in[1]
 			return nil

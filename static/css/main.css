@@ -39,7 +39,7 @@
 .route_label {
     font-family: verdana;
     font-size: 12px;
-    user-select: none
+    user-select: none;
 }
 .route_circle {
     fill: none;

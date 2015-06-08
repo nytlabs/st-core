@@ -19,6 +19,9 @@ var app = app || {};
         componentWillMount: function() {
             this.autocomplete(this.state.text);
         },
+        componentDidMount: function() {
+          this.getDOMNode().children[0].focus()
+        },
         autocomplete: function(s) {
             var reBegin = new RegExp('^' + app.Utils.escape(s), 'i');
             var reIn = new RegExp(app.Utils.escape(s), 'i');

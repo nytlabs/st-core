@@ -7,7 +7,7 @@ import (
 
 func KeyValueStore() SourceSpec {
 	return SourceSpec{
-		Name: "key-value",
+		Name: "key_value",
 		Type: KEY_VALUE,
 		New:  NewKeyValue,
 	}

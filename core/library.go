@@ -25,6 +25,7 @@ func GetLibrary() map[string]Spec {
 		// mechanisms
 		Delay(),
 		Set(),
+		Get(),
 		Log(),
 		Sink(),
 		Latch(),
@@ -35,7 +36,6 @@ func GetLibrary() map[string]Spec {
 		Head(),
 		Pusher(),
 		Merge(),
-
 		Len(),
 		// monads
 		Exp(),

@@ -9,14 +9,14 @@ var app = app || {};
         displayName: 'SourceComponent',
         render: function() {
             return (
-                React.createElement('rect', {
-                    className: 'block',
+                React.createElement('circle', {
+                    className: 'source',
                     x: '0',
                     y: '0',
                     width: '10',
                     height: '10'
                 })
             )
-        }
+        },
     })
 })();

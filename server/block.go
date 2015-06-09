@@ -3,10 +3,8 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"runtime"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -167,8 +165,6 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	// begin monitor
 	go s.MonitorMux(m.Id, block.Monitor)
-
-	fmt.Println("OK:", runtime.NumGoroutine())
 
 	return m, nil
 }

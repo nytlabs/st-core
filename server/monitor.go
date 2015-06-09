@@ -1,20 +1,16 @@
 package server
 
-import "github.com/nytlabs/st-core/core"
+import (
+	"time"
+
+	"github.com/nytlabs/st-core/core"
+)
 
 // code for inferring the current state of the st-core pattern
 // and emitting it over the websocket
 
-func (s *Server) MonitorMux(id int, c chan core.BlockAlert) {
-
-	key := map[core.BlockAlert]string{
-		core.BLOCKED:   "blocked",
-		core.UNBLOCKED: "unblocked",
+func (s *Server) MonitorMux(id int, c chan time.Time) {
+	for m := range c {
+		s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsAlert{wsId{id}, core.CRANK, m}}})
 	}
-
-	for {
-		m := <-c
-		s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsAlert{wsId{id}, key[m]}}})
-	}
-
 }

@@ -37,7 +37,21 @@ type BlockAlert uint8
 const (
 	BLOCKED BlockAlert = iota
 	UNBLOCKED
+	CRANK
 )
+
+func (ba BlockAlert) MarshalJSON() ([]byte, error) {
+	switch ba {
+	case BLOCKED:
+		return []byte(`"blocked"`), nil
+	case UNBLOCKED:
+		return []byte(`"unblocked"`), nil
+	case CRANK:
+		return []byte(`"crank"`), nil
+	}
+
+	return nil, errors.New("could not marshal BlockAlert")
+}
 
 // MessageMap maps a block's inbound routes onto the Messages they contain
 type MessageMap map[RouteIndex]Message
@@ -204,10 +218,11 @@ type BlockRouting struct {
 
 // A Block describes the block's components
 type Block struct {
-	state         BlockState
-	routing       BlockRouting
-	kernel        Kernel
-	sourceType    SourceType
-	Monitor       chan BlockAlert
-	blockageTimer *time.Timer
+	state      BlockState
+	routing    BlockRouting
+	kernel     Kernel
+	sourceType SourceType
+	Monitor    chan time.Time
+	lastCrank  time.Time
+	//blockageTimer *time.Timer
 }

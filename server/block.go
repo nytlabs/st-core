@@ -3,8 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -166,6 +168,8 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	// begin monitor
 	go s.MonitorMux(m.Id, block.Monitor)
 
+	fmt.Println("OK:", runtime.NumGoroutine())
+
 	return m, nil
 }
 
@@ -266,6 +270,10 @@ func (s *Server) DeleteBlock(id int) error {
 
 	// stop and delete the block
 	b.Block.Stop()
+
+	// close the monitor chan so that we quit the monitor routine.
+	close(b.Block.Monitor)
+
 	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: wsBlock{wsId{id}}})
 	delete(s.blocks, id)
 	return nil

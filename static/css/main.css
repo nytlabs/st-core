@@ -173,3 +173,39 @@ body {
 .tool_button:hover {
     background: rgba(100, 100, 100, 1);
 }
+.tick_circle {
+    fill: none;
+    stroke: black;
+}
+@keyframes circle {
+    to {
+        transform: rotate(1turn);
+    }
+}
+.base_tick {
+    /*    transition: all .3s linear;*/
+}
+.ticker_0 {
+    transform: rotate(0deg);
+}
+.ticker_1 {
+    transform: rotate(45deg);
+}
+.ticker_2 {
+    transform: rotate(90deg);
+}
+.ticker_3 {
+    transform: rotate(135deg);
+}
+.ticker_4 {
+    transform: rotate(180deg);
+}
+.ticker_5 {
+    transform: rotate(225deg);
+}
+.ticker_6 {
+    transform: rotate(270deg);
+}
+.ticker_7 {
+    transform: rotate(315deg);
+}

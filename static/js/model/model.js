@@ -213,16 +213,9 @@ var app = app || {};
                 if (m.type === 'block' ||
                     m.type === 'group' ||
                     m.type === 'source') {
-                  
-     //             console.log("id ->>", m.data[m.type].id)
-
-                    
-
                     for (var key in m.data[m.type]) {
                         if (key !== 'id') {
-   // console.log(key, "->>", m.data[m.type][key])
                             this.entities[m.data[m.type].id].data[key] = m.data[m.type][key];
- // console.log("this.entities", this.entities[m.data[m.type].id].data[key])
                         }
                     }
                 } else if (m.type === 'route') {

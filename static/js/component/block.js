@@ -87,8 +87,6 @@ var app = app || {};
                 this.setState({
                     tick: nextTick,
                     lastCrank: props.lastCrank,
-                }, function() {
-                    console.log("tick: " + nextTick);
                 })
             }
         },

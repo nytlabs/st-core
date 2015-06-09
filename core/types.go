@@ -28,6 +28,7 @@ const (
 	BOOLEAN
 	NULL
 	ANY
+	WRITER
 	ERROR
 )
 

@@ -107,7 +107,7 @@ var app = app || {};
                     r: 3.0,
                     key: 'tick',
                     fill: 'red',
-                    className: 'base_tick ticker_' + this.state.tick,
+                    className: 'ticker_' + this.state.tick,
                 }, null)
             ]
             return React.createElement('g', {

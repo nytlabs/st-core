@@ -177,14 +177,6 @@ body {
     fill: none;
     stroke: black;
 }
-@keyframes circle {
-    to {
-        transform: rotate(1turn);
-    }
-}
-.base_tick {
-    /*    transition: all .3s linear;*/
-}
 .ticker_0 {
     transform: rotate(0deg);
 }

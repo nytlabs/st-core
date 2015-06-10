@@ -89,6 +89,9 @@ func GetLibrary() map[string]Spec {
 		ValueGet(),
 		ValueSet(),
 
+		// server
+		FromRequest(),
+
 		// list
 		listGet(),
 		listSet(),
@@ -108,6 +111,11 @@ func GetLibrary() map[string]Spec {
 
 		// network IO
 		GET(),
+
+		// IO
+		Write(),
+		Close(),
+		Flush(),
 
 		//assertions
 		IsBoolean(),

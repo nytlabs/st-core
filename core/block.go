@@ -284,7 +284,9 @@ func (b *Block) process() Interrupt {
 	// we should only be able to get here if
 	// - we don't need an shared state
 	// - we have an external shared state and it has been attached
-	if b.sourceType != NONE {
+
+	// TODO there is a potential generalisation here for sources that don't need to be locked
+	if b.sourceType != NONE && b.sourceType != SERVER {
 		b.routing.Source.Lock()
 	}
 
@@ -296,13 +298,13 @@ func (b *Block) process() Interrupt {
 		b.routing.InterruptChan)
 
 	if interrupt != nil {
-		if b.sourceType != NONE {
+		if b.sourceType != NONE && b.sourceType != SERVER {
 			b.routing.Source.Unlock()
 		}
 		return interrupt
 	}
 
-	if b.sourceType != NONE {
+	if b.sourceType != NONE && b.sourceType != SERVER {
 		b.routing.Source.Unlock()
 	}
 

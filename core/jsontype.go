@@ -15,6 +15,8 @@ func (j *JSONType) UnmarshalJSON(data []byte) error {
 		*j = JSONType(STRING)
 	case `"boolean"`:
 		*j = JSONType(BOOLEAN)
+	case `"writer"`:
+		*j = JSONType(WRITER)
 	case `"null"`:
 		*j = JSONType(NULL)
 	case `"any"`:
@@ -37,6 +39,8 @@ func (j JSONType) MarshalJSON() ([]byte, error) {
 		return []byte(`"string"`), nil
 	case BOOLEAN:
 		return []byte(`"boolean"`), nil
+	case WRITER:
+		return []byte(`"writer"`), nil
 	case NULL:
 		return []byte(`"null"`), nil
 	case ANY:

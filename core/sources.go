@@ -7,6 +7,7 @@ func GetSources() map[string]SourceSpec {
 		ValueStore(),
 		PriorityQueueStore(),
 		ListStore(),
+		ServerSource(),
 	}
 
 	library := make(map[string]SourceSpec)

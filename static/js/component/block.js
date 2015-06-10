@@ -73,6 +73,49 @@ var app = app || {};
 })();
 
 (function() {
+    app.CrankComponent = React.createClass({
+        getInitialState: function() {
+            return {
+                lastCrank: null,
+                tick: 0,
+            }
+        },
+        componentWillReceiveProps: function(props) {
+            if (props.lastCrank != this.state.lastCrank) {
+                var nextTick = this.state.tick < 8 ? this.state.tick + 1 : 0;
+
+                this.setState({
+                    tick: nextTick,
+                    lastCrank: props.lastCrank,
+                })
+            }
+        },
+        render: function() {
+            var children = [
+                React.createElement('circle', {
+                    cx: 0,
+                    cy: 0,
+                    r: 5.0,
+                    className: 'tick_circle',
+                    key: 'tick_bg'
+                }, null),
+                React.createElement('circle', {
+                    cx: 5,
+                    cy: 0,
+                    r: 3.0,
+                    key: 'tick',
+                    fill: 'red',
+                    className: 'ticker_' + this.state.tick,
+                }, null)
+            ]
+            return React.createElement('g', {
+                transform: 'translate(' + this.props.x + ', ' + this.props.y + ')'
+            }, children)
+        }
+    })
+})();
+
+(function() {
     'use strict';
 
     app.BlockComponent = React.createClass({
@@ -103,6 +146,12 @@ var app = app || {};
                 className: 'type unselectable',
                 key: 'type'
             }, title));
+
+            children.push(React.createElement(app.CrankComponent, {
+                x: this.props.model.geometry.width * .5,
+                y: this.props.model.geometry.height + 10,
+                lastCrank: this.props.model.data.lastCrank
+            }));
 
             children = children.concat(this.props.model.routes.map(function(r, i) {
                 return React.createElement(app.RouteComponent, {

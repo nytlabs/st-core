@@ -1,6 +1,10 @@
 package server
 
-import "github.com/nytlabs/st-core/core"
+import (
+	"time"
+
+	"github.com/nytlabs/st-core/core"
+)
 
 type Update struct {
 	Action string      `json:"action"`
@@ -64,4 +68,11 @@ type wsSourceModify struct {
 	wsId
 	Param string `json:"param"`
 	Value string `json:"value"`
+}
+
+//type ALERT
+type wsAlert struct {
+	wsId
+	Alert     core.BlockAlert `json:"alert"`
+	LastCrank time.Time       `json:"lastCrank"`
 }

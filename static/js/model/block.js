@@ -106,8 +106,8 @@ var app = app || {};
             },
             routeHeight = 0,
             padding = {
-              horizontal: 6,
-              vertical: 6
+                horizontal: 6,
+                vertical: 6
             },
             routeRadius = 5,
             routeGeometry = [],

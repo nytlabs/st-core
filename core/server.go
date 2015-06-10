@@ -58,13 +58,37 @@ func NewServer() Source {
 	return server
 }
 
+type Request struct {
+	responseWriter http.ResponseWriter
+	respChan       chan error
+	request        *http.Request
+}
+
+func (r Request) Write(p []byte) (n int, err error) {
+	nn, err := r.responseWriter.Write(p)
+	return nn, err
+}
+
+func (r Request) Close() error {
+	r.respChan <- nil
+	return nil
+}
+
+func (r Request) Flush() {
+	if flusher, ok := r.responseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	} else {
+		log.Println("responseWriter can't flush")
+	}
+}
+
 func (s *Server) Serve() {
 
 	server := &http.Server{
-		Addr:           ":8080",
-		Handler:        s.router,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		Addr:        ":8080",
+		Handler:     s.router,
+		ReadTimeout: 10 * time.Second,
+		//WriteTimeout:   0 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
@@ -77,7 +101,12 @@ func (s *Server) Serve() {
 			log.Println("404")
 			return
 		}
-		outChan <- Request{w, r}
+		c := make(chan error)
+		outChan <- Request{w, c, r}
+		err := <-c
+		if err != nil {
+			log.Println(err)
+		}
 	}).Methods("GET")
 
 	log.Println("starting HTTP server on", server.Addr)
@@ -100,11 +129,6 @@ func (s Server) Stop() {
 	s.quit <- true
 }
 
-type Request struct {
-	responseWriter http.ResponseWriter
-	request        *http.Request
-}
-
 // OutPin 0: received request
 func FromRequest() Spec {
 	return Spec{
@@ -118,7 +142,6 @@ func FromRequest() Spec {
 		},
 		Source: SERVER,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
-			log.Println("running server Kernel")
 			server := s.(*Server)
 			name, ok := in[0].(string)
 			if !ok {
@@ -127,19 +150,15 @@ func FromRequest() Spec {
 
 			requests := make(chan Request)
 
-			log.Println("trying to register")
 			server.addHandler <- handlerRegistration{requests, name}
-			log.Println("waiting for something")
 			select {
 			case r := <-requests:
 				out[0] = r.request
-				out[1] = r.responseWriter
+				out[1] = r
 			case f := <-i:
-				log.Println("INTTERRRRRUPT")
 				server.removeHandler <- name
 				return f
 			}
-			log.Println("done")
 			return nil
 		},
 	}

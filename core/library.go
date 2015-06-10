@@ -112,6 +112,11 @@ func GetLibrary() map[string]Spec {
 		// network IO
 		GET(),
 
+		// IO
+		Write(),
+		Close(),
+		Flush(),
+
 		//assertions
 		IsBoolean(),
 		IsNumber(),

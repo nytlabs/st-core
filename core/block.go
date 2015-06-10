@@ -1,9 +1,6 @@
 package core
 
-import (
-	"errors"
-	"log"
-)
+import "errors"
 
 // NewBlock creates a new block from a spec
 func NewBlock(s Spec) *Block {
@@ -272,10 +269,8 @@ func (b *Block) process() Interrupt {
 	// block until an interrupt connects us to a shared external state.
 
 	if b.sourceType != NONE && b.routing.Source == nil {
-		log.Println("blocking waiting for source")
 		select {
 		case f := <-b.routing.InterruptChan:
-			log.Println("received source, unblocking")
 			return f
 		}
 	}
@@ -286,13 +281,10 @@ func (b *Block) process() Interrupt {
 
 	// TODO there is a potential generalisation here for sources that don't need to be locked
 	if b.sourceType != NONE && b.sourceType != SERVER {
-		log.Println("about to lock source")
 		b.routing.Source.Lock()
-		log.Println("locked source")
 	}
 
 	// run the kernel
-	log.Println("running kernel")
 	interrupt := b.kernel(b.state.inputValues,
 		b.state.outputValues,
 		b.state.internalValues,

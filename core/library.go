@@ -34,6 +34,8 @@ func GetLibrary() map[string]Spec {
 		Append(),
 		Tail(),
 		Head(),
+		Init(),
+		Last(),
 		Pusher(),
 		Merge(),
 		Len(),

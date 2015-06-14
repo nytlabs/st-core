@@ -1,6 +1,7 @@
 package core
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -139,6 +140,7 @@ func FromRequest() Spec {
 		Outputs: []Pin{
 			Pin{"request", OBJECT},
 			Pin{"writer", WRITER},
+			Pin{"body", STRING},
 		},
 		Source: SERVER,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -153,8 +155,14 @@ func FromRequest() Spec {
 			server.addHandler <- handlerRegistration{requests, name}
 			select {
 			case r := <-requests:
+				body, err := ioutil.ReadAll(r.request.Body)
+				if err != nil {
+					out[0] = NewError("could not read body")
+					return nil
+				}
 				out[0] = r.request
 				out[1] = r
+				out[2] = string(body)
 			case f := <-i:
 				server.removeHandler <- name
 				return f

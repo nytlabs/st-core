@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// first emits true when it receives its first message, and false otherwise
 func First() Spec {
 	return Spec{
 		Name:    "first",
@@ -78,6 +79,7 @@ func Set() Spec {
 	}
 }
 
+// Get emits the value against the specified key
 func Get() Spec {
 	return Spec{
 		Name:    "get",
@@ -101,6 +103,7 @@ func Get() Spec {
 
 // Log writes the inbound message to stdout
 // TODO where should this write exactly?
+// TODO there should be a stdout source block and Log should be a compound block with a writer
 func Log() Spec {
 	return Spec{
 		Name:    "log",
@@ -497,6 +500,29 @@ func NotEqualTo() Spec {
 		Outputs: []Pin{Pin{"x!=y", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = in[0] != in[1]
+			return nil
+		},
+	}
+}
+
+// NotEqualTo returns true if value[0] != value[1] or false otherwise
+func Keys() Spec {
+	return Spec{
+		Name:    "keys",
+		Inputs:  []Pin{Pin{"in", OBJECT}},
+		Outputs: []Pin{Pin{"keys", ARRAY}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			obj, ok := in[0].(map[string]interface{})
+			if !ok {
+				out[0] = NewError("Keys requires an object")
+			}
+			keys := make([]string, len(obj))
+			j := 0
+			for k, _ := range obj {
+				keys[j] = k
+				j += 1
+			}
+			out[0] = keys
 			return nil
 		},
 	}

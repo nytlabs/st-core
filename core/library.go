@@ -26,6 +26,7 @@ func GetLibrary() map[string]Spec {
 		Delay(),
 		Set(),
 		Get(),
+		Keys(),
 		Log(),
 		Sink(),
 		Latch(),
@@ -124,6 +125,8 @@ func GetLibrary() map[string]Spec {
 		IsArray(),
 		IsObject(),
 		IsError(),
+
+		// conversion
 		ToString(),
 		ToNumber(),
 

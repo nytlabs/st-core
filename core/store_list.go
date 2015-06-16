@@ -132,7 +132,7 @@ func listAppend() Spec {
 			Pin{"element", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out", ANY},
+			Pin{"out", BOOLEAN},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -171,7 +171,7 @@ func listShift() Spec {
 			Pin{"element", ANY},
 		},
 		Outputs: []Pin{
-			Pin{"out", ANY},
+			Pin{"out", BOOLEAN},
 		},
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

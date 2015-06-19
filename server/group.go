@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -462,23 +463,25 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	for _, c := range p.Connections {
 		c.Source.Id = newIds[c.Source.Id]
 		c.Target.Id = newIds[c.Target.Id]
-		_, err := s.CreateConnection(ProtoConnection{
+		nc, err := s.CreateConnection(ProtoConnection{
 			Source: c.Source,
 			Target: c.Target,
 		})
 		if err != nil {
 			return err
 		}
+		newIds[c.Id] = nc.Id
 	}
 
 	for _, l := range p.Links {
 		pl := ProtoLink{}
 		pl.Block.Id = newIds[l.Block.Id]
 		pl.Source.Id = newIds[l.Source.Id]
-		_, err := s.CreateLink(pl)
+		nl, err := s.CreateLink(pl)
 		if err != nil {
 			return err
 		}
+		newIds[l.Id] = nl.Id
 	}
 
 	for _, source := range p.Sources {
@@ -521,6 +524,15 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			}
 		}
 	}
+
+	snew := []int{}
+	for _, v := range newIds {
+		snew = append(snew, v)
+	}
+
+	o, _ := json.Marshal(snew)
+
+	fmt.Println(string(o))
 
 	return nil
 }

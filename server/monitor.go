@@ -11,6 +11,6 @@ import (
 
 func (s *Server) MonitorMux(id int, c chan time.Time) {
 	for m := range c {
-		s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsAlert{wsId{id}, core.CRANK, m}}})
+		s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsInfo{wsId{id}, core.CRANK, m}})
 	}
 }

@@ -34,15 +34,15 @@ const (
 )
 
 // BlockAlert defines the possible messages a block can emit about its runnig state
-type BlockAlert uint8
+type BlockInfo uint8
 
 const (
-	BLOCKED BlockAlert = iota
+	BLOCKED BlockInfo = iota
 	UNBLOCKED
 	CRANK
 )
 
-func (ba BlockAlert) MarshalJSON() ([]byte, error) {
+func (ba BlockInfo) MarshalJSON() ([]byte, error) {
 	switch ba {
 	case BLOCKED:
 		return []byte(`"blocked"`), nil

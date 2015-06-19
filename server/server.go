@@ -13,7 +13,7 @@ const (
 	RESET  = "reset"
 	UPDATE = "update"
 	CREATE = "create"
-	ALERT  = "alert"
+	INFO   = "info"
 	// nodes
 	BLOCK  = "block"
 	GROUP  = "group"

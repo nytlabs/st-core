@@ -204,3 +204,9 @@ body {
 .ticker_7 {
     transform: rotate(315deg);
 }
+.clipboard {
+    z-index: 0;
+    position: absolute;
+    top: 200px;
+    left: 0px;
+}

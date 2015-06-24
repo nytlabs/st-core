@@ -237,6 +237,17 @@ var app = app || {};
         return expanded.concat(next);
     }
 
+    app.CoreModel.prototype.expandEdges = function(ids) {
+        return this.edges.filter(function(e) {
+            return (-1 !== ids.indexOf(e.from.node) && -1 !== ids.indexOf(e.to.node));
+        })
+    }
+
+    app.CoreModel.prototype.recurseSelection = function(ids) {
+        var allNodes = this.expandGroups(ids);
+        return this.expandEdges(allNodes).concat(allNodes);
+    }
+
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':

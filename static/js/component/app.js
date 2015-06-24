@@ -484,7 +484,7 @@ var app = app || {};
 
             if (this.props.model.focusedGroup !== null) {
                 var clipboard = React.createElement(app.ClipboardComponent, {
-                    selected: this.props.model.expandGroups(this.state.selected),
+                    selected: this.props.model.recurseSelection(this.state.selected),
                     focus: this.state.controlKey,
                     key: 'clipboard',
                     group: this.props.model.focusedGroup.data.id

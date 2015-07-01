@@ -48,10 +48,10 @@ func (s *NSQ) SetSourceParameter(name, value string) {
 
 func (s *NSQ) Describe() []map[string]string {
 	return []map[string]string{
-		{"name": "topic", "value": s.topic, "index": "0"},
-		{"name": "channel", "value": s.channel, "index": "1"},
-		{"name": "lookupdAddr", "value": s.lookupdAddr, "index": "2"},
-		{"name": "maxInFlight", "value": s.maxInFlight, "index": "3"},
+		{"name": "topic", "value": s.topic},
+		{"name": "channel", "value": s.channel},
+		{"name": "lookupdAddr", "value": s.lookupdAddr},
+		{"name": "maxInFlight", "value": s.maxInFlight},
 	}
 }
 

@@ -210,7 +210,6 @@ var app = app || {};
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
-              console.log("just m", m)
 
                 if (m.type === 'block' ||
                     m.type === 'group' ||
@@ -223,11 +222,15 @@ var app = app || {};
                 } else if (m.type === 'route') {
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
                 } else if (m.type === 'param') {
-                    console.log("this.entities etc", this.entities[m.data.id])
-                    this.entities[m.data.id].data.params[m.data.paramIndex].value = m.data.value
+                    var key = {} 
+                    this.entities[m.data.id].data.params.map(function(kv, index, array){
+                      key[kv.name]=index
+                    })
+                    this.entities[m.data.id].data.params[key[m.data.param]].value = m.data.value
                 }
                 break;
             case 'create':
+
                 // create seperate action for child.
                 if (m.type === 'child') {
                     this.addChild(m.data.group.id, m.data.child.id);
@@ -257,6 +260,11 @@ var app = app || {};
                     this.edges.push(n);
                 }
 
+                // for source we need to populate its parameters
+                if (m.type === 'source'){
+                  this.entities[m.data.source.id].data.params = m.data.source.params
+                }
+
                 // if we have a focused group we need to have a way to update the 
                 // conections that are currently on display. 
                 if (this.focusedGroup != null) {
@@ -264,6 +272,7 @@ var app = app || {};
                     //this.focusedGroup.refreshFocusedGroup();
                     return;
                 }
+
 
                 break;
             case 'delete':

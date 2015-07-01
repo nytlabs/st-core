@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -183,15 +182,25 @@ func (s *Server) ModifySource(id int, m []map[string]string) error {
 		return errors.New("cannot modify store")
 	}
 
+	// because sources can have all sorts of parameters, and we are storing
+	// them in an array of maps for ease of rendering, we need to make a quick
+	// index key in order to update them piecemeal.
+	key := make(map[string]int)
+	for i, p := range source.Parameters {
+		key[p["name"]] = i
+	}
+
 	i.Stop()
 	for _, p := range m {
 		name := p["name"]
 		value := p["value"]
-		log.Println(name, value)
 		i.SetSourceParameter(name, value)
 		// TODO nik can we delete the following line? I can't see it having an effect
 		//source.Parameters[name] = v
 		s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, name, value}})
+
+		// update the source ledger
+		source.Parameters[key[name]]["value"] = value
 	}
 	go i.Serve()
 	return nil

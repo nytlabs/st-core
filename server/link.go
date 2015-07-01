@@ -67,7 +67,6 @@ func (s *Server) DeleteLink(id int) error {
 		return errors.New("could not find block")
 	}
 	block.Block.SetSource(nil)
-
 	delete(s.links, id)
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: LINK, Data: wsLink{wsId{id}}})

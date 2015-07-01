@@ -75,12 +75,12 @@ var app = app || {};
 app.ParametersPanelComponent = React.createClass({
   displayName: 'ParametersPanelComponent',
   render: function() {
-    //console.log(this)
+    console.log(this.props.model.data.params)
     var id = this.props.model.data.id
     return React.createElement('div', {className:'panel'},[
       React.createElement('div', {key:'block_header', className:'block_header'}, this.props.model.data.type),
       React.createElement('div', {key:'block_label', className:'label'}, 'label'),
-React.createElement(app.PanelEditableComponent, {
+        React.createElement(app.PanelEditableComponent, {
           key: 'route_label',
           className: 'editable',
           value: this.props.model.data.label,
@@ -94,23 +94,18 @@ React.createElement(app.PanelEditableComponent, {
           }.bind(this)
       }, null),
       this.props.model.data.params.map(function(p,i){
+        console.log("boo!", p)
         return [
-                React.createElement('div', { className: 'label', }, p.name),
-                React.createElement(app.PanelEditableComponent, {
-                          key: id + p.name ,
-                          value: p.value,
-                          onChange: function(value) {
-                            console.log("hi",[{name:p.name, value:value}])
-                              app.Utils.request(
-                                  'PUT',
-                                  'sources/' + id + '/params',
-                                  [{name:p.name, value:value}],
-                                  null
-                              )
-                          }.bind(this)
-                      },
-                      null)
-              ]
+          React.createElement('div', { className: 'label', }, p.name),
+          React.createElement(app.PanelEditableComponent, {
+            key: id + p.name ,
+            value: p.value,
+            onChange: function(value) {
+              console.log("hi",[{name:p.name, value:value}])
+              app.Utils.request( 'PUT', 'sources/' + id + '/params', [{name:p.name, value:value}], null)
+            }.bind(this)
+          }, null)
+        ]
         
       })
     ])

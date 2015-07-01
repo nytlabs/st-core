@@ -210,6 +210,8 @@ var app = app || {};
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
+              console.log("just m", m)
+
                 if (m.type === 'block' ||
                     m.type === 'group' ||
                     m.type === 'source') {
@@ -220,6 +222,9 @@ var app = app || {};
                     }
                 } else if (m.type === 'route') {
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
+                } else if (m.type === 'param') {
+                    console.log("this.entities etc", this.entities[m.data.id])
+                    this.entities[m.data.id].data.params[m.data.paramIndex].value = m.data.value
                 }
                 break;
             case 'create':

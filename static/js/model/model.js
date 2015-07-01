@@ -244,8 +244,15 @@ var app = app || {};
     }
 
     app.CoreModel.prototype.recurseSelection = function(ids) {
-        var allNodes = this.expandGroups(ids);
-        return this.expandEdges(allNodes).concat(allNodes);
+        var groupNodes = this.expandGroups(ids.filter(function(o) {
+            return o instanceof app.Group
+        }));
+
+        var orphans = ids.filter(function(o) {
+            return !(o instanceof app.Group)
+        })
+
+        return this.expandEdges(groupNodes).concat(groupNodes).concat(orphans);
     }
 
     app.CoreModel.prototype.update = function(m) {

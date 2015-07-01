@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -408,6 +409,9 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ImportGroup(id int, p Pattern) error {
+
+	log.Println("IMPORTING TO ", id)
+
 	parents := make(map[int]int) // old child id / old parent id
 	newIds := make(map[int]int)  // old id / new id
 
@@ -467,6 +471,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			Source: c.Source,
 			Target: c.Target,
 		})
+		fmt.Println("trying to connect ", c.Source.Id, c.Target.Id)
 		if err != nil {
 			return err
 		}
@@ -493,14 +498,19 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		}
 	}
 
+	fmt.Println("BLOCKS ", len(p.Blocks))
 	for _, b := range p.Blocks {
+		fmt.Println("WTF HELLO, ", b.Id)
 		for route, v := range b.Inputs {
 			err := s.ModifyBlockRoute(newIds[b.Id], route, v.Value)
 			if err != nil {
+				fmt.Println("SHOOT", err)
 				return err
 			}
 		}
 	}
+
+	assigned := make(map[int]struct{})
 
 	for _, g := range p.Groups {
 		for _, c := range g.Children {
@@ -522,8 +532,31 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			if err != nil {
 				return err
 			}
+
+			assigned[newIds[c]] = struct{}{}
+
 		}
 	}
+
+	for _, nId := range newIds {
+		if _, ok := assigned[nId]; !ok {
+			var n Node
+			if bn, ok := s.blocks[nId]; ok {
+				n = bn
+			}
+			if bg, ok := s.groups[nId]; ok {
+				n = bg
+			}
+			if bs, ok := s.sources[nId]; ok {
+				n = bs
+			}
+			err := s.AddChildToGroup(id, n)
+			if err != nil {
+				fmt.Println("can't buy a bucket")
+			}
+		}
+	}
+	fmt.Println("from downtown")
 
 	snew := []int{}
 	for _, v := range newIds {

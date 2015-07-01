@@ -46,12 +46,12 @@ func (s *NSQ) SetSourceParameter(name, value string) {
 	}
 }
 
-func (s *NSQ) Describe() map[string]string {
-	return map[string]string{
-		"topic":       s.topic,
-		"channel":     s.channel,
-		"lookupdAddr": s.lookupdAddr,
-		"maxInFlight": s.maxInFlight,
+func (s *NSQ) Describe() []map[string]string {
+	return []map[string]string{
+		{"name": "topic", "value": s.topic},
+		{"name": "channel", "value": s.channel},
+		{"name": "lookupdAddr", "value": s.lookupdAddr},
+		{"name": "maxInFlight", "value": s.maxInFlight},
 	}
 }
 
@@ -115,9 +115,9 @@ func (s NSQ) Stop() {
 // OutPin 0: received message
 func NSQReceive() Spec {
 	return Spec{
-		Name: "NSQReceive",
+		Name: "receive",
 		Outputs: []Pin{
-			Pin{"out", OBJECT},
+			Pin{"out", STRING},
 		},
 		Source: STREAM,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

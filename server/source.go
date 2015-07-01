@@ -157,7 +157,6 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Lock()
 	defer s.Unlock()
 
 	b, err := s.CreateSource(m)
@@ -195,8 +194,7 @@ func (s *Server) ModifySource(id int, m []map[string]string) error {
 		name := p["name"]
 		value := p["value"]
 		i.SetSourceParameter(name, value)
-		// TODO nik can we delete the following line? I can't see it having an effect
-		//source.Parameters[name] = v
+
 		s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, name, value}})
 
 		// update the source ledger

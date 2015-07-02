@@ -43,8 +43,10 @@ func (s *Server) SetSourceParameter(name, value string) {
 	}
 }
 
-func (s *Server) Describe() map[string]string {
-	return map[string]string{"port": strconv.Itoa(s.port)}
+func (s *Server) Describe() []map[string]string {
+	return []map[string]string{
+		{"name": "port", "value": strconv.Itoa(s.port)},
+	}
 }
 
 func NewServer() Source {

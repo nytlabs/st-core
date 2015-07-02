@@ -157,6 +157,7 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.Lock()
 	defer s.Unlock()
 
 	b, err := s.CreateSource(m)

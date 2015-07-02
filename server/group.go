@@ -554,14 +554,11 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 		}
 	}
 
+	// return a list of ids that have been added
 	snew := []int{}
 	for _, v := range newIds {
 		snew = append(snew, v)
 	}
-
-	//o, _ := json.Marshal(snew)
-
-	//fmt.Println(string(o))
 
 	return snew, nil
 }

@@ -80,10 +80,7 @@ var app = app || {};
                 this.setState({
                     controlKey: true
                 })
-
             }
-
-            console.log(e);
 
             if (e.shiftKey === true) {
                 this.setState({
@@ -223,6 +220,13 @@ var app = app || {};
                 library: {
                     enabled: false,
                 }
+            })
+        },
+        setSelection: function(ids) {
+            this.setState({
+                selected: ids.map(function(id) {
+                    return this.props.model.entities[id];
+                }.bind(this))
             })
         },
         nodeSelect: function(id) {
@@ -487,7 +491,8 @@ var app = app || {};
                     selected: this.props.model.recurseSelection(this.state.selected),
                     focus: this.state.controlKey,
                     key: 'clipboard',
-                    group: this.props.model.focusedGroup.data.id
+                    group: this.props.model.focusedGroup.data.id,
+                    setSelection: this.setSelection,
                 });
                 children.push(clipboard);
             }

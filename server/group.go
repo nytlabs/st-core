@@ -3,9 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -399,24 +397,22 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
-	err = s.ImportGroup(id, p)
+	snew, err := s.ImportGroup(id, p)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, snew)
 }
 
-func (s *Server) ImportGroup(id int, p Pattern) error {
-
-	log.Println("IMPORTING TO ", id)
-
+func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	parents := make(map[int]int) // old child id / old parent id
 	newIds := make(map[int]int)  // old id / new id
 
 	if _, ok := s.groups[id]; !ok {
-		return errors.New("could not attach to group: does not exist")
+		return nil, errors.New("could not attach to group: does not exist")
 	}
 
 	for _, g := range p.Groups {
@@ -426,7 +422,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[g.Id] = ng.Id
@@ -444,7 +440,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[b.Id] = nb.Id
@@ -458,7 +454,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[source.Id] = ns.Id
@@ -471,9 +467,8 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			Source: c.Source,
 			Target: c.Target,
 		})
-		fmt.Println("trying to connect ", c.Source.Id, c.Target.Id)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newIds[c.Id] = nc.Id
 	}
@@ -484,7 +479,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		pl.Source.Id = newIds[l.Source.Id]
 		nl, err := s.CreateLink(pl)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newIds[l.Id] = nl.Id
 	}
@@ -493,19 +488,16 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		if source.Parameters != nil {
 			err := s.ModifySource(newIds[source.Id], source.Parameters)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
-	fmt.Println("BLOCKS ", len(p.Blocks))
 	for _, b := range p.Blocks {
-		fmt.Println("WTF HELLO, ", b.Id)
 		for route, v := range b.Inputs {
 			err := s.ModifyBlockRoute(newIds[b.Id], route, v.Value)
 			if err != nil {
-				fmt.Println("SHOOT", err)
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -525,12 +517,12 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 				n = bs
 			}
 			if n == nil {
-				return errors.New("could not add node, node does not exist")
+				return nil, errors.New("could not add node, node does not exist")
 			}
 
 			err := s.AddChildToGroup(newIds[g.Id], n)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			assigned[newIds[c]] = struct{}{}
@@ -550,24 +542,28 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 			if bs, ok := s.sources[nId]; ok {
 				n = bs
 			}
+			// if this id is not a node or we are already correctly assigned
+			// to a parent -- quit
+			if n == nil || id == n.GetParent().GetID() {
+				continue
+			}
 			err := s.AddChildToGroup(id, n)
 			if err != nil {
-				fmt.Println("can't buy a bucket")
+				return nil, err
 			}
 		}
 	}
-	fmt.Println("from downtown")
 
 	snew := []int{}
 	for _, v := range newIds {
 		snew = append(snew, v)
 	}
 
-	o, _ := json.Marshal(snew)
+	//o, _ := json.Marshal(snew)
 
-	fmt.Println(string(o))
+	//fmt.Println(string(o))
 
-	return nil
+	return snew, nil
 }
 
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {

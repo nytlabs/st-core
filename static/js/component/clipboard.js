@@ -25,8 +25,6 @@ var app = app || {};
                 groups: []
             };
 
-            //console.log(this.props.selected);
-
             pattern.blocks = this.props.selected.filter(function(n) {
                 return n instanceof app.Block && !(n instanceof app.Group) && !(n instanceof app.Source)
             }).map(function(o) {
@@ -44,8 +42,6 @@ var app = app || {};
             }).map(function(o) {
                 return o.data;
             });
-
-            console.log(this.props.selected);
 
             pattern.connections = this.props.selected.filter(function(c) {
                 return c instanceof app.Connection
@@ -66,26 +62,15 @@ var app = app || {};
             return true;
         },
         onPaste: function(e) {
-            /*            var pasted = JSON.parse(React.findDOMNode(this.refs.textarea).value);
-                        var hasParent = [].concat.apply([], pasted.groups.map(function(g) {
-                            console.log(g);
-                            return g.children
-                        }));
+            var pattern = JSON.parse(React.findDOMNode(this.refs.textarea).value);
 
-                        pasted.groups.each(function(g){
-                            if(g.
-                        })*/
-
-            //            console.log(hasParent);
-            //console.log(React.findDOMNode(this.refs.textarea).value);
-            console.log('the group is ', this.props.group);
             app.Utils.request(
                 'post',
                 'groups/' + this.props.group + '/import',
-                JSON.parse(React.findDOMNode(this.refs.textarea).value),
+                pattern,
                 function(e) {
-                    console.log(e);
-                });
+                    this.props.setSelection(JSON.parse(e.response))
+                }.bind(this));
         },
         render: function() {
             var pattern = this.stringifyProps();

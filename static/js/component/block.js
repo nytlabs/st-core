@@ -150,7 +150,8 @@ var app = app || {};
             children.push(React.createElement(app.CrankComponent, {
                 x: this.props.model.geometry.width * .5,
                 y: this.props.model.geometry.height + 10,
-                lastCrank: this.props.model.data.lastCrank
+                lastCrank: this.props.model.lastCrank,
+                key: 'crank'
             }));
 
             children = children.concat(this.props.model.routes.map(function(r, i) {

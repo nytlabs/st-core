@@ -24,6 +24,7 @@ var app = app || {};
                     y: null,
                     enabled: false,
                 },
+                controlKey: false,
             }
         },
         handleSelectionChange: function(rectX, rectY, width, height) {
@@ -67,22 +68,38 @@ var app = app || {};
 
         },
         documentKeyDown: function(e) {
+            // only fire delete if we have the stage in focus
             if (e.keyCode === 8 && e.target === document.body) {
                 e.preventDefault();
                 e.stopPropagation();
                 this.deleteSelection();
             }
 
-            if (e.shiftKey === true) this.setState({
-                keys: {
-                    shift: true
-                }
-            })
+            // only fire ctrl key state if we don't have anything in focus
+            if (document.activeElement === document.body && (e.keyCode === 91 || e.keyCode === 17)) {
+                this.setState({
+                    controlKey: true
+                })
+            }
+
+            if (e.shiftKey === true) {
+                this.setState({
+                    keys: {
+                        shift: true
+                    }
+                })
+            }
 
             if (e.keyCode === 71 && e.target === document.body) this.handleGroup()
             if (e.keyCode === 85 && e.target === document.body) this.handleUngroup()
         },
         documentKeyUp: function(e) {
+            if (e.keyCode === 91 || e.keyCode === 17) {
+                this.setState({
+                    controlKey: false
+                })
+
+            }
             if (e.shiftKey === false) this.setState({
                 keys: {
                     shift: false
@@ -203,6 +220,13 @@ var app = app || {};
                 library: {
                     enabled: false,
                 }
+            })
+        },
+        setSelection: function(ids) {
+            this.setState({
+                selected: ids.map(function(id) {
+                    return this.props.model.entities[id];
+                }.bind(this))
             })
         },
         nodeSelect: function(id) {
@@ -459,7 +483,19 @@ var app = app || {};
                 key: 'panel_list',
             });
 
+
             var children = [stage, groupList, panelList, tools];
+
+            if (this.props.model.focusedGroup !== null) {
+                var clipboard = React.createElement(app.ClipboardComponent, {
+                    selected: this.props.model.recurseSelection(this.state.selected),
+                    focus: this.state.controlKey,
+                    key: 'clipboard',
+                    group: this.props.model.focusedGroup.data.id,
+                    setSelection: this.setSelection,
+                });
+                children.push(clipboard);
+            }
 
             if (this.state.library.enabled === true) {
                 children.push(React.createElement(app.AutoCompleteComponent, {

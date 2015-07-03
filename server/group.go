@@ -397,21 +397,22 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 	s.Lock()
 	defer s.Unlock()
 
-	err = s.ImportGroup(id, p)
+	snew, err := s.ImportGroup(id, p)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
+	writeJSON(w, snew)
 }
 
-func (s *Server) ImportGroup(id int, p Pattern) error {
+func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	parents := make(map[int]int) // old child id / old parent id
 	newIds := make(map[int]int)  // old id / new id
 
 	if _, ok := s.groups[id]; !ok {
-		return errors.New("could not attach to group: does not exist")
+		return nil, errors.New("could not attach to group: does not exist")
 	}
 
 	for _, g := range p.Groups {
@@ -421,7 +422,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[g.Id] = ng.Id
@@ -439,7 +440,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[b.Id] = nb.Id
@@ -453,7 +454,7 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		})
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		newIds[source.Id] = ns.Id
@@ -462,30 +463,32 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 	for _, c := range p.Connections {
 		c.Source.Id = newIds[c.Source.Id]
 		c.Target.Id = newIds[c.Target.Id]
-		_, err := s.CreateConnection(ProtoConnection{
+		nc, err := s.CreateConnection(ProtoConnection{
 			Source: c.Source,
 			Target: c.Target,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
+		newIds[c.Id] = nc.Id
 	}
 
 	for _, l := range p.Links {
 		pl := ProtoLink{}
 		pl.Block.Id = newIds[l.Block.Id]
 		pl.Source.Id = newIds[l.Source.Id]
-		_, err := s.CreateLink(pl)
+		nl, err := s.CreateLink(pl)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		newIds[l.Id] = nl.Id
 	}
 
 	for _, source := range p.Sources {
 		if source.Parameters != nil {
 			err := s.ModifySource(newIds[source.Id], source.Parameters)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -494,10 +497,12 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 		for route, v := range b.Inputs {
 			err := s.ModifyBlockRoute(newIds[b.Id], route, v.Value)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
+
+	assigned := make(map[int]struct{})
 
 	for _, g := range p.Groups {
 		for _, c := range g.Children {
@@ -512,17 +517,50 @@ func (s *Server) ImportGroup(id int, p Pattern) error {
 				n = bs
 			}
 			if n == nil {
-				return errors.New("could not add node, node does not exist")
+				return nil, errors.New("could not add node, node does not exist")
 			}
 
 			err := s.AddChildToGroup(newIds[g.Id], n)
 			if err != nil {
-				return err
+				return nil, err
+			}
+
+			assigned[newIds[c]] = struct{}{}
+
+		}
+	}
+
+	for _, nId := range newIds {
+		if _, ok := assigned[nId]; !ok {
+			var n Node
+			if bn, ok := s.blocks[nId]; ok {
+				n = bn
+			}
+			if bg, ok := s.groups[nId]; ok {
+				n = bg
+			}
+			if bs, ok := s.sources[nId]; ok {
+				n = bs
+			}
+			// if this id is not a node or we are already correctly assigned
+			// to a parent -- quit
+			if n == nil || id == n.GetParent().GetID() {
+				continue
+			}
+			err := s.AddChildToGroup(id, n)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
 
-	return nil
+	// return a list of ids that have been added
+	snew := []int{}
+	for _, v := range newIds {
+		snew = append(snew, v)
+	}
+
+	return snew, nil
 }
 
 func (s *Server) GroupModifyLabelHandler(w http.ResponseWriter, r *http.Request) {

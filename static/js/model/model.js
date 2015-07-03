@@ -146,6 +146,22 @@ var app = app || {};
                 }));
             }.bind(this)
         )
+
+
+        this.crankQueue = [];
+        var _this = this;
+        window.setInterval(function() {
+            _this.crankQueue.forEach(function(m) {
+                if (_this.entities.hasOwnProperty(m.data.id)) {
+                    _this.entities[m.data.id].lastCrank = m.data.value;
+                }
+            })
+            if (_this.crankQueue.length > 0) {
+                _this.inform();
+            }
+            this.crankQueue = [];
+        }, 300)
+
     }
 
     app.CoreModel.prototype.subscribe = function(onChange) {
@@ -207,6 +223,38 @@ var app = app || {};
         this.inform();
     }
 
+    // recursively expand/flatten groups in a list of entities
+    app.CoreModel.prototype.expandGroups = function(ids) {
+        var expanded = ids;
+        var next = [].concat.apply([], ids.filter(function(e) {
+            return e instanceof app.Group
+        }).map(function(g) {
+            return this.expandGroups(g.data.children.map(function(id) {
+                return this.entities[id];
+            }.bind(this)))
+        }.bind(this)));
+
+        return expanded.concat(next);
+    }
+
+    app.CoreModel.prototype.expandEdges = function(ids) {
+        return this.edges.filter(function(e) {
+            return (-1 !== ids.indexOf(e.from.node) && -1 !== ids.indexOf(e.to.node));
+        })
+    }
+
+    app.CoreModel.prototype.recurseSelection = function(ids) {
+        var groupNodes = this.expandGroups(ids.filter(function(o) {
+            return o instanceof app.Group
+        }));
+
+        var orphans = ids.filter(function(o) {
+            return !(o instanceof app.Group)
+        })
+
+        return this.expandEdges(groupNodes).concat(groupNodes).concat(orphans);
+    }
+
     app.CoreModel.prototype.update = function(m) {
         switch (m.action) {
             case 'update':
@@ -222,6 +270,14 @@ var app = app || {};
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
                 }
                 break;
+            case 'info':
+                switch (m.data.type) {
+                    case 'crank':
+                        this.crankQueue.push(m);
+                        //                        this.entities[m.data.id].lastCrank = m.data.value;
+                        break;
+                }
+                return;
             case 'create':
                 // create seperate action for child.
                 if (m.type === 'child') {

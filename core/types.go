@@ -201,7 +201,7 @@ type Source interface {
 
 type Interface interface {
 	Source
-	Describe() map[string]string
+	Describe() []map[string]string
 	Serve()
 	Stop()
 	SetSourceParameter(key, value string)

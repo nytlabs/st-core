@@ -66,7 +66,6 @@ func (s *Server) DeleteLink(id int) error {
 	if !ok {
 		return errors.New("could not find block")
 	}
-
 	block.Block.SetSource(nil)
 	delete(s.links, id)
 

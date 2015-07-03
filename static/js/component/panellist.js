@@ -15,10 +15,11 @@ var app = app || {};
             }, this.props.nodes.filter(function(r) {
                 return r instanceof app.Entity
             }).map(function(n) {
-                return React.createElement(app.PanelComponent, {
-                    model: n,
-                    key: n.data.id
-                }, null)
+              if (n instanceof app.Source){
+                return React.createElement(app.ParametersPanelComponent, { model: n, key: n.data.id }, null)
+              } else {
+                return React.createElement(app.RoutesPanelComponent, { model: n, key: n.data.id }, null)
+              }
             }))
         },
     })

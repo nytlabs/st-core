@@ -19,7 +19,7 @@ type SourceLedger struct {
 	Parent     *Group              `json:"-"`
 	Token      suture.ServiceToken `json:"-"`
 	Position   Position            `json:"position"`
-	Parameters map[string]string   `json:"params,omitempty"`
+	Parameters []map[string]string `json:"params"`
 }
 
 type ProtoSource struct {
@@ -27,7 +27,7 @@ type ProtoSource struct {
 	Type       string            `json:"type"`
 	Position   Position          `json:"position"`
 	Parent     int               `json:"parent"`
-	Parameters map[string]string `json:"params,omitempty"`
+	Parameters map[string]string `json:"params"`
 }
 
 func (sl *SourceLedger) GetID() int {
@@ -89,11 +89,12 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	source := f.New()
 
 	sl := &SourceLedger{
-		Label:    p.Label,
-		Position: p.Position,
-		Source:   source,
-		Type:     p.Type,
-		Id:       s.GetNextID(),
+		Label:      p.Label,
+		Position:   p.Position,
+		Source:     source,
+		Type:       p.Type,
+		Id:         s.GetNextID(),
+		Parameters: make([]map[string]string, 0), // this will get overwritten if we have parameters
 	}
 
 	if i, ok := source.(core.Interface); ok {
@@ -170,7 +171,7 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, b)
 }
 
-func (s *Server) ModifySource(id int, m map[string]string) error {
+func (s *Server) ModifySource(id int, m []map[string]string) error {
 	source, ok := s.sources[id]
 	if !ok {
 		return errors.New("no source found")
@@ -181,13 +182,24 @@ func (s *Server) ModifySource(id int, m map[string]string) error {
 		return errors.New("cannot modify store")
 	}
 
+	// because sources can have all sorts of parameters, and we are storing
+	// them in an array of maps for ease of rendering, we need to make a quick
+	// index key in order to update them piecemeal.
+	key := make(map[string]int)
+	for i, p := range source.Parameters {
+		key[p["name"]] = i
+	}
+
 	i.Stop()
-	for k, _ := range source.Parameters {
-		if v, ok := m[k]; ok {
-			i.SetSourceParameter(k, v)
-			source.Parameters[k] = v
-			s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, k, v}})
-		}
+	for _, p := range m {
+		name := p["name"]
+		value := p["value"]
+		i.SetSourceParameter(name, value)
+
+		s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, name, value}})
+
+		// update the source ledger
+		source.Parameters[key[name]]["value"] = value
 	}
 	go i.Serve()
 	return nil
@@ -201,11 +213,11 @@ func (s *Server) SourceModifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var m map[string]string
+	var m []map[string]string
 	err = json.Unmarshal(body, &m)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
+		writeJSON(w, Error{"could not unmarhsal source modification JSON"})
 		return
 	}
 

@@ -217,7 +217,7 @@ func (s *Server) SourceModifyHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &m)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"no ID supplied"})
+		writeJSON(w, Error{"could not unmarhsal source modification JSON"})
 		return
 	}
 

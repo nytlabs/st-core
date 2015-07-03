@@ -182,7 +182,7 @@ func TestEndpoints(t *testing.T) {
 	post("/sources", `{"type":"stream"}`, 200)
 
 	// change a parameter in the stream
-	put("/sources/11/params", `{"topic":"test"}`, 204)
+	put("/sources/11/params", `[{"topic":"test"}]`, 204)
 
 	// get all the sources
 	get("/sources", 200)
@@ -210,7 +210,7 @@ func TestEndpoints(t *testing.T) {
 	get("/groups/0/export", 200)
 
 	// import a pattern
-	pattern := `{"blocks":[{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","value":null},{"name":"duration","value":{"data":"1s"}}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}},{"label":"","type":"set","id":7,"inputs":[{"name":"key","value":{"data":"myResult"}},{"name":"value","value":null}],"outputs":[{"name":"object"}],"position":{"x":0,"y":0}},{"label":"","type":"log","id":4,"inputs":[{"name":"log","value":null}],"outputs":[],"position":{"x":0,"y":0}},{"label":"my bestest adder","type":"+","id":2,"inputs":[{"name":"addend","value":{"data":1}},{"name":"addend","value":{"data":1}}],"outputs":[{"name":"sum"}],"position":{"x":10,"y":10}},{"label":"","type":"kvGet","id":12,"inputs":[{"name":"key","value":null}],"outputs":[{"name":"value"}],"position":{"x":0,"y":0}}],"connections":[{"from":{"id":2,"route":0},"to":{"id":3,"route":0},"id":5},{"from":{"id":7,"route":0},"to":{"id":4,"route":0},"id":8},{"from":{"id":3,"route":0},"to":{"id":7,"route":1},"id":9}],"groups":[{"id":0,"label":"root","children":[1,4,2,11,12],"position":{"x":0,"y":0}},{"id":1,"label":"The Best Group Ever","children":[3,7],"position":{"x":20,"y":20}}],"sources":[{"label":"","type":"stream","id":11,"position":{"x":0,"y":0},"params":{"channel":"","lookupdAddr":"","maxInFlight":"10","topic":""}}],"links":null}`
+	pattern := `{"blocks":[{"label":"","type":"delay","id":3,"inputs":[{"name":"passthrough","value":null},{"name":"duration","value":{"data":"1s"}}],"outputs":[{"name":"passthrough"}],"position":{"x":0,"y":0}},{"label":"","type":"set","id":7,"inputs":[{"name":"key","value":{"data":"myResult"}},{"name":"value","value":null}],"outputs":[{"name":"object"}],"position":{"x":0,"y":0}},{"label":"","type":"log","id":4,"inputs":[{"name":"log","value":null}],"outputs":[],"position":{"x":0,"y":0}},{"label":"my bestest adder","type":"+","id":2,"inputs":[{"name":"addend","value":{"data":1}},{"name":"addend","value":{"data":1}}],"outputs":[{"name":"sum"}],"position":{"x":10,"y":10}},{"label":"","type":"kvGet","id":12,"inputs":[{"name":"key","value":null}],"outputs":[{"name":"value"}],"position":{"x":0,"y":0}}],"connections":[{"from":{"id":2,"route":0},"to":{"id":3,"route":0},"id":5},{"from":{"id":7,"route":0},"to":{"id":4,"route":0},"id":8},{"from":{"id":3,"route":0},"to":{"id":7,"route":1},"id":9}],"groups":[{"id":0,"label":"root","children":[1,4,2,11,12],"position":{"x":0,"y":0}},{"id":1,"label":"The Best Group Ever","children":[3,7],"position":{"x":20,"y":20}}],"sources":[{"label":"","type":"stream","id":11,"position":{"x":0,"y":0},"params":[{"name":"channel","value":""},{"name":"lookupdAddr","value":""},{"name":"maxInFlight","value":"10"},{"name":"topic","value":""}]}],"links":null}`
 	post("/groups/1/import", pattern, 200)
 
 	// delete the log block

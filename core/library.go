@@ -136,6 +136,10 @@ func GetLibrary() map[string]Spec {
 		And(),
 		Or(),
 		Not(),
+
+		//string functions
+		StringConcat(),
+		StringSplit(),
 	}
 
 	library := make(map[string]Spec)

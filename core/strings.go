@@ -14,7 +14,7 @@ func StringConcat() Spec {
 				out[0] = NewError("concat requires string")
 				return nil
 			}
-			out[1] = a + b
+			out[0] = a + b
 			return nil
 		},
 	}
@@ -32,8 +32,12 @@ func StringSplit() Spec {
 				out[0] = NewError("split requires string")
 				return nil
 			}
-
-			out[0] = strings.Split(ab, sep)
+			seperatedStrings := strings.Split(ab, sep)
+			sepI := make([]interface{}, len(seperatedStrings))
+			for i, v := range seperatedStrings {
+				sepI[i] = v
+			}
+			out[0] = sepI
 			return nil
 		},
 	}

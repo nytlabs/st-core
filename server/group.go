@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/nytlabs/st-core/core"
 )
 
 type Pattern struct {
@@ -485,7 +486,7 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	}
 
 	for _, source := range p.Sources {
-		if source.Parameters != nil {
+		if _, ok := source.Source.(core.Interface); ok {
 			err := s.ModifySource(newIds[source.Id], source.Parameters)
 			if err != nil {
 				return nil, err

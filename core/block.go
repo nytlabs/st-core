@@ -42,7 +42,7 @@ func NewBlock(s Spec) *Block {
 		},
 		kernel:     s.Kernel,
 		sourceType: s.Source,
-		Monitor:    make(chan time.Time, 1),
+		Monitor:    make(chan MonitorMessage, 1),
 		lastCrank:  time.Now(),
 		//blockageTimer: time.NewTimer(time.Duration(1 * time.Hour)),
 	}
@@ -358,7 +358,17 @@ func (b *Block) crank() {
 	for k, _ := range b.state.inputValues {
 		delete(b.state.inputValues, k)
 	}
-	for k, _ := range b.state.outputValues {
+	for k, v := range b.state.outputValues {
+		if _, ok := v.(*stcoreError); ok {
+			select {
+			case b.Monitor <- MonitorMessage{
+				BI_ERROR,
+				v,
+				time.Now(),
+			}:
+			default:
+			}
+		}
 		delete(b.state.outputValues, k)
 	}
 	for k, _ := range b.state.manifest {
@@ -370,7 +380,11 @@ func (b *Block) crank() {
 	if diff > time.Duration(300*time.Millisecond) {
 		b.lastCrank = time.Now()
 		select {
-		case b.Monitor <- time.Now():
+		case b.Monitor <- MonitorMessage{
+			BI_CRANK,
+			nil,
+			time.Now(),
+		}:
 		default:
 		}
 	}

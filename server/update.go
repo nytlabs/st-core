@@ -69,6 +69,5 @@ type wsSourceModify struct {
 //type Info
 type wsInfo struct {
 	wsId
-	Type  core.BlockInfo `json:"type"`
-	Value interface{}    `json:"value"`
+	core.MonitorMessage
 }

@@ -152,8 +152,8 @@ var app = app || {};
         var _this = this;
         window.setInterval(function() {
             _this.crankQueue.forEach(function(m) {
-                if (_this.entities.hasOwnProperty(m.data.id)) {
-                    _this.entities[m.data.id].lastCrank = m.data.value;
+                if (_this.entities.hasOwnProperty(m.id)) {
+                    _this.entities[m.id].lastCrank = m;
                 }
             })
             if (_this.crankQueue.length > 0) {
@@ -270,20 +270,24 @@ var app = app || {};
                 } else if (m.type === 'route') {
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
                 } else if (m.type === 'param') {
-                    var key = {} 
-                    this.entities[m.data.id].data.params.map(function(kv, index, array){
-                      key[kv.name]=index
+                    var key = {}
+                    this.entities[m.data.id].data.params.map(function(kv, index, array) {
+                        key[kv.name] = index
                     })
                     this.entities[m.data.id].data.params[key[m.data.param]].value = m.data.value
                 }
                 break;
             case 'info':
-                switch (m.data.type) {
-                    case 'crank':
-                        this.crankQueue.push(m);
-                        //                        this.entities[m.data.id].lastCrank = m.data.value;
-                        break;
-                }
+                this.crankQueue.push(m.data);
+
+                /*     switch (m.data.type) {
+                         case 'crank':
+                             this.crankQueue.push(m.data);
+                             break;
+                         case 'error':
+                             this.crankQueue.push(m);
+                             break;
+                     }*/
                 return;
             case 'create':
 
@@ -317,8 +321,8 @@ var app = app || {};
                 }
 
                 // for source we need to populate its parameters
-                if (m.type === 'source'){
-                  this.entities[m.data.source.id].data.params = m.data.source.params
+                if (m.type === 'source') {
+                    this.entities[m.data.source.id].data.params = m.data.source.params
                 }
 
                 // if we have a focused group we need to have a way to update the 

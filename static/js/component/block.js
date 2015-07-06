@@ -81,7 +81,7 @@ var app = app || {};
             }
         },
         componentWillReceiveProps: function(props) {
-            if (props.lastCrank != this.state.lastCrank) {
+            if (props.lastCrank !== this.state.lastCrank) {
                 var nextTick = this.state.tick < 8 ? this.state.tick + 1 : 0;
 
                 this.setState({
@@ -91,12 +91,16 @@ var app = app || {};
             }
         },
         render: function() {
+            var state = '';
+            if (this.state.lastCrank !== null && this.state.lastCrank !== undefined) {
+                state = ' ' + this.state.lastCrank.type;
+            }
             var children = [
                 React.createElement('circle', {
                     cx: 0,
                     cy: 0,
                     r: 5.0,
-                    className: 'tick_circle',
+                    className: 'tick_circle' + state,
                     key: 'tick_bg'
                 }, null),
                 React.createElement('circle', {

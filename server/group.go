@@ -486,7 +486,9 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	}
 
 	for _, source := range p.Sources {
-		if _, ok := source.Source.(core.Interface); ok {
+		// eesh we need to sort out source types...
+		// checks to see if the source can accept parameters, and if so, sets them.
+		if _, ok := s.sources[newIds[source.Id]].Source.(core.Interface); ok {
 			err := s.ModifySource(newIds[source.Id], source.Parameters)
 			if err != nil {
 				return nil, err

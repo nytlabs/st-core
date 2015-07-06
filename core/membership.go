@@ -14,7 +14,7 @@ func InArray() Spec {
 				out[0] = NewError("inArray requries array")
 				return nil
 			}
-			for x := range arr {
+			for _, x := range arr {
 				if x == in[0] {
 					out[0] = true
 					return nil

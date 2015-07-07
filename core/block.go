@@ -44,7 +44,6 @@ func NewBlock(s Spec) *Block {
 		sourceType: s.Source,
 		Monitor:    make(chan MonitorMessage, 1),
 		lastCrank:  time.Now(),
-		//blockageTimer: time.NewTimer(time.Duration(1 * time.Hour)),
 	}
 }
 
@@ -245,6 +244,12 @@ func (b *Block) Stop() {
 // wait and listen for all kernel inputs to be filled.
 func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
+		b.Monitor <- MonitorMessage{
+			BI_RECEIVE,
+			id,
+			time.Now(),
+		}
+
 		//if we have already received a value on this input, skip.
 		if _, ok := b.state.inputValues[RouteIndex(id)]; ok {
 			continue
@@ -267,6 +272,12 @@ func (b *Block) receive() Interrupt {
 
 // run kernel on inputs, produce outputs
 func (b *Block) process() Interrupt {
+	b.Monitor <- MonitorMessage{
+		BI_KERNEL,
+		nil,
+		time.Now(),
+	}
+
 	if b.state.Processed == true {
 		return nil
 	}
@@ -316,6 +327,12 @@ func (b *Block) process() Interrupt {
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
+		b.Monitor <- MonitorMessage{
+			BI_BROADCAST,
+			id,
+			time.Now(),
+		}
+
 		// if the output key is not present in the output map, then we
 		// don't deliver any message
 		_, ok := b.state.outputValues[RouteIndex(id)]
@@ -348,7 +365,6 @@ func (b *Block) broadcast() Interrupt {
 				return f
 			}
 		}
-
 	}
 	return nil
 }
@@ -358,52 +374,11 @@ func (b *Block) crank() {
 	for k, _ := range b.state.inputValues {
 		delete(b.state.inputValues, k)
 	}
-	for k, v := range b.state.outputValues {
-		if _, ok := v.(*stcoreError); ok {
-			select {
-			case b.Monitor <- MonitorMessage{
-				BI_ERROR,
-				v,
-				time.Now(),
-			}:
-			default:
-			}
-		}
+	for k, _ := range b.state.outputValues {
 		delete(b.state.outputValues, k)
 	}
 	for k, _ := range b.state.manifest {
 		delete(b.state.manifest, k)
 	}
 	b.state.Processed = false
-
-	diff := time.Now().Sub(b.lastCrank)
-	if diff > time.Duration(300*time.Millisecond) {
-		b.lastCrank = time.Now()
-		select {
-		case b.Monitor <- MonitorMessage{
-			BI_CRANK,
-			nil,
-			time.Now(),
-		}:
-		default:
-		}
-	}
-	// stop the blockage timer
-	/*if !b.blockageTimer.Stop() {
-		select {
-		case b.Monitor <- UNBLOCKED:
-		default:
-		}
-	}
-
-	// start a new blocked timer
-	b.blockageTimer = time.AfterFunc(
-		time.Duration(300*time.Millisecond),
-		func() {
-			select {
-			case b.Monitor <- BLOCKED:
-			default:
-			}
-		},
-	)*/
 }

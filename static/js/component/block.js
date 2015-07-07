@@ -93,7 +93,7 @@ var app = app || {};
         render: function() {
             var state = '';
             if (this.state.lastCrank !== null && this.state.lastCrank !== undefined) {
-                state = ' ' + this.state.lastCrank.type;
+                state = ' ' + this.state.lastCrank.type + ' ' + this.state.lastCrank.data
             }
             var children = [
                 React.createElement('circle', {
@@ -110,7 +110,8 @@ var app = app || {};
                     key: 'tick',
                     fill: 'red',
                     className: 'ticker_' + this.state.tick,
-                }, null)
+                }, null),
+                React.createElement('text', {}, state)
             ]
             return React.createElement('g', {
                 transform: 'translate(' + this.props.x + ', ' + this.props.y + ')'

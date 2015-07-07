@@ -149,6 +149,10 @@ func (s *Server) websocketReadPump(c *socket) {
 			}
 
 			s.Unlock()
+
+			for _, b := range s.blocks {
+				b.MonitorQuery <- struct{}{}
+			}
 			// we want to lock for this entire time, so that nothing can interfere
 			// with our state as we are dumping it
 

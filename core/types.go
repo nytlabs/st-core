@@ -242,5 +242,5 @@ type Block struct {
 type MonitorMessage struct {
 	Type BlockInfo   `json:"type"`
 	Data interface{} `json:"data,omitempty"`
-	Time time.Time   `json:"time"`
+	//	Time time.Time   `json:"time"`
 }

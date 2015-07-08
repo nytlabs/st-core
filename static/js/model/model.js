@@ -146,22 +146,6 @@ var app = app || {};
                 }));
             }.bind(this)
         )
-
-
-        this.crankQueue = [];
-        var _this = this;
-        window.setInterval(function() {
-            _this.crankQueue.forEach(function(m) {
-                if (_this.entities.hasOwnProperty(m.id)) {
-                    _this.entities[m.id].lastCrank = m;
-                }
-            })
-            if (_this.crankQueue.length > 0) {
-                _this.inform();
-            }
-            this.crankQueue = [];
-        }, 300)
-
     }
 
     app.CoreModel.prototype.subscribe = function(onChange) {
@@ -278,17 +262,22 @@ var app = app || {};
                 }
                 break;
             case 'info':
-                this.crankQueue.push(m.data);
+                if (this.entities.hasOwnProperty(m.data.id)) {
+                    this.entities[m.data.id].routes.forEach(function(r) {
+                        if (r.direction === 'input' && m.data.type === 'receive' && m.data.data === r.index) {
+                            r.status.data = 'waiting';
+                        }
+                        if (r.direction === 'output' && m.data.type === 'broadcast' && m.data.data === r.index) {
+                            r.status.data = 'waiting';
+                        }
+                        if (m.data.type === 'kernel' || m.data.type === 'running') {
+                            r.status.data = null;
+                        }
+                    })
 
-                /*     switch (m.data.type) {
-                         case 'crank':
-                             this.crankQueue.push(m.data);
-                             break;
-                         case 'error':
-                             this.crankQueue.push(m);
-                             break;
-                     }*/
-                return;
+                    this.entities[m.data.id].lastCrank = m.data;
+                }
+                break;
             case 'create':
 
                 // create seperate action for child.

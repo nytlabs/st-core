@@ -79,7 +79,8 @@ var app = app || {};
                     index: r.index,
                     displayIndex: displayIndex[r.direction]++,
                     parentNode: this,
-                    source: r.source
+                    source: r.source,
+                    status: r.status // not copied, actual reference to original status obj.
                 })
             }.bind(this))
         }.bind(this))

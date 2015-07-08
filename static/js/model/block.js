@@ -75,6 +75,12 @@ var app = app || {};
             r.routesIndex = index;
             r.parentNode = this;
             r.source = null;
+            // this is an object because it ensures that it is copied
+            // by reference to parent groups so that we can proliferate
+            // changes to route status
+            r.status = {
+                data: null
+            };
             return r
         }.bind(this));
 

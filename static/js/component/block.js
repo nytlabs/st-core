@@ -31,7 +31,8 @@ var app = app || {};
                 }, this.props.model.data.name)
             )
 
-            var circleClass = 'route_circle' + ' ' + this.props.model.data.type;
+            var waiting = this.props.model.status.data !== null ? ' ' + this.props.model.status.data : '';
+            var circleClass = 'route_circle' + ' ' + this.props.model.data.type + waiting;
             var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
             var cy = this.props.geometry.routeRadius * -.5;
 
@@ -82,7 +83,7 @@ var app = app || {};
         },
         componentWillReceiveProps: function(props) {
             if (props.lastCrank !== this.state.lastCrank) {
-                var nextTick = this.state.tick < 8 ? this.state.tick + 1 : 0;
+                var nextTick = this.state.tick < 14 ? this.state.tick + 1 : 0;
 
                 this.setState({
                     tick: nextTick,
@@ -93,14 +94,14 @@ var app = app || {};
         render: function() {
             var state = '';
             if (this.state.lastCrank !== null && this.state.lastCrank !== undefined) {
-                state = ' ' + this.state.lastCrank.type + ' ' + this.state.lastCrank.data
+                state = this.state.lastCrank.type;
             }
             var children = [
                 React.createElement('circle', {
                     cx: 0,
                     cy: 0,
                     r: 5.0,
-                    className: 'tick_circle' + state,
+                    className: 'tick_circle' + (state === 'kernel' ? ' ' + state : ''),
                     key: 'tick_bg'
                 }, null),
                 React.createElement('circle', {
@@ -109,12 +110,13 @@ var app = app || {};
                     r: 3.0,
                     key: 'tick',
                     fill: 'red',
-                    className: 'ticker_' + this.state.tick,
+                    className: 'ticker_' + Math.floor(this.state.tick / 2) + (state === 'running' ? ' ' + state : ''),
                 }, null),
-                React.createElement('text', {}, state)
+                //React.createElement('text', {}, state)
             ]
             return React.createElement('g', {
-                transform: 'translate(' + this.props.x + ', ' + this.props.y + ')'
+                transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
+                //                className: (state === 'running' ? ' ' + state : ''),
             }, children)
         }
     })

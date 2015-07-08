@@ -244,10 +244,13 @@ func (b *Block) Stop() {
 // wait and listen for all kernel inputs to be filled.
 func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
-		b.Monitor <- MonitorMessage{
+		select {
+		case b.Monitor <- MonitorMessage{
 			BI_RECEIVE,
 			id,
-			time.Now(),
+			//			time.Now(),
+		}:
+		default:
 		}
 
 		//if we have already received a value on this input, skip.
@@ -272,10 +275,13 @@ func (b *Block) receive() Interrupt {
 
 // run kernel on inputs, produce outputs
 func (b *Block) process() Interrupt {
-	b.Monitor <- MonitorMessage{
+	select {
+	case b.Monitor <- MonitorMessage{
 		BI_KERNEL,
 		nil,
-		time.Now(),
+		//		time.Now(),
+	}:
+	default:
 	}
 
 	if b.state.Processed == true {
@@ -327,10 +333,13 @@ func (b *Block) process() Interrupt {
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
-		b.Monitor <- MonitorMessage{
+		select {
+		case b.Monitor <- MonitorMessage{
 			BI_BROADCAST,
 			id,
-			time.Now(),
+			//			time.Now(),
+		}:
+		default:
 		}
 
 		// if the output key is not present in the output map, then we

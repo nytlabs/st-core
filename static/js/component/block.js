@@ -82,7 +82,7 @@ var app = app || {};
         },
         componentWillReceiveProps: function(props) {
             if (props.lastCrank != this.state.lastCrank) {
-                var nextTick = this.state.tick < 8 ? this.state.tick + 1 : 0;
+                var nextTick = this.state.tick < 7 ? this.state.tick + 1 : 0;
 
                 this.setState({
                     tick: nextTick,

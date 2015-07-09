@@ -314,9 +314,20 @@ func (b *Block) process() Interrupt {
 }
 
 func (b *Block) deliver(ensure bool) (bool, Interrupt) {
+	// tally how many deliveries that we need to make in total. due to the fact
+	// that the kernel _does not need_ to satisfy all outputs per crank, we need
+	// to check to see if there are any messages on a given output before adding
+	// it to the tally.
+	// TODO: this can be possibly further optimized
+	// - by caching the total connections
+	// - by moving both the len(manifest) validation and tallying to the
+	//   broadcast() func
+	// - possibly convert manifest to a simple count instead a map
 	total := 0
-	for _, out := range b.routing.Outputs {
-		total += len(out.Connections)
+	for id, out := range b.routing.Outputs {
+		if _, ok := b.state.outputValues[RouteIndex(id)]; ok {
+			total += len(out.Connections)
+		}
 	}
 
 	for id, out := range b.routing.Outputs {
@@ -346,7 +357,7 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 
 			// ensure is a flag that toggles between a blocking send and a non-
 			// blocking send. in some circumstances, connections may get
-			// "crossed". When this happens, a connection may block the send
+			// "tangled". When this happens, a connection may block the send
 			// for another connection on the same broadcast pin. This can
 			// happen when a single broadcast pin may attempt to deliver to two
 			// separate inputs on a single block. Because a block receives in
@@ -391,7 +402,7 @@ func (b *Block) broadcast() Interrupt {
 		return i
 	}
 	if !done {
-		panic("cataclymsic error, we should never get here")
+		panic("cataclysmic error, we should never get here")
 	}
 
 	return nil

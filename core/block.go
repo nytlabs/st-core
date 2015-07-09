@@ -42,9 +42,8 @@ func NewBlock(s Spec) *Block {
 		},
 		kernel:     s.Kernel,
 		sourceType: s.Source,
-		Monitor:    make(chan time.Time, 1),
+		Monitor:    make(chan MonitorMessage, 1),
 		lastCrank:  time.Now(),
-		//blockageTimer: time.NewTimer(time.Duration(1 * time.Hour)),
 	}
 }
 
@@ -245,6 +244,11 @@ func (b *Block) Stop() {
 // wait and listen for all kernel inputs to be filled.
 func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
+		b.Monitor <- MonitorMessage{
+			BI_RECEIVE,
+			id,
+		}
+
 		//if we have already received a value on this input, skip.
 		if _, ok := b.state.inputValues[RouteIndex(id)]; ok {
 			continue
@@ -267,6 +271,11 @@ func (b *Block) receive() Interrupt {
 
 // run kernel on inputs, produce outputs
 func (b *Block) process() Interrupt {
+	b.Monitor <- MonitorMessage{
+		BI_KERNEL,
+		nil,
+	}
+
 	if b.state.Processed == true {
 		return nil
 	}
@@ -331,6 +340,11 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 	}
 
 	for id, out := range b.routing.Outputs {
+		b.Monitor <- MonitorMessage{
+			BI_BROADCAST,
+			id,
+		}
+
 		// if the output key is not present in the output map, then we
 		// don't deliver any message
 		_, ok := b.state.outputValues[RouteIndex(id)]
@@ -420,31 +434,4 @@ func (b *Block) crank() {
 		delete(b.state.manifest, k)
 	}
 	b.state.Processed = false
-
-	diff := time.Now().Sub(b.lastCrank)
-	if diff > time.Duration(300*time.Millisecond) {
-		b.lastCrank = time.Now()
-		select {
-		case b.Monitor <- time.Now():
-		default:
-		}
-	}
-	// stop the blockage timer
-	/*if !b.blockageTimer.Stop() {
-		select {
-		case b.Monitor <- UNBLOCKED:
-		default:
-		}
-	}
-
-	// start a new blocked timer
-	b.blockageTimer = time.AfterFunc(
-		time.Duration(300*time.Millisecond),
-		func() {
-			select {
-			case b.Monitor <- BLOCKED:
-			default:
-			}
-		},
-	)*/
 }

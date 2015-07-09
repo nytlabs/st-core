@@ -24,16 +24,18 @@ type ProtoBlock struct {
 }
 
 type BlockLedger struct {
-	Label       string          `json:"label"`
-	Type        string          `json:"type"`
-	Id          int             `json:"id"`
-	Block       *core.Block     `json:"-"`
-	Parent      *Group          `json:"-"`
-	Composition int             `json:"composition,omitempty"`
-	Inputs      []core.Input    `json:"inputs"`
-	Outputs     []core.Output   `json:"outputs"`
-	Source      core.SourceType `json:"source"`
-	Position    Position        `json:"position"`
+	Label        string          `json:"label"`
+	Type         string          `json:"type"`
+	Id           int             `json:"id"`
+	Block        *core.Block     `json:"-"`
+	Parent       *Group          `json:"-"`
+	Composition  int             `json:"composition,omitempty"`
+	Inputs       []core.Input    `json:"inputs"`
+	Outputs      []core.Output   `json:"outputs"`
+	Source       core.SourceType `json:"source"`
+	Position     Position        `json:"position"`
+	MonitorQuery chan struct{}   `json:"-"`
+	MonitorQuit  chan struct{}   `json:"-"`
 }
 
 func (bl *BlockLedger) GetID() int {
@@ -138,12 +140,14 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	block := core.NewBlock(blockSpec)
 
 	m := &BlockLedger{
-		Label:    p.Label,
-		Position: p.Position,
-		Type:     p.Type,
-		Block:    block,
-		Source:   blockSpec.Source,
-		Id:       s.GetNextID(),
+		Label:        p.Label,
+		Position:     p.Position,
+		Type:         p.Type,
+		Block:        block,
+		Source:       blockSpec.Source,
+		Id:           s.GetNextID(),
+		MonitorQuit:  make(chan struct{}),
+		MonitorQuery: make(chan struct{}),
 	}
 
 	if _, ok := s.groups[p.Parent]; !ok {
@@ -164,7 +168,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	}
 
 	// begin monitor
-	go s.MonitorMux(m.Id, block.Monitor)
+	go s.MonitorMux(m.Id, block.Monitor, m.MonitorQuery, m.MonitorQuit)
 
 	return m, nil
 }
@@ -268,7 +272,8 @@ func (s *Server) DeleteBlock(id int) error {
 	b.Block.Stop()
 
 	// close the monitor chan so that we quit the monitor routine.
-	close(b.Block.Monitor)
+	// close(b.Block.Monitor)
+	b.MonitorQuit <- struct{}{}
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: BLOCK, Data: wsBlock{wsId{id}}})
 	delete(s.blocks, id)

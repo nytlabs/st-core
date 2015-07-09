@@ -211,3 +211,21 @@ body {
     top: 0px;
     width: 100px;
 }
+.error {
+    fill: rgba(255, 0, 0, 1);
+}
+.waiting {
+    stroke-width: 5px;
+}
+.kernel {
+    fill: rgba(0, 0, 0, 1);
+}
+.running {
+    animation: RUNROTATE 250ms infinite;
+    animation-timing-function: linear;
+}
+@keyframes RUNROTATE {
+    to {
+        transform: rotate(1turn);
+    }
+}

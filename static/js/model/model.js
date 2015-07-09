@@ -146,22 +146,6 @@ var app = app || {};
                 }));
             }.bind(this)
         )
-
-
-        this.crankQueue = [];
-        var _this = this;
-        window.setInterval(function() {
-            _this.crankQueue.forEach(function(m) {
-                if (_this.entities.hasOwnProperty(m.data.id)) {
-                    _this.entities[m.data.id].lastCrank = m.data.value;
-                }
-            })
-            if (_this.crankQueue.length > 0) {
-                _this.inform();
-            }
-            this.crankQueue = [];
-        }, 300)
-
     }
 
     app.CoreModel.prototype.subscribe = function(onChange) {
@@ -270,21 +254,30 @@ var app = app || {};
                 } else if (m.type === 'route') {
                     this.entities[m.data.id].data.inputs[m.data.route].value = m.data.value
                 } else if (m.type === 'param') {
-                    var key = {} 
-                    this.entities[m.data.id].data.params.map(function(kv, index, array){
-                      key[kv.name]=index
+                    var key = {}
+                    this.entities[m.data.id].data.params.map(function(kv, index, array) {
+                        key[kv.name] = index
                     })
                     this.entities[m.data.id].data.params[key[m.data.param]].value = m.data.value
                 }
                 break;
             case 'info':
-                switch (m.data.type) {
-                    case 'crank':
-                        this.crankQueue.push(m);
-                        //                        this.entities[m.data.id].lastCrank = m.data.value;
-                        break;
+                if (this.entities.hasOwnProperty(m.data.id)) {
+                    this.entities[m.data.id].routes.forEach(function(r) {
+                        if (r.direction === 'input' && m.data.type === 'receive' && m.data.data === r.index) {
+                            r.status.data = 'waiting';
+                        }
+                        if (r.direction === 'output' && m.data.type === 'broadcast' && m.data.data === r.index) {
+                            r.status.data = 'waiting';
+                        }
+                        if (m.data.type === 'kernel' || m.data.type === 'running') {
+                            r.status.data = null;
+                        }
+                    })
+
+                    this.entities[m.data.id].lastCrank = m.data;
                 }
-                return;
+                break;
             case 'create':
 
                 // create seperate action for child.
@@ -317,8 +310,8 @@ var app = app || {};
                 }
 
                 // for source we need to populate its parameters
-                if (m.type === 'source'){
-                  this.entities[m.data.source.id].data.params = m.data.source.params
+                if (m.type === 'source') {
+                    this.entities[m.data.source.id].data.params = m.data.source.params
                 }
 
                 // if we have a focused group we need to have a way to update the 

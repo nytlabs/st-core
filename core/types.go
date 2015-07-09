@@ -37,19 +37,25 @@ const (
 type BlockInfo uint8
 
 const (
-	BLOCKED BlockInfo = iota
-	UNBLOCKED
-	CRANK
+	BI_RUNNING BlockInfo = iota
+	BI_ERROR
+	BI_RECEIVE
+	BI_BROADCAST
+	BI_KERNEL
 )
 
 func (ba BlockInfo) MarshalJSON() ([]byte, error) {
 	switch ba {
-	case BLOCKED:
-		return []byte(`"blocked"`), nil
-	case UNBLOCKED:
-		return []byte(`"unblocked"`), nil
-	case CRANK:
-		return []byte(`"crank"`), nil
+	case BI_RUNNING:
+		return []byte(`"running"`), nil
+	case BI_ERROR:
+		return []byte(`"error"`), nil
+	case BI_RECEIVE:
+		return []byte(`"receive"`), nil
+	case BI_BROADCAST:
+		return []byte(`"broadcast"`), nil
+	case BI_KERNEL:
+		return []byte(`"kernel"`), nil
 	}
 
 	return nil, errors.New("could not marshal BlockAlert")
@@ -228,7 +234,12 @@ type Block struct {
 	routing    BlockRouting
 	kernel     Kernel
 	sourceType SourceType
-	Monitor    chan time.Time
+	Monitor    chan MonitorMessage
 	lastCrank  time.Time
 	//blockageTimer *time.Timer
+}
+
+type MonitorMessage struct {
+	Type BlockInfo   `json:"type"`
+	Data interface{} `json:"data,omitempty"`
 }

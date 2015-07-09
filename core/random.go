@@ -78,9 +78,11 @@ func ZipfRandom() Spec {
 	}
 }
 
-func poisson(λ float64) int {
+// poisson returns an integer (though we actually pretend it's a float) from a Poisson distrbution
+func poisson(λ float64) float64 {
+	var k float64
 	L := math.Exp(-λ)
-	k := 0
+	k = 0
 	p := 1.0
 	for {
 		k++

@@ -83,7 +83,7 @@ var app = app || {};
         },
         componentWillReceiveProps: function(props) {
             if (props.lastCrank !== this.state.lastCrank) {
-                var nextTick = this.state.tick < 14 ? this.state.tick + 1 : 0;
+                var nextTick = this.state.tick < 7 ? this.state.tick + .5 : 0;
                 this.setState({
                     tick: nextTick,
                     lastCrank: props.lastCrank,
@@ -109,13 +109,11 @@ var app = app || {};
                     r: 3.0,
                     key: 'tick',
                     fill: 'red',
-                    className: 'ticker_' + Math.floor(this.state.tick / 2) + (state === 'running' ? ' ' + state : ''),
+                    className: (state === 'running' ? state : 'ticker_' + Math.floor(this.state.tick)),
                 }, null),
-                //React.createElement('text', {}, state)
             ]
             return React.createElement('g', {
                 transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
-                //                className: (state === 'running' ? ' ' + state : ''),
             }, children)
         }
     })

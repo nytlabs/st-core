@@ -216,30 +216,16 @@ body {
 }
 .waiting {
     stroke-width: 5px;
-    /*animation: NAME-YOUR-ANIMATION 100ms infinite;
-    stroke: rgba(0, 255, 0, 1);
-    stroke-width: 3px;*/
 }
 .kernel {
     fill: rgba(0, 0, 0, 1);
 }
 .running {
-    animation: HELLO 300ms infinite;
+    animation: RUNROTATE 250ms infinite;
     animation-timing-function: linear;
 }
-@keyframes HELLO {
+@keyframes RUNROTATE {
     to {
         transform: rotate(1turn);
     }
 }
-/*@keyframes NAME-YOUR-ANIMATION {
-    0% {
-        stroke-width: 1px;
-    }
-    50% {
-        stroke-width: 5px;
-    }
-    100% {
-        stroke-width: 1px;
-    }
-}*/

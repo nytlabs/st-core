@@ -22,9 +22,10 @@ import (
 // every block ges a monitor by default. an optimizing step may be to disable
 // it by default, and affording the querying of state by some API handle.
 //
-// in that capacity, the state should live in core.Block, and MonitorMux would
-// simply use a mutex to transmit it, instead of any continous channel traffic
-// from block to Monitor
+// another strategy could be to leave the state in core.Block and have Monitor
+// query it only when the time has run out, with a mutex. this could
+// potentially reduce the amount of channel traffic from 1 msg / pin to
+// 1 / msg per crank.
 
 func (s *Server) MonitorMux(id int, c chan core.MonitorMessage, query chan struct{}, quit chan struct{}) {
 	expire := time.NewTimer(time.Duration(250 * time.Millisecond))

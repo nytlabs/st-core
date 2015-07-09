@@ -313,8 +313,12 @@ func (b *Block) process() Interrupt {
 	return nil
 }
 
-// broadcast the kernel output to all connections on all outputs.
-func (b *Block) broadcast() Interrupt {
+func (b *Block) deliver(ensure bool) (bool, Interrupt) {
+	total := 0
+	for _, out := range b.routing.Outputs {
+		total += len(out.Connections)
+	}
+
 	for id, out := range b.routing.Outputs {
 		// if the output key is not present in the output map, then we
 		// don't deliver any message
@@ -328,7 +332,7 @@ func (b *Block) broadcast() Interrupt {
 		if len(out.Connections) == 0 {
 			select {
 			case f := <-b.routing.InterruptChan:
-				return f
+				return len(b.state.manifest) == total, f
 			}
 		}
 		for c, _ := range out.Connections {
@@ -340,16 +344,56 @@ func (b *Block) broadcast() Interrupt {
 				continue
 			}
 
-			select {
-			case c <- b.state.outputValues[RouteIndex(id)]:
-				// set that we have delivered the message.
-				b.state.manifest[m] = struct{}{}
-			case f := <-b.routing.InterruptChan:
-				return f
+			// ensure is a flag that toggles between a blocking send and a non-
+			// blocking send. in some circumstances, connections may get
+			// "crossed". When this happens, a connection may block the send
+			// for another connection on the same broadcast pin. This can
+			// happen when a single broadcast pin may attempt to deliver to two
+			// separate inputs on a single block. Because a block receives in
+			// order, the broadcasting pin may attempt to send to a pin that is
+			// not currently in a receive state. This results in eternal
+			// blocking.
+			if ensure {
+				select {
+				case c <- b.state.outputValues[RouteIndex(id)]:
+					// set that we have delivered the message.
+					b.state.manifest[m] = struct{}{}
+				case f := <-b.routing.InterruptChan:
+					return len(b.state.manifest) == total, f
+				}
+			} else {
+				select {
+				case c <- b.state.outputValues[RouteIndex(id)]:
+					// set that we have delivered the message.
+					b.state.manifest[m] = struct{}{}
+				default:
+				}
 			}
 		}
-
 	}
+	return len(b.state.manifest) == total, nil
+}
+
+// broadcast the kernel output to all connections on all outputs.
+func (b *Block) broadcast() Interrupt {
+	// we attempt to deliver twice. the first with a non-blocking send, and
+	// secondly, a blocking send. If the non-blocking send fails at least once,
+	// we revert to a blocking send state.
+	done, i := b.deliver(false)
+	if i != nil {
+		return i
+	}
+	if done {
+		return nil
+	}
+	done, i = b.deliver(true)
+	if i != nil {
+		return i
+	}
+	if !done {
+		panic("cataclymsic error, we should never get here")
+	}
+
 	return nil
 }
 

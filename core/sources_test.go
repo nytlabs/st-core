@@ -23,6 +23,10 @@ func TestList(t *testing.T) {
 		"listDump":   NewBlock(library["listDump"]),
 	}
 
+	for _, v := range blocks {
+		go DummyMonitor(v.Monitor)
+	}
+
 	out := make(chan Message)
 	for name, b := range blocks {
 		log.Println("testing", name)
@@ -124,6 +128,10 @@ func TestValuePrimitive(t *testing.T) {
 		"valueSet": NewBlock(library["valueSet"]),
 	}
 
+	for _, v := range blocks {
+		go DummyMonitor(v.Monitor)
+	}
+
 	out := make(chan Message)
 	for name, b := range blocks {
 		log.Println("testing", name)
@@ -170,6 +178,10 @@ func TestPriorityQueue(t *testing.T) {
 		"pqPop":  NewBlock(library["pqPop"]),
 		"pqPeek": NewBlock(library["pqPeek"]),
 		"pqLen":  NewBlock(library["pqLen"]),
+	}
+
+	for _, v := range blocks {
+		go DummyMonitor(v.Monitor)
 	}
 
 	out := make(chan Message)

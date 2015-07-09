@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+func DummyMonitor(mm chan MonitorMessage) {
+	for m := range mm {
+		_ = m
+	}
+}
+
 func TestDelay(t *testing.T) {
 	log.Println("testing delay")
 	spec := Delay()
@@ -38,6 +44,7 @@ func TestSingleBlock(t *testing.T) {
 
 	out := make(chan Message)
 	set := NewBlock(GetLibrary()["set"])
+	go DummyMonitor(set.Monitor)
 	go set.Serve()
 
 	set.Connect(0, out)
@@ -79,12 +86,14 @@ func TestKeyValue(t *testing.T) {
 	}
 
 	kvset := NewBlock(GetLibrary()["kvSet"])
+	go DummyMonitor(kvset.Monitor)
 	kv := NewKeyValue()
 	go kvset.Serve()
 	kvset.SetSource(kv)
 
 	kvset.Connect(0, sink)
 	kvdump := NewBlock(GetLibrary()["kvDump"])
+	go DummyMonitor(kvdump.Monitor)
 	go kvdump.Serve()
 	kvdump.SetSource(kv)
 
@@ -129,6 +138,7 @@ func TestKeyValue(t *testing.T) {
 func TestFirst(t *testing.T) {
 	log.Println("testing first")
 	f := NewBlock(GetLibrary()["first"])
+	go DummyMonitor(f.Monitor)
 	go f.Serve()
 	sink := make(chan Message)
 	f.Connect(0, sink)
@@ -147,6 +157,7 @@ func TestFirst(t *testing.T) {
 func TestNull(t *testing.T) {
 	log.Println("testing null stream")
 	null := NewBlock(GetLibrary()["identity"])
+	go DummyMonitor(null.Monitor)
 	go null.Serve()
 	null.SetInput(0, &InputValue{nil})
 	out := make(chan Message)
@@ -163,6 +174,7 @@ func TestNull(t *testing.T) {
 func BenchmarkAddition(b *testing.B) {
 	sink := make(chan Message)
 	add := NewBlock(GetLibrary()["+"])
+	go DummyMonitor(add.Monitor)
 	go add.Serve()
 	add.Connect(0, sink)
 	addend1, _ := add.GetInput(0)
@@ -179,10 +191,15 @@ func BenchmarkAddition(b *testing.B) {
 func BenchmarkRandomMath(b *testing.B) {
 	sink := make(chan Message)
 	u1 := NewBlock(GetLibrary()["uniform"])
+	go DummyMonitor(u1.Monitor)
 	u2 := NewBlock(GetLibrary()["uniform"])
+	go DummyMonitor(u2.Monitor)
 	u3 := NewBlock(GetLibrary()["uniform"])
+	go DummyMonitor(u3.Monitor)
 	add := NewBlock(GetLibrary()["+"])
+	go DummyMonitor(add.Monitor)
 	mul := NewBlock(GetLibrary()["×"])
+	go DummyMonitor(mul.Monitor)
 	go u1.Serve()
 	go u2.Serve()
 	go u3.Serve()
@@ -210,6 +227,7 @@ func TestGET(t *testing.T) {
 	log.Println("testing GET")
 	lib := GetLibrary()
 	block := NewBlock(lib["GET"])
+	go DummyMonitor(block.Monitor)
 	go block.Serve()
 	headers := make(map[string]string)
 	block.SetInput(1, &InputValue{headers})
@@ -231,6 +249,7 @@ func TestParseJSON(t *testing.T) {
 		t.Fatal("couldn't find block")
 	}
 	block := NewBlock(spec)
+	go DummyMonitor(block.Monitor)
 	go block.Serve()
 	testJsonGood := "{\"foo\":\"bar\", \"weight\":2.3, \"someArray\":[1,2,3]}"
 	out := make(chan Message)
@@ -265,6 +284,7 @@ func TestMerge(t *testing.T) {
 	log.Println("testing merge")
 	lib := GetLibrary()
 	block := NewBlock(lib["merge"])
+	go DummyMonitor(block.Monitor)
 	go block.Serve()
 	out := make(chan Message)
 	inroute1, _ := block.GetInput(0)

@@ -78,9 +78,11 @@ func ZipfRandom() Spec {
 	}
 }
 
-func poisson(λ float64) int {
+// poisson returns an integer (though we actually pretend it's a float) from a Poisson distrbution
+func poisson(λ float64) float64 {
+	var k float64
 	L := math.Exp(-λ)
-	k := 0
+	k = 0
 	p := 1.0
 	for {
 		k++
@@ -95,7 +97,7 @@ func poisson(λ float64) int {
 // PoissonRandom emits a Poisson distribtued random number
 func PoissonRandom() Spec {
 	return Spec{
-		Name:    "Poisson",
+		Name:    "poisson",
 		Inputs:  []Pin{Pin{"rate", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {

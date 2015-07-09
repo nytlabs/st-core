@@ -97,8 +97,8 @@ func poisson(λ float64) float64 {
 // PoissonRandom emits a Poisson distribtued random number
 func PoissonRandom() Spec {
 	return Spec{
-		Name:    "Poisson",
-		Inputs:  []Pin{Pin{"rate", NUMBER}},
+		Name:    "poisson",
+		Inputs:  []Pin{Pin{"λ", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
 			λ, ok := in[0].(float64)

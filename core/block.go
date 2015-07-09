@@ -377,7 +377,7 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	// we attempt to deliver twice. the first with a non-blocking send, and
-	// secondly, a blocking send. If the non-blocking send fails on all pins,
+	// secondly, a blocking send. If the non-blocking send fails at least once,
 	// we revert to a blocking send state.
 	done, i := b.deliver(false)
 	if i != nil {

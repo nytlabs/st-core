@@ -97,6 +97,9 @@ var app = app || {};
                     'value': null,
                     'type': 'any',
                 },
+                'status': {
+                    'data': null
+                },
                 'routesIndex': this.routes.length,
                 'parentNode': this,
                 'source': this.data.source,

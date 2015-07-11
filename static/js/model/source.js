@@ -33,6 +33,9 @@ var app = app || {};
                 'value': null,
                 'type': 'any',
             },
+            'status': {
+                'data': null
+            },
             'routesIndex': 0,
             'parentNode': this,
             'source': this.data.type,

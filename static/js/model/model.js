@@ -110,6 +110,7 @@ var app = app || {};
         var ws = new WebSocket('ws://localhost:7071/updates');
 
         ws.onmessage = function(m) {
+            app.Router(JSON.parse(m.data));
             this.update(JSON.parse(m.data));
         }.bind(this)
 

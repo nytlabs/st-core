@@ -16,6 +16,32 @@ var app = app || {};
 
     app.RouteComponent = React.createClass({
         displayName: 'RouteComponent',
+        getInitialState: function() {
+            var m = this.props.model;
+            return {
+                blocked: app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction).data.blocked
+            }
+        },
+        componentDidMount: function() {
+            var m = this.props.model;
+            var id = m.id + '_' + m.index + '_' + m.direction;
+            app.RouteStore.getRoute(id).addListener(this._onChange);
+        },
+        componentWillUnmount: function() {
+            var m = this.props.model;
+            var id = m.id + '_' + m.index + '_' + m.direction;
+            app.RouteStore.getRoute(id).removeListener(this._onChange);
+        },
+        shouldComponentUpdate: function(props, state) {
+            return state.blocked != this.state.blocked
+        },
+        _onChange: function() {
+            var m = this.props.model;
+            var id = m.id + '_' + m.index + '_' + m.direction;
+            this.setState({
+                blocked: app.RouteStore.getRoute(id).blocked
+            })
+        },
         handleMouseUp: function() {
             this.props.onChange(this.props.model)
         },
@@ -31,7 +57,7 @@ var app = app || {};
                 }, this.props.model.data.name)
             )
 
-            var waiting = this.props.model.status.data !== null ? ' ' + this.props.model.status.data : '';
+            var waiting = this.state.blocked ? ' waiting' : '';
             var circleClass = 'route_circle' + ' ' + this.props.model.data.type + waiting;
             var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
             var cy = this.props.geometry.routeRadius * -.5;

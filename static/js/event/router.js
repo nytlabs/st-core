@@ -65,11 +65,13 @@ var app = app || {};
             }
         }
 
-
-        //app.Dispatcher.dispatch({
-        //    action: sanitizeEvent[event.type + '_' + event.action],
-        //    data: event.data
-        //})
+        if (event.type == 'route' && event.action == 'update') {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_UPDATE,
+                id: event.data.id + '_' + event.data.route + '_input',
+                value: event.data.value,
+            })
+        }
     }
 
     app.Router = router;

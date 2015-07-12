@@ -22,11 +22,9 @@ var app = app || {};
         'WS_CONNECTION_DELETE',
 
         // for UI
-        // 'APP_GROUP_FOCUS',
-        // 'APP_GROUP_PAN',
-        // 'APP_GROUP_MOVE',
         'APP_ROUTE_CREATE',
         'APP_ROUTE_DELETE',
+        'APP_ROUTE_UPDATE',
         'APP_ROUTE_UPDATE_POSITION',
         'APP_ROUTE_UPDATE_STATUS',
         'APP_ROUTE_UPDATE_CONNECTED'

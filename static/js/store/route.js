@@ -4,15 +4,23 @@ var app = app || {};
     var routes = {};
 
     function Route(data) {
+        this.blocked = false;
         this.data = data;
+        this.active = data.hasOwnProperty('value') && data.value != null;
     }
 
     Route.prototype = Object.create(app.Emitter.prototype);
     Route.constructor = Route;
 
+    // we've received an update for the value of the route
+    Route.prototype.updateData = function(data) {
+        this.data.value = data;
+        this.active = data !== null;
+    }
+
+    // we've received an update for the status of the route
     Route.prototype.update = function(data) {
         this.blocked = data;
-        this.emit();
     }
 
     function RouteStore() {}
@@ -30,7 +38,7 @@ var app = app || {};
             console.warn('could not create route:', route.id, ' already exists');
             return
         }
-        routes[route.id] = new Route(route);
+        routes[route.id] = new Route(route.data);
     }
 
     function deleteRoute(id) {
@@ -44,23 +52,24 @@ var app = app || {};
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_ROUTE_CREATE:
-                console.log(event.action);
                 createRoute(event);
                 rs.emit();
                 break;
             case app.Actions.APP_ROUTE_DELETE:
-                console.log(event.action);
                 deleteRoute(action.id);
                 rs.emit();
                 break;
             case app.Actions.APP_ROUTE_UPDATE_POSITION:
-                console.log(event.action);
+                break;
+            case app.Actions.APP_ROUTE_UPDATE:
+                routes[event.id].updateData(event.value);
+                routes[event.id].emit();
                 break;
             case app.Actions.APP_ROUTE_UPDATE_STATUS:
                 routes[event.id].update(event.blocked);
+                routes[event.id].emit();
                 break;
             case app.Actions.APP_ROUTE_UPDATE_CONNECTED:
-                console.log(event.action);
                 break;
         }
     })

@@ -18,8 +18,10 @@ var app = app || {};
         displayName: 'RouteComponent',
         getInitialState: function() {
             var m = this.props.model;
+            var route = app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction)
             return {
-                blocked: app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction).data.blocked
+                blocked: route.blocked,
+                active: route.active,
             }
         },
         componentDidMount: function() {
@@ -33,13 +35,15 @@ var app = app || {};
             app.RouteStore.getRoute(id).removeListener(this._onChange);
         },
         shouldComponentUpdate: function(props, state) {
-            return state.blocked != this.state.blocked
+            var u = (state.blocked != this.state.blocked || state.active != this.state.active)
+            return u
         },
         _onChange: function() {
             var m = this.props.model;
-            var id = m.id + '_' + m.index + '_' + m.direction;
+            var route = app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction)
             this.setState({
-                blocked: app.RouteStore.getRoute(id).blocked
+                blocked: route.blocked,
+                active: route.active,
             })
         },
         handleMouseUp: function() {
@@ -57,7 +61,7 @@ var app = app || {};
                 }, this.props.model.data.name)
             )
 
-            var waiting = this.state.blocked ? ' waiting' : '';
+            var waiting = this.state.blocked ? ' waiting' : ' open';
             var circleClass = 'route_circle' + ' ' + this.props.model.data.type + waiting;
             var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
             var cy = this.props.geometry.routeRadius * -.5;
@@ -75,9 +79,7 @@ var app = app || {};
 
             // if this route has a value set for it OR we are connected to
             // something, then fill the route.
-            if ((this.props.model.data.hasOwnProperty('value') &&
-                    this.props.model.data.value !== null) ||
-                this.props.model.connections.length !== 0) {
+            if (this.state.active || this.props.model.connections.length !== 0) {
                 children.push(
                     React.createElement('circle', {
                         onMouseUp: this.handleMouseUp,

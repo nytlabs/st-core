@@ -133,6 +133,12 @@ func (b *Block) SetInput(id RouteIndex, v *InputValue) error {
 			return true
 		}
 
+		// if our receive() has already set the inputValue for the kernel
+		// then delete the value out of the input map and use the new one
+		if _, ok := b.state.inputValues[id]; ok {
+			delete(b.state.inputValues, id)
+		}
+
 		b.routing.Inputs[id].Value = v
 
 		returnVal <- nil

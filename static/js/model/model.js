@@ -263,20 +263,20 @@ var app = app || {};
                 }
                 break;
             case 'info':
-                if (this.entities.hasOwnProperty(m.data.id)) {
-                    this.entities[m.data.id].routes.forEach(function(r) {
-                        if (r.direction === 'input' && m.data.type === 'receive' && m.data.data === r.index) {
+                if (this.entities.hasOwnProperty(m.data.block.id)) {
+                    this.entities[m.data.block.id].routes.forEach(function(r) {
+                        if (r.direction === 'input' && m.data.block.type === 'receive' && m.data.block.data === r.index) {
                             r.status.data = 'waiting';
                         }
-                        if (r.direction === 'output' && m.data.type === 'broadcast' && m.data.data === r.index) {
+                        if (r.direction === 'output' && m.data.block.type === 'broadcast' && m.data.block.data === r.index) {
                             r.status.data = 'waiting';
                         }
-                        if (m.data.type === 'kernel' || m.data.type === 'running') {
+                        if (m.data.block.type === 'kernel' || m.data.block.type === 'running') {
                             r.status.data = null;
                         }
                     })
 
-                    this.entities[m.data.id].lastCrank = m.data;
+                    this.entities[m.data.block.id].lastCrank = m.data.block;
                 }
                 break;
             case 'create':

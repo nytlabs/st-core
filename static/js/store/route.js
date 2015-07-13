@@ -66,6 +66,11 @@ var app = app || {};
                 routes[event.id].emit();
                 break;
             case app.Actions.APP_ROUTE_UPDATE_STATUS:
+                // TODO: it's possible for the server to emit statuses of blocks
+                // that have not yet been added to the client. this is due to 
+                // statuses being emit before the 'list' websocket command is 
+                // complete. this should be addressed in the server.
+                if (!routes.hasOwnProperty(event.id)) return;
                 routes[event.id].update(event.blocked);
                 routes[event.id].emit();
                 break;

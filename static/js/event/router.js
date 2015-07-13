@@ -26,52 +26,26 @@ var app = app || {};
     var blocks = {}
 
     function router(event) {
-        if (event.type == 'block' && event.action == 'create') {
-            event.data.block.inputs.forEach(function(route, index) {
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_CREATE,
-                    id: event.data.block.id + '_' + index + '_input',
-                    data: route
-                })
-            })
 
-            event.data.block.outputs.forEach(function(route, index) {
+        var action = sanitizeEvent[event.type + '_' + event.action];
+        switch (event.type) {
+            case 'block':
                 app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_CREATE,
-                    id: event.data.block.id + '_' + index + '_output',
-                    data: route
-                })
-            })
+                    action: action,
+                    id: event.data.block.id,
+                    data: event.data.block
+                });
+                break;
         }
 
-        if (event.type == 'block' && event.action == 'info') {
-            if (event.data.type === 'receive' || event.data.type === 'broadcast') {
-                var s = event.data.type === 'receive' ? 'input' : 'output';
-                var id = event.data.id + '_' + event.data.data + '_' + s;
-                blocks[event.data.id] = id;
-
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_UPDATE_STATUS,
-                    id: event.data.id + '_' + event.data.data + '_' + s,
-                    blocked: true,
-                })
-            } else {
-                if (!blocks.hasOwnProperty(event.data.id)) return;
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_UPDATE_STATUS,
-                    id: blocks[event.data.id],
-                    blocked: false,
-                })
-            }
-        }
-
-        if (event.type == 'route' && event.action == 'update') {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_UPDATE,
-                id: event.data.id + '_' + event.data.route + '_input',
-                value: event.data.value,
-            })
-        }
+        /*
+                        if (event.type == 'route' && event.action == 'update') {
+                            app.Dispatcher.dispatch({
+                                action: app.Actions.APP_ROUTE_UPDATE,
+                                id: event.data.id + '_' + event.data.route + '_input',
+                                value: event.data.value,
+                            })
+                        }*/
     }
 
     app.Router = router;

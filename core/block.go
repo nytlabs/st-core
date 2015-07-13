@@ -251,7 +251,7 @@ func (b *Block) Stop() {
 func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
 		b.Monitor <- MonitorMessage{
-			BI_RECEIVE,
+			BI_INPUT,
 			id,
 		}
 
@@ -347,7 +347,7 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 
 	for id, out := range b.routing.Outputs {
 		b.Monitor <- MonitorMessage{
-			BI_BROADCAST,
+			BI_OUTPUT,
 			id,
 		}
 

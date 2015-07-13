@@ -264,18 +264,6 @@ var app = app || {};
                 break;
             case 'info':
                 if (this.entities.hasOwnProperty(m.data.block.id)) {
-                    this.entities[m.data.block.id].routes.forEach(function(r) {
-                        if (r.direction === 'input' && m.data.block.type === 'receive' && m.data.block.data === r.index) {
-                            r.status.data = 'waiting';
-                        }
-                        if (r.direction === 'output' && m.data.block.type === 'broadcast' && m.data.block.data === r.index) {
-                            r.status.data = 'waiting';
-                        }
-                        if (m.data.block.type === 'kernel' || m.data.block.type === 'running') {
-                            r.status.data = null;
-                        }
-                    })
-
                     this.entities[m.data.block.id].lastCrank = m.data.block;
                 }
                 break;

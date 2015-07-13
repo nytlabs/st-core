@@ -105,30 +105,30 @@ var app = app || {};
     app.CrankComponent = React.createClass({
         getInitialState: function() {
             return {
-                lastCrank: null,
-                tick: 0,
+                status: null,
             }
         },
-        componentWillReceiveProps: function(props) {
-            if (props.lastCrank !== this.state.lastCrank) {
-                var nextTick = this.state.tick < 7 ? this.state.tick + .5 : 0;
-                this.setState({
-                    tick: nextTick,
-                    lastCrank: props.lastCrank,
-                })
-            }
+        componentDidMount: function() {
+            app.BlockStore.getBlock(this.props.id).crank.addListener(this._onChange);
+        },
+        componentWillUnmount: function() {
+            app.BlockStore.getBlock(this.props.id).crank.removeListener(this._onChange);
+        },
+        shouldComponentUpdate: function(props, state) {
+            return this.status != state.status
+        },
+        _onChange: function() {
+            this.setState({
+                status: app.BlockStore.getBlock(this.props.id).crank.status,
+            })
         },
         render: function() {
-            var state = '';
-            if (this.state.lastCrank !== null && this.state.lastCrank !== undefined) {
-                state = this.state.lastCrank.type;
-            }
             var children = [
                 React.createElement('circle', {
                     cx: 0,
                     cy: 0,
                     r: 5.0,
-                    className: 'tick_circle' + (state === 'kernel' ? ' ' + state : ''),
+                    className: 'tick_circle ' + (this.state.status === 'kernel' ? 'kernel' : ''),
                     key: 'tick_bg'
                 }, null),
                 React.createElement('circle', {
@@ -137,7 +137,7 @@ var app = app || {};
                     r: 3.0,
                     key: 'tick',
                     fill: 'red',
-                    className: (state === 'running' ? state : 'ticker_' + Math.floor(this.state.tick)),
+                    className: 'ticker_0 ' + (this.state.status === 'running' ? 'running' : ''),
                 }, null),
             ]
             return React.createElement('g', {
@@ -183,6 +183,7 @@ var app = app || {};
                 x: this.props.model.geometry.width * .5,
                 y: this.props.model.geometry.height + 10,
                 lastCrank: this.props.model.lastCrank,
+                id: this.props.model.data.id,
                 key: 'crank'
             }));
 

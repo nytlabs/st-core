@@ -2,6 +2,20 @@ var app = app || {};
 
 (function() {
 
+    function Crank() {
+        this.status = null;
+    }
+
+    Crank.prototype = Object.create(app.Emitter.prototype);
+    Crank.constructor = Crank;
+
+    Crank.prototype.update = function(s) {
+        if (s != this.status) {
+            this.status = s;
+            this.emit();
+        }
+    }
+
     function Block(data) {
 
         // TODO: drop the whole "inputs" and "outputs" part of the schema, put
@@ -14,7 +28,10 @@ var app = app || {};
             return data.id + '_' + i + '_output';
         });
 
-        // create the routes in the route store.
+        // ask the RouteStore to create some routes.
+        // TODO: consider using facebook's waitFor() in the future. in that case, 
+        // we'd just make RouteStore consume the WS_BLOCK_CREATE message,
+        // and have the RouteStore do the job of what is happening here.
         inputs.map(function(id, i) {
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_CREATE,
@@ -31,49 +48,10 @@ var app = app || {};
             });
         });
 
-        // holds the ID of the last blocked route.
-        this.lastBlockedRoute = null;
-
-        /*        if (event.type == 'block' && event.action == 'create') {
-                    event.data.block.inputs.forEach(function(route, index) {
-                        app.Dispatcher.dispatch({
-                            action: app.Actions.APP_ROUTE_CREATE,
-                            id: event.data.block.id + '_' + index + '_input',
-                            data: route
-                        })
-                    })
-
-                    event.data.block.outputs.forEach(function(route, index) {
-                        app.Dispatcher.dispatch({
-                            action: app.Actions.APP_ROUTE_CREATE,
-                            id: event.data.block.id + '_' + index + '_output',
-                            data: route
-                        })
-                    })
-                }
-
-                if (event.type == 'block' && event.action == 'info') {
-                    if (event.data.type === 'receive' || event.data.type === 'broadcast') {
-                        var s = event.data.type === 'receive' ? 'input' : 'output';
-                        var id = event.data.id + '_' + event.data.data + '_' + s;
-                        blocks[event.data.id] = id;
-
-                        app.Dispatcher.dispatch({
-                            action: app.Actions.APP_ROUTE_UPDATE_STATUS,
-                            id: event.data.id + '_' + event.data.data + '_' + s,
-                            blocked: true,
-                        })
-                    } else {
-                        if (!blocks.hasOwnProperty(event.data.id)) return;
-                        app.Dispatcher.dispatch({
-                            action: app.Actions.APP_ROUTE_UPDATE_STATUS,
-                            id: blocks[event.data.id],
-                            blocked: false,
-                        })
-                    }
-                }*/
-
-
+        // when the state of the block changes, we need to know what status
+        // was set last so that we can clear it. 
+        this.lastRouteStatus = null;
+        this.crank = new Crank();
         this.data = data;
     }
 
@@ -86,8 +64,24 @@ var app = app || {};
         }
     }
 
-    Block.prototype.updateStatus = function(status) {
+    Block.prototype.updateStatus = function(event) {
+        if (event.data.type === 'input' || event.data.type === 'output') {
+            var id = event.data.id + '_' + event.data.data + '_' + event.data.type;
+            this.lastRouteStatus = id;
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_UPDATE_STATUS,
+                id: id,
+                blocked: true,
+            })
+        } else {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_UPDATE_STATUS,
+                id: this.lastRouteStatus,
+                blocked: false,
+            })
+        }
 
+        this.crank.update(event.data.type);
     }
 
     var blocks = {};
@@ -134,8 +128,8 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_DELETE:
-                console.log(event.action);
-                deleteBlock(action.id);
+                //console.log(event.action);
+                //deleteBlock(action.id);
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE:
@@ -143,10 +137,11 @@ var app = app || {};
                 blocks[event.id].emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
+                if (!blocks.hasOwnProperty(event.id)) return;
                 blocks[event.id].updateStatus(event);
                 break;
         }
     })
 
-    app.BlockCollection = rs;
+    app.BlockStore = rs;
 }())

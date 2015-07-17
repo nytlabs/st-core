@@ -53,6 +53,7 @@ var app = app || {};
         this.lastRouteStatus = null;
         this.crank = new Crank();
         this.data = data;
+        console.log(this.data);
     }
 
     Block.prototype = Object.create(app.Emitter.prototype);

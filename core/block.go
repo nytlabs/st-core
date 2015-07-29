@@ -44,11 +44,15 @@ func NewBlock(s Spec) *Block {
 		sourceType: s.Source,
 		Monitor:    make(chan MonitorMessage, 1),
 		lastCrank:  time.Now(),
+		done:       make(chan struct{}),
 	}
 }
 
 // suture: the main routine the block runs
 func (b *Block) Serve() {
+	defer func() {
+		b.done <- struct{}{}
+	}()
 	for {
 		var interrupt Interrupt
 
@@ -239,6 +243,8 @@ func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false
 	}
+	<-b.done
+	return
 }
 
 // wait and listen for all kernel inputs to be filled.

@@ -15,7 +15,7 @@ func NewBlock(s Spec) *Block {
 			Name:  v.Name,
 			Type:  v.Type,
 			Value: nil,
-			C:     make(chan Message),
+			C:     make(chan Message, 1),
 		})
 	}
 
@@ -44,11 +44,15 @@ func NewBlock(s Spec) *Block {
 		sourceType: s.Source,
 		Monitor:    make(chan MonitorMessage, 1),
 		lastCrank:  time.Now(),
+		done:       make(chan struct{}),
 	}
 }
 
 // suture: the main routine the block runs
 func (b *Block) Serve() {
+	defer func() {
+		b.done <- struct{}{}
+	}()
 	for {
 		var interrupt Interrupt
 
@@ -238,6 +242,18 @@ func (b *Block) Reset() {
 		delete(b.state.internalValues, k)
 	}
 
+	// if there are any messages on the input channels, flush them.
+	// note: all blocks that are sending to this block MUST BE IN A
+	// STOPPED STATE. if any block routines that posess this block's
+	// input channel are in a RUNNING state, this flush will not work
+	// because it will simply pull another message into the buffer.
+	for _, input := range b.routing.Inputs {
+		select {
+		case <-input.C:
+		default:
+		}
+	}
+
 	return
 }
 
@@ -245,6 +261,8 @@ func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false
 	}
+	<-b.done
+	return
 }
 
 // wait and listen for all kernel inputs to be filled.
@@ -328,23 +346,8 @@ func (b *Block) process() Interrupt {
 	return nil
 }
 
-func (b *Block) deliver(ensure bool) (bool, Interrupt) {
-	// tally how many deliveries that we need to make in total. due to the fact
-	// that the kernel _does not need_ to satisfy all outputs per crank, we need
-	// to check to see if there are any messages on a given output before adding
-	// it to the tally.
-	// TODO: this can be possibly further optimized
-	// - by caching the total connections
-	// - by moving both the len(manifest) validation and tallying to the
-	//   broadcast() func
-	// - possibly convert manifest to a simple count instead a map
-	total := 0
-	for id, out := range b.routing.Outputs {
-		if _, ok := b.state.outputValues[RouteIndex(id)]; ok {
-			total += len(out.Connections)
-		}
-	}
-
+// broadcast the kernel output to all connections on all outputs.
+func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
 		b.Monitor <- MonitorMessage{
 			BI_OUTPUT,
@@ -363,7 +366,7 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 		if len(out.Connections) == 0 {
 			select {
 			case f := <-b.routing.InterruptChan:
-				return len(b.state.manifest) == total, f
+				return f
 			}
 		}
 		for c, _ := range out.Connections {
@@ -375,56 +378,15 @@ func (b *Block) deliver(ensure bool) (bool, Interrupt) {
 				continue
 			}
 
-			// ensure is a flag that toggles between a blocking send and a non-
-			// blocking send. in some circumstances, connections may get
-			// "tangled". When this happens, a connection may block the send
-			// for another connection on the same broadcast pin. This can
-			// happen when a single broadcast pin may attempt to deliver to two
-			// separate inputs on a single block. Because a block receives in
-			// order, the broadcasting pin may attempt to send to a pin that is
-			// not currently in a receive state. This results in eternal
-			// blocking.
-			if ensure {
-				select {
-				case c <- b.state.outputValues[RouteIndex(id)]:
-					// set that we have delivered the message.
-					b.state.manifest[m] = struct{}{}
-				case f := <-b.routing.InterruptChan:
-					return len(b.state.manifest) == total, f
-				}
-			} else {
-				select {
-				case c <- b.state.outputValues[RouteIndex(id)]:
-					// set that we have delivered the message.
-					b.state.manifest[m] = struct{}{}
-				default:
-				}
+			select {
+			case c <- b.state.outputValues[RouteIndex(id)]:
+				// set that we have delivered the message.
+				b.state.manifest[m] = struct{}{}
+			case f := <-b.routing.InterruptChan:
+				return f
 			}
 		}
 	}
-	return len(b.state.manifest) == total, nil
-}
-
-// broadcast the kernel output to all connections on all outputs.
-func (b *Block) broadcast() Interrupt {
-	// we attempt to deliver twice. the first with a non-blocking send, and
-	// secondly, a blocking send. If the non-blocking send fails at least once,
-	// we revert to a blocking send state.
-	done, i := b.deliver(false)
-	if i != nil {
-		return i
-	}
-	if done {
-		return nil
-	}
-	done, i = b.deliver(true)
-	if i != nil {
-		return i
-	}
-	if !done {
-		panic("cataclysmic error, we should never get here")
-	}
-
 	return nil
 }
 

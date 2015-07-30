@@ -157,6 +157,10 @@ func listPop() Spec {
 		Source: LIST,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			l := s.(*List)
+			if len(l.list) == 0 {
+				out[0] = NewError("empty list")
+				return nil
+			}
 			out[0], l.list = l.list[len(l.list)-1], l.list[:len(l.list)-1]
 			return nil
 		},

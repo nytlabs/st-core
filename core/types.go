@@ -236,6 +236,7 @@ type Block struct {
 	sourceType SourceType
 	Monitor    chan MonitorMessage
 	lastCrank  time.Time
+	done       chan struct{}
 	//blockageTimer *time.Timer
 }
 

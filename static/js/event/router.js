@@ -36,16 +36,16 @@ var app = app || {};
                     data: event.data.block
                 });
                 break;
+            case 'route':
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_ROUTE_UPDATE,
+                    id: event.data.id + '_' + event.data.route + '_input',
+                    value: event.data.value
+                });
+                break;
+
         }
 
-        /*
-                        if (event.type == 'route' && event.action == 'update') {
-                            app.Dispatcher.dispatch({
-                                action: app.Actions.APP_ROUTE_UPDATE,
-                                id: event.data.id + '_' + event.data.route + '_input',
-                                value: event.data.value,
-                            })
-                        }*/
     }
 
     app.Router = router;

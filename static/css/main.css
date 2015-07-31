@@ -221,11 +221,12 @@ body {
     fill: rgba(0, 0, 0, 1);
 }
 .running {
-    animation: RUNROTATE 250ms infinite;
+    stroke: blue;
+    /*    animation: RUNROTATE 250ms infinite;
     animation-timing-function: linear;
 }
 @keyframes RUNROTATE {
     to {
         transform: rotate(1turn);
-    }
+    }*/
 }

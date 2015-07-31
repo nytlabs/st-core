@@ -266,7 +266,7 @@ var app = app || {};
                 if (this.entities.hasOwnProperty(m.data.block.id)) {
                     this.entities[m.data.block.id].lastCrank = m.data.block;
                 }
-                break;
+                return
             case 'create':
 
                 // create seperate action for child.

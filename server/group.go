@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -411,6 +412,7 @@ func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	parents := make(map[int]int) // old child id / old parent id
 	newIds := make(map[int]int)  // old id / new id
+	newBlocks := make(map[int]struct{})
 
 	if _, ok := s.groups[id]; !ok {
 		return nil, errors.New("could not attach to group: does not exist")
@@ -445,6 +447,7 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 		}
 
 		newIds[b.Id] = nb.Id
+		newBlocks[nb.Id] = struct{}{}
 	}
 
 	for _, source := range p.Sources {
@@ -555,6 +558,24 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 				return nil, err
 			}
 		}
+	}
+
+	// reset the entire pattern on import
+	// TODO: sort this out with ResetGraph, and BlockCreate such that we have a
+	// more unified approach to block resetting.
+	for k, _ := range newBlocks {
+		log.Println("tidy: stopping id", k)
+		s.blocks[k].Block.Stop()
+	}
+
+	for k, _ := range newBlocks {
+		log.Println("tidy: resetting id", k)
+		s.blocks[k].Block.Reset()
+	}
+
+	for k, _ := range newBlocks {
+		log.Println("tidy: starting id", k)
+		go s.blocks[k].Block.Serve()
 	}
 
 	// return a list of ids that have been added

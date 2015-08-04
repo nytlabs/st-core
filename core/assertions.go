@@ -109,7 +109,7 @@ func IsObject() Spec {
 
 func ToString() Spec {
 	return Spec{
-		Name:    "ToString",
+		Name:    "toString",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", STRING}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
@@ -132,7 +132,7 @@ func ToString() Spec {
 
 func ToNumber() Spec {
 	return Spec{
-		Name:    "ToNumber",
+		Name:    "toNumber",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

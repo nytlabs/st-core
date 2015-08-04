@@ -17,85 +17,72 @@ var app = app || {};
     app.RouteComponent = React.createClass({
         displayName: 'RouteComponent',
         getInitialState: function() {
-            var m = this.props.model;
-            var route = app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction)
+            var route = app.RouteStore.getRoute(this.props.id);
             return {
                 blocked: route.blocked,
                 active: route.active,
             }
         },
         componentDidMount: function() {
-            var m = this.props.model;
-            var id = m.id + '_' + m.index + '_' + m.direction;
-            app.RouteStore.getRoute(id).addListener(this._onChange);
+            app.RouteStore.getRoute(this.props.id).addListener(this._onChange);
         },
         componentWillUnmount: function() {
-            var m = this.props.model;
-            var id = m.id + '_' + m.index + '_' + m.direction;
-            app.RouteStore.getRoute(id).removeListener(this._onChange);
+            app.RouteStore.getRoute(this.props.id).removeListener(this._onChange);
         },
         shouldComponentUpdate: function(props, state) {
             var u = (state.blocked != this.state.blocked || state.active != this.state.active)
             return u
         },
         _onChange: function() {
-            var m = this.props.model;
-            var route = app.RouteStore.getRoute(m.id + '_' + m.index + '_' + m.direction)
+            var route = app.RouteStore.getRoute(this.props.id);
             this.setState({
                 blocked: route.blocked,
                 active: route.active,
             })
         },
-        handleMouseUp: function() {
+        /*handleMouseUp: function() {
             this.props.onChange(this.props.model)
-        },
+        },*/
         render: function() {
             var children = [];
-            var direction = this.props.model.direction;
 
-            children.push(
-                React.createElement('text', {
-                    className: 'route_label unselectable',
-                    textAnchor: direction === 'input' ? 'start' : 'end',
-                    key: 'route_label',
-                }, this.props.model.data.name)
-            )
+            children.push(React.createElement('text', {
+                className: 'route_label unselectable',
+                textAnchor: this.props.direction === 'input' ? 'start' : 'end',
+                key: 'route_label',
+            }, this.props.displayName))
 
             var waiting = this.state.blocked ? ' waiting' : ' open';
-            var circleClass = 'route_circle' + ' ' + this.props.model.data.type + waiting;
-            var cx = this.props.geometry.routeRadius * (direction === 'input' ? -.5 : .5);
+            var circleClass = 'route_circle' + ' ' + this.props.displayType + waiting;
+            var cx = this.props.geometry.routeRadius * (this.props.direction === 'input' ? -.5 : .5);
             var cy = this.props.geometry.routeRadius * -.5;
 
-            children.push(
-                React.createElement('circle', {
-                    onMouseUp: this.handleMouseUp,
-                    cx: cx,
-                    cy: cy,
-                    r: this.props.geometry.routeRadius,
-                    className: circleClass,
-                    key: 'route_circle',
-                }, null)
-            )
+            children.push(React.createElement('circle', {
+                onMouseUp: this.handleMouseUp,
+                cx: cx,
+                cy: cy,
+                r: this.props.geometry.routeRadius,
+                className: circleClass,
+                key: 'route_circle',
+            }, null))
 
             // if this route has a value set for it OR we are connected to
             // something, then fill the route.
-            if (this.state.active || this.props.model.connections.length !== 0) {
-                children.push(
-                    React.createElement('circle', {
-                        onMouseUp: this.handleMouseUp,
-                        cx: cx,
-                        cy: cy,
-                        r: this.props.geometry.routeRadius - 2,
-                        className: this.props.model.connections.length !== 0 ? 'route_circle_filled' : 'route_circle_white',
-                        key: 'route_circle_filled'
-                    }, null)
-                )
+            if (this.state.active || this.props.connections.length !== 0) {
+                children.push(React.createElement('circle', {
+                    onMouseUp: this.handleMouseUp,
+                    cx: cx,
+                    cy: cy,
+                    r: this.props.geometry.routeRadius - 2,
+                    className: this.props.connections.length !== 0 ? 'route_circle_filled' : 'route_circle_white',
+                    key: 'route_circle_filled'
+                }, null))
             }
 
             return React.createElement('g', {
                 transform: 'translate(' +
-                    (direction === 'input' ? 0 : this.props.geometry.width) + ', ' +
-                    ((1 + this.props.model.displayIndex) * this.props.geometry.routeHeight) + ')',
+                    (this.props.direction === 'input' ? 0 : this.props.geometry.width) + ', ' +
+                    ((1 + this.props.displayIndex) * this.props.geometry.routeHeight) + ')',
             }, children)
         },
     })
@@ -155,22 +142,27 @@ var app = app || {};
         onChange: function(r) {
             this.props.onRouteEvent(r)
         },
+        shouldComponentUpdate: function(props, state) {
+            return props.selected != this.props.selected
+        },
         render: function() {
+            var block = app.BlockStore.getBlock(this.props.id);
+
             var classes = 'block';
             if (this.props.selected === true) classes += ' selected';
             var children = [];
             children.push(React.createElement('rect', {
                 x: 0,
                 y: 0,
-                width: this.props.model.geometry.width,
-                height: this.props.model.geometry.height,
+                width: block.geometry.width,
+                height: block.geometry.height,
                 className: classes,
                 key: 'bg'
             }, null));
 
             // TODO: style this better
-            var title = this.props.model.data.type;
-            title += ' ' + this.props.model.data.label;
+            var title = block.data.type;
+            title += ' ' + block.data.label;
 
             children.push(React.createElement('text', {
                 x: 0,
@@ -180,19 +172,41 @@ var app = app || {};
             }, title));
 
             children.push(React.createElement(app.CrankComponent, {
-                x: this.props.model.geometry.width * .5,
-                y: this.props.model.geometry.height + 10,
-                lastCrank: this.props.model.lastCrank,
-                id: this.props.model.data.id,
+                x: block.geometry.width * .5,
+                y: block.geometry.height + 10,
+                id: block.data.id,
                 key: 'crank'
             }));
 
-            children = children.concat(this.props.model.routes.map(function(r, i) {
+            // add the input routes to the block
+            children = children.concat(block.inputs.map(function(routeName, i) {
+                var route = app.RouteStore.getRoute(routeName);
                 return React.createElement(app.RouteComponent, {
                     onChange: this.onChange,
-                    model: r,
-                    geometry: r.parentNode.geometry, //this.props.model.geometry,
-                    key: i
+                    id: routeName,
+                    geometry: block.geometry,
+                    direction: 'input',
+                    displayIndex: i,
+                    displayName: route.data.name,
+                    displayType: route.data.type,
+                    connections: route.connections,
+                    key: routeName
+                })
+            }.bind(this)));
+
+            // add the output routes to the block
+            children = children.concat(block.outputs.map(function(routeName, i) {
+                var route = app.RouteStore.getRoute(routeName);
+                return React.createElement(app.RouteComponent, {
+                    onChange: this.onChange,
+                    id: routeName,
+                    direction: 'output',
+                    geometry: block.geometry,
+                    displayIndex: i,
+                    displayName: route.data.name,
+                    displayType: route.data.type,
+                    connections: route.connections,
+                    key: routeName
                 })
             }.bind(this)));
 

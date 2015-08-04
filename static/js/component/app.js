@@ -403,8 +403,9 @@ var app = app || {};
                     onDragStop: this.handleDragStop
                 }, React.createElement(nodes[c.instance()], {
                     key: c.data.id,
-                    model: c,
-                    onRouteEvent: this.handleRouteEvent,
+                    id: c.data.id,
+                    //model: c,
+                    //onRouteEvent: this.handleRouteEvent,
                     selected: this.state.selected.indexOf(c) !== -1 ? true : false,
                 }, null))
             }.bind(this));

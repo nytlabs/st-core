@@ -48,12 +48,54 @@ var app = app || {};
             });
         });
 
+        // calculate block width
+        // potentially make a util so that this can be shared with Group.
+        var inputMeasures = inputs.map(function(r) {
+            return app.Utils.measureText(app.RouteStore.getRoute(r).data.name, 'route_label');
+        });
+
+        var outputMeasures = outputs.map(function(r) {
+            return app.Utils.measureText(app.RouteStore.getRoute(r).data.name, 'route_label');
+        });
+
+        var maxInputWidth = inputMeasures.length ? Math.max.apply(null, inputMeasures.map(function(im) {
+            return im.width;
+        })) : 0;
+
+        var maxOutputWidth = outputMeasures.length ? Math.max.apply(null, outputMeasures.map(function(om) {
+            return om.width;
+        })) : 0;
+
+        var maxInputHeight = inputMeasures.length ? Math.max.apply(null, inputMeasures.map(function(im) {
+            return im.height;
+        })) : 0;
+
+        var maxOutputHeight = outputMeasures.length ? Math.max.apply(null, outputMeasures.map(function(om) {
+            return om.height;
+        })) : 0;
+
+        var routeHeight = Math.max(maxInputHeight, maxOutputHeight);
+
+        var padding = {
+            vertical: 6,
+            horizontal: 6
+        }
+
+        this.geometry = {
+            width: maxInputWidth + maxOutputWidth + padding.horizontal,
+            height: Math.max(inputs.length, outputs.length) * routeHeight + padding.vertical,
+            routeRadius: Math.floor(routeHeight / 2.0),
+            routeHeight: routeHeight,
+        }
+
+        this.inputs = inputs;
+        this.outputs = outputs;
+
         // when the state of the block changes, we need to know what status
         // was set last so that we can clear it. 
         this.lastRouteStatus = null;
         this.crank = new Crank();
         this.data = data;
-        console.log(this.data);
     }
 
     Block.prototype = Object.create(app.Emitter.prototype);
@@ -122,6 +164,7 @@ var app = app || {};
     }
 
     app.Dispatcher.register(function(event) {
+
         switch (event.action) {
             case app.Actions.WS_BLOCK_CREATE:
                 console.log(event.action);
@@ -134,11 +177,14 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE:
+                if (!blocks.hasOwnProperty(event.id)) {
+                    console.warn('an action was sent to a non-existant block:', event);
+                    return;
+                }
                 blocks[event.id].update(event.data);
                 blocks[event.id].emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
-                if (!blocks.hasOwnProperty(event.id)) return;
                 blocks[event.id].updateStatus(event);
                 break;
         }

@@ -6,7 +6,11 @@ var app = app || {};
     function Route(data) {
         this.blocked = false;
         this.data = data;
+        console.log(data);
         this.active = data.hasOwnProperty('value') && data.value != null;
+
+        //TODO:
+        this.connections = [];
     }
 
     Route.prototype = Object.create(app.Emitter.prototype);

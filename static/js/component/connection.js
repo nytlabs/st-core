@@ -24,6 +24,7 @@ var app = app || {};
 
     app.ConnectionToolComponent = React.createClass({
         displayName: 'ConnectionToolComponent',
+        getInitialState: function() {},
         componentWillMount: function() {
             window.addEventListener('mousemove', this.handleMouseMove);
         },

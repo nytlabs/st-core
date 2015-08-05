@@ -27,7 +27,8 @@ var app = app || {};
         'APP_ROUTE_UPDATE',
         'APP_ROUTE_UPDATE_POSITION',
         'APP_ROUTE_UPDATE_STATUS',
-        'APP_ROUTE_UPDATE_CONNECTED'
+        'APP_ROUTE_UPDATE_CONNECTED',
+        'APP_MOVE'
     ]
 
 

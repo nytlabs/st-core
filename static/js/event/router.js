@@ -43,6 +43,20 @@ var app = app || {};
                     value: event.data.value
                 });
                 break;
+            case 'connection':
+                console.log(event);
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.connection.id,
+                    data: event.data.connection
+                });
+                break;
+            case 'group':
+                break;
+            case 'source':
+                break;
+            case 'link':
+                break;
 
         }
 

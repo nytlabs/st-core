@@ -3,11 +3,14 @@ var app = app || {};
 (function() {
     var routes = {};
 
-    function Route(data) {
+    function Route(data, blockId, direction) {
         this.blocked = false;
-        this.data = data;
-        console.log(data);
         this.active = data.hasOwnProperty('value') && data.value != null;
+        this.data = data;
+        this.blockId = blockId;
+        this.direction = direction;
+
+        console.log(this);
 
         //TODO:
         this.connections = [];
@@ -42,7 +45,7 @@ var app = app || {};
             console.warn('could not create route:', route.id, ' already exists');
             return
         }
-        routes[route.id] = new Route(route.data);
+        routes[route.id] = new Route(route.data, route.blockId, route.direction);
     }
 
     function deleteRoute(id) {

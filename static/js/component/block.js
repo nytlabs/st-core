@@ -21,6 +21,7 @@ var app = app || {};
             return {
                 blocked: route.blocked,
                 active: route.active,
+                connecting: false,
             }
         },
         componentDidMount: function() {

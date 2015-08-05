@@ -1,68 +1,68 @@
 var app = app || {};
 
 (function() {
-    var routes = {};
+    var connections = {};
 
-    function RouteStore() {}
-    RouteStore.prototype = Object.create(app.Emitter.prototype);
-    RouteStore.constructor = RouteStore;
+    function Connection(data) {
+        this.data = data;
+        console.log(app.BlockStore.getBlock(this.data.from.id));
 
-    RouteStore.prototype.getRoute = function(id) {
-        return routes[id];
+        app.BlockStore.getBlock(this.data.from.id).addListener(function() {
+            this.render();
+        }.bind(this));
+        app.BlockStore.getBlock(this.data.to.id).addListener(function() {
+            this.render()
+        }.bind(this));
     }
 
-    var rs = new RouteStore();
+    Connection.prototype = Object.create(app.Emitter.prototype);
+    Connection.constructor = Connection;
 
-    function createRoute(route) {
-        if (routes.hasOwnProperty(route.id) === true) {
-            console.warn('could not create route:', route.id, ' already exists');
-            return
-        }
-        routes[route.id] = route;
+    Connection.prototype.render = function() {
+        console.log("WTF!!!");
+        console.log("I NEED TO BE RENDERED! - a connectin: ", this);
     }
 
-    function deleteRoute(id) {
-        if (routes.hasOwnProperty(id) === false) {
-            console.warn('could not delete route: ', id, ' does not exist');
-            return
-        }
-        delete routes[id]
+    function ConnectionStore() {}
+    ConnectionStore.prototype = Object.create(app.Emitter.prototype);
+    ConnectionStore.constructor = ConnectionStore;
+
+    ConnectionStore.prototype.getConnection = function(id) {
+        return connections[id];
     }
 
-    function updateRoute(route) {
-        if (routes.hasOwnProperty(route.id) === false) {
-            console.warn('could not update route: ', route.id, ' does not exist');
+    var rs = new ConnectionStore();
+
+    function createConnection(connection) {
+        if (connections.hasOwnProperty(connection.id) === true) {
+            console.warn('could not create connection:', connection.id, ' already exists');
             return
         }
-        route[route.id] = route;
+        connections[connection.id] = new Connection(connection);
+    }
+
+    function deleteConnection(id) {
+        if (connections.hasOwnProperty(id) === false) {
+            console.warn('could not delete connections: ', id, ' does not exist');
+            return
+        }
+        delete connections[id]
     }
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
-            case app.Actions.APP_ROUTE_CREATE:
+            case app.Actions.WS_CONNECTION_CREATE:
                 console.log(event.action);
-                createRoute(action.data);
+                createConnection(event.data);
                 rs.emit();
                 break;
-            case app.Actions.APP_ROUTE_DELETE:
+            case app.Actions.WS_CONNECTION_DELETE:
                 console.log(event.action);
-                deleteRoute(action.id);
-                rs.emit();
-                break;
-            case app.Actions.APP_ROUTE_UPDATE_POSITION:
-                console.log(event.action);
-                rs.emit();
-                break;
-            case app.Actions.APP_ROUTE_UPDATE_STATUS:
-                console.log(event.action);
-                rs.emit();
-                break;
-            case app.Actions.APP_ROUTE_UPDATE_CONNECTED:
-                console.log(event.action);
+                deleteConnection(event.id);
                 rs.emit();
                 break;
         }
     })
 
-    app.RouteStore = rs;
+    app.ConnectionStore = rs;
 }())

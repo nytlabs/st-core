@@ -36,6 +36,8 @@ var app = app || {};
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_CREATE,
                 id: id,
+                blockId: data.id,
+                direction: 'input',
                 data: data.inputs[i]
             });
         });
@@ -44,6 +46,8 @@ var app = app || {};
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_CREATE,
                 id: id,
+                blockId: data.id,
+                direction: 'output',
                 data: data.outputs[i]
             });
         });
@@ -81,6 +85,7 @@ var app = app || {};
             horizontal: 6
         }
 
+        // the following is derived data for use with UI
         this.geometry = {
             width: maxInputWidth + maxOutputWidth + padding.horizontal,
             height: Math.max(inputs.length, outputs.length) * routeHeight + padding.vertical,
@@ -90,6 +95,10 @@ var app = app || {};
 
         this.inputs = inputs;
         this.outputs = outputs;
+        this.position = {
+            x: data.position.x,
+            y: data.position.y
+        }
 
         // when the state of the block changes, we need to know what status
         // was set last so that we can clear it. 
@@ -163,6 +172,12 @@ var app = app || {};
         block[block.id] = block;
     }
 
+    function moveBlock(id, dx, dy) {
+        blocks[id].position.x += dx;
+        blocks[id].position.y += dy;
+        blocks[id].emit();
+    }
+
     app.Dispatcher.register(function(event) {
 
         switch (event.action) {
@@ -176,6 +191,10 @@ var app = app || {};
                 //deleteBlock(action.id);
                 rs.emit();
                 break;
+            case app.Actions.APP_MOVE:
+                if (!blocks.hasOwnProperty(event.id)) return;
+                moveBlock(event.id);
+                break
             case app.Actions.WS_BLOCK_UPDATE:
                 if (!blocks.hasOwnProperty(event.id)) {
                     console.warn('an action was sent to a non-existant block:', event);

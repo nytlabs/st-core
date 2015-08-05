@@ -314,6 +314,12 @@ var app = app || {};
             this.state.selected.filter(function(e) {
                 return (e instanceof app.Entity)
             }).forEach(function(n) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_MOVE,
+                    id: n.data.id, // the selection list should simply be a list of IDs in the future.
+                    dx: x,
+                    dy: y
+                })
                 n.setPosition({
                     x: n.data.position.x + x,
                     y: n.data.position.y + y

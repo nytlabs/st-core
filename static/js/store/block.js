@@ -193,7 +193,7 @@ var app = app || {};
                 break;
             case app.Actions.APP_MOVE:
                 if (!blocks.hasOwnProperty(event.id)) return;
-                moveBlock(event.id);
+                moveBlock(event.id, event.dx, event.dy);
                 break
             case app.Actions.WS_BLOCK_UPDATE:
                 if (!blocks.hasOwnProperty(event.id)) {

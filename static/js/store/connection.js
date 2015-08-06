@@ -5,7 +5,6 @@ var app = app || {};
 
     function Connection(data) {
         this.data = data;
-        console.log(app.BlockStore.getBlock(this.data.from.id));
 
         app.BlockStore.getBlock(this.data.from.id).addListener(function() {
             this.render();
@@ -13,14 +12,50 @@ var app = app || {};
         app.BlockStore.getBlock(this.data.to.id).addListener(function() {
             this.render()
         }.bind(this));
+
+        this.render();
     }
 
     Connection.prototype = Object.create(app.Emitter.prototype);
     Connection.constructor = Connection;
 
     Connection.prototype.render = function() {
-        console.log("WTF!!!");
-        console.log("I NEED TO BE RENDERED! - a connectin: ", this);
+        // TODO: instead of blocks, this should somehow find the top-most visible geometry that
+        // the route is apart of (for groups);
+        var from = app.BlockStore.getBlock(this.data.from.id);
+        var to = app.BlockStore.getBlock(this.data.to.id);
+
+        var routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
+        var routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
+
+        var routeIndexFrom = from.outputs.indexOf(routeIdFrom);
+        var routeIndexTo = to.inputs.indexOf(routeIdTo);
+
+        var yFrom = from.geometry.routeHeight * routeIndexFrom + (from.geometry.routeRadius * .5);
+        var xFrom = from.geometry.routeRadius * .5 + from.geometry.width;
+
+        var yTo = to.geometry.routeHeight * routeIndexTo - (to.geometry.routeRadius * .5);
+        var xTo = to.geometry.routeRadius * -.5 + 0;
+
+        xFrom += from.position.x;
+        yFrom += from.position.y;
+        xTo += to.position.x;
+        yTo += to.position.y;
+
+        var c = [xFrom, yFrom, xFrom + 50, yFrom, xTo - 50, yTo, xTo, yTo];
+        this.curve = [
+            'M',
+            c[0], ' ',
+            c[1], ' C ',
+            c[2], ' ',
+            c[3], ' ',
+            c[4], ' ',
+            c[5], ' ',
+            c[6], ' ',
+            c[7]
+        ].join('');
+
+        this.emit();
     }
 
     function ConnectionStore() {}

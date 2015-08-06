@@ -94,6 +94,25 @@ var app = app || {};
 
     app.ConnectionComponent = React.createClass({
         displayName: 'ConnectionComponent',
+        getInitialState: function() {
+            return {
+                curve: app.ConnectionStore.getConnection(this.props.id).curve,
+            }
+        },
+        componentDidMount: function() {
+            app.ConnectionStore.getConnection(this.props.id).addListener(this._onChange);
+        },
+        componentWillUnmount: function() {
+            app.ConnectionStore.getConnection(this.props.id).removeListener(this._onChange);
+        },
+        shouldComponentUpdate: function(props, state) {
+            return this.state.curve != state.curve;
+        },
+        _onChange: function() {
+            this.setState({
+                curve: app.ConnectionStore.getConnection(this.props.id).curve,
+            })
+        },
         onMouseUp: function(e) {
             this.props.nodeSelect(this.props.model.data.id);
         },
@@ -104,27 +123,9 @@ var app = app || {};
                 fill: 'none'
             }
 
-            var from = getCoords(this.props.model.from.node, this.props.model.from.route)
-            var to = getCoords(this.props.model.to.node, this.props.model.to.route)
-
-            var c = [from.x, from.y, from.x, from.y, to.x, to.y, to.x, to.y];
-            c[2] += 50.0;
-            c[4] -= 50.0;
-
-            if (this.props.selected === true) lineStyle.stroke = 'blue';
             return React.createElement('path', {
                 style: lineStyle,
-                d: [
-                    'M',
-                    c[0], ' ',
-                    c[1], ' C ',
-                    c[2], ' ',
-                    c[3], ' ',
-                    c[4], ' ',
-                    c[5], ' ',
-                    c[6], ' ',
-                    c[7]
-                ].join(''),
+                d: this.state.curve,
                 onMouseUp: this.onMouseUp,
             }, null)
         }

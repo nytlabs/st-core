@@ -11,64 +11,57 @@ var app = app || {};
     app.DragContainer = React.createClass({
         displayName: 'DragContainer',
         getInitialState: function() {
+            var block = app.BlockStore.getBlock(this.props.id);
             return {
-                dragging: false,
-                offX: null,
-                offY: null,
-                debounce: 0,
+                x: block.position.x,
+                y: block.position.y,
+                dragging: false
             }
+        },
+        componentDidMount: function() {
+            app.BlockStore.getBlock(this.props.id).addListener(this._onChange);
+        },
+        componentWillUnmount: function() {
+            app.BlockStore.getBlock(this.props.id).removeListener(this._onChange);
+        },
+        shouldComponentUpdate: function(props, state) {
+            return false;
+        },
+        _onChange: function() {
+            var position = app.BlockStore.getBlock(this.props.id).position;
+            this.setState({
+                x: position.x,
+                y: position.y,
+            }, function() {
+                React.findDOMNode(this.refs.container).setAttribute('transform', 'translate(' + this.state.x + ', ' + this.state.y + ')');
+            })
         },
         onMouseDown: function(e) {
             this.props.nodeSelect(this.props.model.data.id);
-
-            // see TODO in model.js in CoreModel.update()
-            // this is to protect our model from receiving updates
-            // from the server
-            this.props.model.setDragging(true);
-
             this.setState({
                 dragging: true,
-                offX: e.pageX - this.props.x,
-                offY: e.pageY - this.props.y
-            })
-        },
-        componentDidUpdate: function(props, state) {
-            if (this.state.dragging && !state.dragging) {
-                document.addEventListener('mousemove', this.onMouseMove)
-                document.addEventListener('mouseup', this.onMouseUp)
-            } else if (!this.state.dragging && state.dragging) {
-                document.removeEventListener('mousemove', this.onMouseMove)
-                document.removeEventListener('mouseup', this.onMouseUp)
-            }
+            });
+            document.addEventListener('mousemove', this.onMouseMove)
+            document.addEventListener('mouseup', this.onMouseUp)
         },
         onMouseUp: function(e) {
-            this.props.model.setPosition({
-                x: e.pageX - this.state.offX,
-                y: e.pageY - this.state.offY
-            });
-
+            document.removeEventListener('mousemove', this.onMouseMove)
+            document.removeEventListener('mouseup', this.onMouseUp)
             this.setState({
                 dragging: false,
             });
-            // see TODO in model.js in CoreModel.update()
-            // this is to protect our model from receiving updates
-            // would like to do away with this...
-            this.props.model.setDragging(false);
             this.props.onDragStop();
         },
         onMouseMove: function(e) {
             if (this.state.dragging) {
-                var diffX = e.pageX - this.state.offX;
-                var diffY = e.pageY - this.state.offY;
-
-                this.props.onDrag(-1 * (this.props.model.data.position.x - diffX), -1 * (this.props.model.data.position.y - diffY));
+                this.props.onDrag(e.movementX, e.movementY);
             }
         },
         render: function() {
             return (
                 React.createElement('g', {
-                        transform: 'translate(' + this.props.x + ', ' + this.props.y + ')',
-                        onMouseMove: this.onMouseMove,
+                        ref: 'container',
+                        transform: 'translate(' + this.state.x + ', ' + this.state.y + ')',
                         onMouseDown: this.onMouseDown,
                         onMouseUp: this.onMouseUp,
                     },

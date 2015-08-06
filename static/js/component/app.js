@@ -315,15 +315,15 @@ var app = app || {};
                 return (e instanceof app.Entity)
             }).forEach(function(n) {
                 app.Dispatcher.dispatch({
-                    action: app.Actions.APP_MOVE,
-                    id: n.data.id, // the selection list should simply be a list of IDs in the future.
-                    dx: x,
-                    dy: y
-                })
-                n.setPosition({
-                    x: n.data.position.x + x,
-                    y: n.data.position.y + y
-                });
+                        action: app.Actions.APP_MOVE,
+                        id: n.data.id, // the selection list should simply be a list of IDs in the future.
+                        dx: x,
+                        dy: y
+                    })
+                    /*n.setPosition({
+                        x: n.data.position.x + x,
+                        y: n.data.position.y + y
+                    });*/
             })
         },
         handleDragStop: function() {
@@ -402,6 +402,7 @@ var app = app || {};
                 return React.createElement(app.DragContainer, {
                     key: c.data.id,
                     model: c,
+                    id: c.data.id,
                     x: c.data.position.x,
                     y: c.data.position.y,
                     nodeSelect: this.nodeSelect,
@@ -418,6 +419,7 @@ var app = app || {};
 
             var edgeElements = this.props.model.focusedEdges.map(function(c) {
                 return React.createElement(edges[c.instance()], {
+                    id: c.data.id,
                     key: c.data.id,
                     model: c,
                     nodeSelect: this.nodeSelect,

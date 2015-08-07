@@ -1,6 +1,7 @@
 var app = app || {};
 
 (function() {
+    var blocks = {};
 
     function Crank() {
         this.status = null;
@@ -15,6 +16,10 @@ var app = app || {};
             this.emit();
         }
     }
+
+    function Group(data) {}
+
+    function Source(data) {}
 
     function Block(data) {
 
@@ -136,7 +141,6 @@ var app = app || {};
         this.crank.update(event.data.type);
     }
 
-    var blocks = {};
 
     function BlockCollection() {}
     BlockCollection.prototype = Object.create(app.Emitter.prototype);
@@ -144,6 +148,10 @@ var app = app || {};
 
     BlockCollection.prototype.getBlock = function(id) {
         return blocks[id];
+    }
+
+    BlockCollection.prototype.getBlocks = function() {
+        return Object.keys(blocks);
     }
 
     var rs = new BlockCollection();

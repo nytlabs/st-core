@@ -13,6 +13,9 @@ var app = app || {};
             this.render()
         }.bind(this));
 
+        this.routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
+        this.routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
+
         this.render();
     }
 
@@ -25,16 +28,13 @@ var app = app || {};
         var from = app.BlockStore.getBlock(this.data.from.id);
         var to = app.BlockStore.getBlock(this.data.to.id);
 
-        var routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
-        var routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
+        var routeIndexFrom = from.outputs.indexOf(this.routeIdFrom);
+        var routeIndexTo = to.inputs.indexOf(this.routeIdTo);
 
-        var routeIndexFrom = from.outputs.indexOf(routeIdFrom);
-        var routeIndexTo = to.inputs.indexOf(routeIdTo);
-
-        var yFrom = from.geometry.routeHeight * routeIndexFrom + (from.geometry.routeRadius * .5);
+        var yFrom = from.geometry.routeHeight * (routeIndexFrom + 1) - (from.geometry.routeRadius * .5);
         var xFrom = from.geometry.routeRadius * .5 + from.geometry.width;
 
-        var yTo = to.geometry.routeHeight * routeIndexTo - (to.geometry.routeRadius * .5);
+        var yTo = to.geometry.routeHeight * (routeIndexTo + 1) - (to.geometry.routeRadius * .5);
         var xTo = to.geometry.routeRadius * -.5 + 0;
 
         xFrom += from.position.x;

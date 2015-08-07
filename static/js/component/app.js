@@ -387,7 +387,7 @@ var app = app || {};
             }.bind(this))
         },
         render: function() {
-            var nodes = {
+            /*var nodes = {
                 'source': app.BlockComponent,
                 'group': app.BlockComponent,
                 'block': app.BlockComponent
@@ -479,7 +479,14 @@ var app = app || {};
                 onContextMenu: function(e) {
                     e.nativeEvent.preventDefault();
                 }
-            }, background)
+            }, background)*/
+
+            var canvasGraph = React.createElement(app.CanvasGraphComponent, {
+                key: 'canvas_graph',
+                width: this.state.width,
+                height: this.state.height,
+            }, null);
+
 
             var tools = React.createElement(app.ToolsComponent, {
                 key: 'tool_list',
@@ -493,7 +500,7 @@ var app = app || {};
             });
 
 
-            var children = [stage, groupList, panelList, tools];
+            var children = [canvasGraph, /*stage* , groupList,*/ panelList, tools];
 
             if (this.props.model.focusedGroup !== null) {
                 var clipboard = React.createElement(app.ClipboardComponent, {

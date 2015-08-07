@@ -1,0 +1,1 @@
+for i in {1..100}; do curl -X POST localhost:7071/blocks -d "{\"type\":\"+\",\"position\":{\"x\":$(( ( RANDOM % 10 )  + 1 ))$(( ( RANDOM % 10 )  + 1 ))$(( ( RANDOM % 10 )  + 1 )), \"y\":$(( ( RANDOM % 10 )  + 1 ))$(( ( RANDOM % 10 )  + 1 ))$(( ( RANDOM % 10 )  + 1 ))}}"; done

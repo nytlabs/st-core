@@ -485,6 +485,7 @@ var app = app || {};
                 key: 'canvas_graph',
                 width: this.state.width,
                 height: this.state.height,
+                doubleClick: this.handleDoubleClick,
             }, null);
 
 

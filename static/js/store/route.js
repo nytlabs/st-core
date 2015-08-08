@@ -10,8 +10,6 @@ var app = app || {};
         this.blockId = blockId;
         this.direction = direction;
 
-        console.log(this);
-
         //TODO:
         this.connections = [];
     }

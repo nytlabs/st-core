@@ -7,6 +7,26 @@ var app = app || {};
     // ids for all selected blocks
     var selected = [];
 
+    function createInputGeometry(inputs, geometry) {
+        return inputs.map(function(id, i) {
+            return {
+                id: id,
+                x: geometry.routeRadius,
+                y: (i + .5) * geometry.routeHeight,
+            }
+        });
+    }
+
+    function createOutputGeometry(outputs, geometry) {
+        return outputs.map(function(id, i) {
+            return {
+                id: id,
+                x: geometry.width + geometry.routeRadius,
+                y: (+.5) * geometry.routeHeight
+            }
+        });
+    }
+
     function Crank() {
         this.status = null;
     }
@@ -71,12 +91,10 @@ var app = app || {};
         // calculate block width
         // potentially make a util so that this can be shared with Group.
         var inputMeasures = inputs.map(function(r) {
-            //return app.Utils.measureText(app.RouteStore.getRoute(r).data.name, 'route_label');
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '');
         });
 
         var outputMeasures = outputs.map(function(r) {
-            //return app.Utils.measureText(app.RouteStore.getRoute(r).data.name, 'route_label');
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '');
         });
 
@@ -88,15 +106,7 @@ var app = app || {};
             return om.width;
         })) : 0;
 
-        /*var maxInputHeight = inputMeasures.length ? Math.max.apply(null, inputMeasures.map(function(im) {
-            return im.height;
-        })) : 0;
-
-        var maxOutputHeight = outputMeasures.length ? Math.max.apply(null, outputMeasures.map(function(om) {
-            return om.height;
-        })) : 0;*/
-
-        var routeHeight = 15; //Math.max(maxInputHeight, maxOutputHeight);
+        var routeHeight = 15;
 
         var padding = {
             vertical: 6,
@@ -111,8 +121,9 @@ var app = app || {};
             routeHeight: routeHeight,
         }
 
-        this.inputs = inputs;
-        this.outputs = outputs;
+        this.inputs = createInputGeometry(inputs, this.geometry);
+        this.outputs = createOutputGeometry(outputs, this.geometry);
+
         this.position = {
             x: data.position.x,
             y: data.position.y
@@ -134,6 +145,7 @@ var app = app || {};
     Block.prototype = Object.create(app.Emitter.prototype);
     Block.constructor = Block;
 
+
     Block.prototype.render = function() {
         var ctx = this.canvas.getContext('2d');
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -154,26 +166,24 @@ var app = app || {};
             'error': 'rgba(255, 0, 0, 1)'
         }
 
-        this.inputs.forEach(function(id, i) {
-            var route = app.RouteStore.getRoute(id);
+        function renderRoute(routeGeometry, route, geometry) {
             ctx.beginPath();
-            ctx.arc(this.geometry.routeRadius, (i + .5) * this.geometry.routeHeight, this.geometry.routeRadius, 0, 2 * Math.PI, false);
+            ctx.arc(routeGeometry.x, routeGeometry.y, geometry.routeRadius, 0, 2 * Math.PI, false);
             ctx.fillStyle = types[route.data.type];
             ctx.fill();
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'black';
             ctx.stroke();
+        };
+
+        this.inputs.forEach(function(routeGeometry) {
+            var route = app.RouteStore.getRoute(routeGeometry.id);
+            renderRoute(routeGeometry, route, this.geometry);
         }.bind(this))
 
-        this.outputs.forEach(function(id, i) {
-            var route = app.RouteStore.getRoute(id);
-            ctx.beginPath();
-            ctx.arc(this.geometry.width + this.geometry.routeRadius, (i + .5) * this.geometry.routeHeight, this.geometry.routeRadius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = types[route.data.type];
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'black';
-            ctx.stroke();
+        this.outputs.forEach(function(routeGeometry, i) {
+            var route = app.RouteStore.getRoute(routeGeometry.id);
+            renderRoute(routeGeometry, route, this.geometry);
         }.bind(this))
     }
 
@@ -220,15 +230,15 @@ var app = app || {};
         return selected;
     }
 
+    // TODO: make it so that this only works for visible blocks
     BlockCollection.prototype.pickBlock = function(x, y) {
-        // TODO: make it so that this only works for visible blocks
         var picked = [];
         for (var id in blocks) {
             if (app.Utils.pointInRect(
-                blocks[id].position.x + blocks[id].geometry.routeRadius,
-                blocks[id].position.y + blocks[id].geometry.routeRadius,
-                blocks[id].geometry.width,
-                blocks[id].geometry.height,
+                blocks[id].position.x,
+                blocks[id].position.y,
+                blocks[id].canvas.width,
+                blocks[id].canvas.height,
                 x,
                 y
             )) {
@@ -236,6 +246,26 @@ var app = app || {};
             }
         }
         return picked;
+    }
+
+    BlockCollection.prototype.pickRoute = function(id, x, y) {
+        var block = blocks[id];
+        x -= block.position.x;
+        y -= block.position.y;
+
+        var picked = block.inputs.filter(function(route) {
+            return block.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        })
+
+        if (picked.length > 0) {
+            return picked;
+        }
+
+        picked = block.outputs.filter(function(route) {
+            return block.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        })
+
+        return picked
     }
 
     BlockCollection.prototype.pickArea = function(x, y, w, h) {

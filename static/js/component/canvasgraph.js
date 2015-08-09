@@ -122,6 +122,7 @@ var app = app || {};
 
             // pick the first ID
             var id = ids[0];
+            console.log(app.BlockStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY));
             if (this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,

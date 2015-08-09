@@ -8,38 +8,59 @@ var app = app || {};
         getInitialState: function() {
             return {
                 shift: false,
-                controlKey: false,
+                control: false,
                 button: null,
                 bufferNodes: document.createElement('canvas'),
                 bufferSelection: document.createElement('canvas'),
+                bufferStage: document.createElement('canvas'),
                 mouseDownId: null,
                 mouseDownX: null,
                 mouseDownY: null,
                 mouseLastX: null,
                 mouseLastY: null,
                 selecting: false,
-                selection: []
+                selection: [],
+                translateX: 0, // TODO: do per-group translations, deprecate this
+                translateY: 0
             }
         },
         shouldComponentUpdate: function() {
             return false;
         },
         componentDidMount: function() {
-            // this is a cardinal sin, but how are you supposed to handle
-            // canvas-as-state?
-            this.state.bufferNodes.width = this.props.width;
-            this.state.bufferNodes.height = this.props.height;
-            this.state.bufferSelection.width = this.props.width;
-            this.state.bufferSelection.height = this.props.height;
-
             app.BlockStore.addListener(this._onNodesUpdate);
-            document.addEventListener('keydown', this._onKeyDown);
-            document.addEventListener('keyup', this._onKeyUp);
+            window.addEventListener('keydown', this._onKeyDown);
+            window.addEventListener('keyup', this._onKeyUp);
+            window.addEventListener('resize', this._onResize);
+
+            this._onResize();
         },
         componentWillUnmount: function() {
             app.BlockStore.removeListener(this._onNodesUpdate);
-            document.removeEventListener('keydown', this._onKeyDown);
-            document.removeEventListener('keyup', this._onKeyUp);
+            window.removeEventListener('keydown', this._onKeyDown);
+            window.removeEventListener('keyup', this._onKeyUp);
+            window.removeEventListener('resize', this._onResize);
+        },
+        _onResize: function(e) {
+            var width = document.body.clientWidth;
+            var height = document.body.clientHeight;
+
+            // resize all the buffers
+            this.state.bufferNodes.width = width;
+            this.state.bufferNodes.height = height;
+            this.state.bufferSelection.width = width;
+            this.state.bufferSelection.height = height;
+            this.state.bufferStage.width = width;
+            this.state.bufferStage.height = height;
+
+            // resize the main canvas
+            React.findDOMNode(this.refs.test).width = width;
+            React.findDOMNode(this.refs.test).height = height;
+
+            // render everything again
+            this._onStageUpdate();
+            this._onNodesUpdate();
+            this._renderBuffers();
         },
         _onKeyDown: function(e) {
             // only fire delete if we have the stage in focus
@@ -53,7 +74,7 @@ var app = app || {};
             if (document.activeElement === document.body &&
                 (e.keyCode === 91 || e.keyCode === 17)) {
                 this.setState({
-                    controlKey: true
+                    control: true
                 })
             }
 
@@ -66,13 +87,15 @@ var app = app || {};
         _onKeyUp: function(e) {
             if (e.keyCode === 91 || e.keyCode === 17) {
                 this.setState({
-                    controlKey: false
+                    control: false
                 })
 
             }
-            if (e.shiftKey === false) this.setState({
-                shift: false
-            })
+            if (e.shiftKey === false) {
+                this.setState({
+                    shift: false
+                })
+            }
         },
         _onMouseDown: function(e) {
             this.setState({
@@ -83,6 +106,7 @@ var app = app || {};
 
             var ids = app.BlockStore.pickBlock(e.pageX, e.pageY);
 
+            // if we've clicked on nothing, deselect everything
             if (ids.length === 0) {
                 if (this.state.shift === false) {
                     app.Dispatcher.dispatch({
@@ -94,7 +118,6 @@ var app = app || {};
                 })
                 return
             }
-
 
             // pick the first ID
             var id = ids[0];
@@ -109,6 +132,7 @@ var app = app || {};
                     id: id
                 })
             }
+
             this.setState({
                 mouseDownId: id
             })
@@ -127,6 +151,9 @@ var app = app || {};
             }
         },
         _onClick: function(e) {},
+        _onContextMenu: function(e) {
+            e.nativeEvent.preventDefault();
+        },
         _onMouseMove: function(e) {
             this.setState({
                 mouseLastX: e.pageX,
@@ -140,16 +167,52 @@ var app = app || {};
                     dx: e.pageX - this.state.mouseLastX,
                     dy: e.pageY - this.state.mouseLastY
                 })
-            }
-
-            if (this.state.button === 0 && this.state.mouseDownId === null) {
+            } else if (this.state.button === 0 && this.state.mouseDownId === null) {
                 if (this.state.selected !== true) {
                     this.setState({
                         selecting: true
                     })
                 }
                 this._selectionRectUpdate(e.pageX, e.pageY);
+            } else if (this.state.button === 2) {
+                var dx = e.pageX - this.state.mouseLastX;
+                var dy = e.pageY - this.state.mouseLastY;
+                this.setState({
+                    translateX: this.state.translateX + dx,
+                    translateY: this.state.translateY + dy
+                }, function() {
+                    this._onStageUpdate()
+                }.bind(this));
             }
+        },
+        _onStageUpdate: function() {
+            var ctx = this.state.bufferStage.getContext('2d');
+            var width = this.state.bufferStage.width;
+            var height = this.state.bufferStage.height;
+            var GRID_PX = 50.0;
+            var translateX = this.state.translateX;
+            var translateY = this.state.translateY;
+            var x = translateX % GRID_PX;
+            var y = translateY % GRID_PX;
+            var lines = [];
+            var hMax = Math.floor(width / GRID_PX);
+            var vMax = Math.floor(height / GRID_PX);
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = 'rgb(220,220,220)';
+
+            var grid = new Path2D();
+            for (var i = 0; i <= hMax; i++) {
+                grid.moveTo(x + (i * GRID_PX), 0);
+                grid.lineTo(x + (i * GRID_PX), height);
+            }
+            for (var i = 0; i <= vMax; i++) {
+                grid.moveTo(0, y + (i * GRID_PX));
+                grid.lineTo(width, y + (i * GRID_PX));
+            }
+            ctx.stroke(grid);
+
+            this._renderBuffers();
         },
         _selectionRectClear: function() {
             var ctx = this.state.bufferSelection.getContext('2d');
@@ -186,7 +249,7 @@ var app = app || {};
 
             var ctx = this.state.bufferSelection.getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
-            ctx.fillStyle = 'rgba(200,200,200,1)';
+            ctx.fillStyle = 'rgba(200,200,200,.5)';
             ctx.fillRect(originX, originY, width, height);
 
             this._renderBuffers();
@@ -204,6 +267,7 @@ var app = app || {};
         _renderBuffers: function() {
             var ctx = React.findDOMNode(this.refs.test).getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.drawImage(this.state.bufferStage, 0, 0);
             ctx.drawImage(this.state.bufferSelection, 0, 0);
             ctx.drawImage(this.state.bufferNodes, 0, 0);
         },
@@ -217,7 +281,7 @@ var app = app || {};
                 onDoubleClick: this.props.doubleClick,
                 onClick: this._onClick,
                 onMouseMove: this._onMouseMove,
-                onDrag: this._onDrag
+                onContextMenu: this._onContextMenu,
             }, null);
         }
     });

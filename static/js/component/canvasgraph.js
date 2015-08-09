@@ -101,7 +101,7 @@ var app = app || {};
             if (this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    id: id
+                    ids: [id]
                 })
             } else if (app.BlockStore.getSelected().indexOf(id) === -1) {
                 app.Dispatcher.dispatch({
@@ -175,12 +175,10 @@ var app = app || {};
             }));
 
             // toggle all new nodes, all nodes that have left the rect
-            toggles.forEach(function(id) {
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_SELECT_TOGGLE,
-                    id: id
-                })
-            });
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_SELECT_TOGGLE,
+                ids: toggles
+            })
 
             this.setState({
                 selection: selectRect

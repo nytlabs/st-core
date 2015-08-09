@@ -290,15 +290,17 @@ var app = app || {};
     }
 
 
-    function selectToggle(id) {
-        if (selected.indexOf(id) === -1) {
-            selected.push(id);
-        } else {
-            selected = selected.slice().filter(function(i) {
-                return i != id;
-            });
-        }
-        blocks[id].render();
+    function selectToggle(ids) {
+        ids.forEach(function(id) {
+            if (selected.indexOf(id) === -1) {
+                selected.push(id);
+            } else {
+                selected = selected.slice().filter(function(i) {
+                    return i != id;
+                });
+            }
+            blocks[id].render();
+        })
     }
 
     function deselectAll() {
@@ -339,12 +341,11 @@ var app = app || {};
             case app.Actions.APP_SELECT:
                 if (!blocks.hasOwnProperty(event.id)) return;
                 deselectAll();
-                selectToggle(event.id);
+                selectToggle([event.id]);
                 rs.emit();
                 break;
             case app.Actions.APP_SELECT_TOGGLE:
-                if (!blocks.hasOwnProperty(event.id)) return;
-                selectToggle(event.id);
+                selectToggle(event.ids);
                 rs.emit();
                 break;
             case app.Actions.APP_DESELECT_ALL:

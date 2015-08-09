@@ -58,8 +58,8 @@ var app = app || {};
             React.findDOMNode(this.refs.test).height = height;
 
             // render everything again
-            this._onStageUpdate();
-            this._onNodesUpdate();
+            this._renderStage();
+            this._renderNodes();
             this._renderBuffers();
         },
         _onKeyDown: function(e) {
@@ -104,7 +104,8 @@ var app = app || {};
                 mouseDownY: e.pageY
             })
 
-            var ids = app.BlockStore.pickBlock(e.pageX, e.pageY);
+            // TODO: get rid of in favor of per-group translations
+            var ids = app.BlockStore.pickBlock(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
 
             // if we've clicked on nothing, deselect everything
             if (ids.length === 0) {
@@ -177,6 +178,7 @@ var app = app || {};
             } else if (this.state.button === 2) {
                 var dx = e.pageX - this.state.mouseLastX;
                 var dy = e.pageY - this.state.mouseLastY;
+                // TODO: get rid of translate in favor of per-group translations
                 this.setState({
                     translateX: this.state.translateX + dx,
                     translateY: this.state.translateY + dy
@@ -184,35 +186,6 @@ var app = app || {};
                     this._onStageUpdate()
                 }.bind(this));
             }
-        },
-        _onStageUpdate: function() {
-            var ctx = this.state.bufferStage.getContext('2d');
-            var width = this.state.bufferStage.width;
-            var height = this.state.bufferStage.height;
-            var GRID_PX = 50.0;
-            var translateX = this.state.translateX;
-            var translateY = this.state.translateY;
-            var x = translateX % GRID_PX;
-            var y = translateY % GRID_PX;
-            var lines = [];
-            var hMax = Math.floor(width / GRID_PX);
-            var vMax = Math.floor(height / GRID_PX);
-
-            ctx.clearRect(0, 0, width, height);
-            ctx.strokeStyle = 'rgb(220,220,220)';
-
-            var grid = new Path2D();
-            for (var i = 0; i <= hMax; i++) {
-                grid.moveTo(x + (i * GRID_PX), 0);
-                grid.lineTo(x + (i * GRID_PX), height);
-            }
-            for (var i = 0; i <= vMax; i++) {
-                grid.moveTo(0, y + (i * GRID_PX));
-                grid.lineTo(width, y + (i * GRID_PX));
-            }
-            ctx.stroke(grid);
-
-            this._renderBuffers();
         },
         _selectionRectClear: function() {
             var ctx = this.state.bufferSelection.getContext('2d');
@@ -225,7 +198,8 @@ var app = app || {};
             var height = Math.abs(y - this.state.mouseDownY);
             var originX = Math.min(x, this.state.mouseDownX);
             var originY = Math.min(y, this.state.mouseDownY);
-            var selectRect = app.BlockStore.pickArea(originX, originY, width, height);
+            // TODO: get rid of translate in favor of per-group translations
+            var selectRect = app.BlockStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
 
             // get all nodes new to the selection rect
             var toggles = selectRect.filter(function(id) {
@@ -254,15 +228,52 @@ var app = app || {};
 
             this._renderBuffers();
         },
+        _onStageUpdate: function() {
+            this._renderStage();
+            this._renderNodes();
+            this._renderBuffers();
+        },
         _onNodesUpdate: function() {
+            this._renderNodes();
+            this._renderBuffers();
+        },
+        _renderStage: function() {
+            var ctx = this.state.bufferStage.getContext('2d');
+            var width = this.state.bufferStage.width;
+            var height = this.state.bufferStage.height;
+            var GRID_PX = 50.0;
+            //TODO: get rid in favor of per group translations
+            var translateX = this.state.translateX;
+            var translateY = this.state.translateY;
+            var x = translateX % GRID_PX;
+            var y = translateY % GRID_PX;
+            var lines = [];
+            var hMax = Math.floor(width / GRID_PX);
+            var vMax = Math.floor(height / GRID_PX);
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = 'rgb(220,220,220)';
+
+            var grid = new Path2D();
+            for (var i = 0; i <= hMax; i++) {
+                grid.moveTo(x + (i * GRID_PX), 0);
+                grid.lineTo(x + (i * GRID_PX), height);
+            }
+            for (var i = 0; i <= vMax; i++) {
+                grid.moveTo(0, y + (i * GRID_PX));
+                grid.lineTo(width, y + (i * GRID_PX));
+            }
+            ctx.stroke(grid);
+        },
+        _renderNodes: function() {
             var nodesCtx = this.state.bufferNodes.getContext('2d');
             nodesCtx.clearRect(0, 0, this.props.width, this.props.height);
             app.BlockStore.getBlocks().forEach(function(id, i) {
                 var block = app.BlockStore.getBlock(id);
-                nodesCtx.drawImage(block.canvas, block.position.x, block.position.y);
-            })
-
-            this._renderBuffers();
+                var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
+                var y = block.position.y + this.state.translateY;
+                nodesCtx.drawImage(block.canvas, x, y);
+            }.bind(this))
         },
         _renderBuffers: function() {
             var ctx = React.findDOMNode(this.refs.test).getContext('2d');

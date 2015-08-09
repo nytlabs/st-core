@@ -15,6 +15,8 @@ var app = app || {};
                 mouseDownId: null,
                 mouseDownX: null,
                 mouseDownY: null,
+                mouseLastX: null,
+                mouseLastY: null,
                 selecting: false,
                 selection: []
             }
@@ -126,12 +128,17 @@ var app = app || {};
         },
         _onClick: function(e) {},
         _onMouseMove: function(e) {
+            this.setState({
+                mouseLastX: e.pageX,
+                mouseLastY: e.pageY
+            });
+
             if (this.state.button === 0 && this.state.mouseDownId !== null &&
                 this.state.shift === false) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_MOVE,
-                    dx: e.nativeEvent.movementX,
-                    dy: e.nativeEvent.movementY
+                    dx: e.pageX - this.state.mouseLastX,
+                    dy: e.pageY - this.state.mouseLastY
                 })
             }
 

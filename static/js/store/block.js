@@ -136,6 +136,7 @@ var app = app || {};
 
     Block.prototype.render = function() {
         var ctx = this.canvas.getContext('2d');
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fillStyle = 'rgba(230,230,230,1)';
         ctx.fillRect(this.geometry.routeRadius, 0, this.geometry.width, this.geometry.height);
         ctx.lineWidth = selected.indexOf(this.data.id) !== -1 ? 2 : 1;
@@ -222,16 +223,35 @@ var app = app || {};
     BlockCollection.prototype.pickBlock = function(x, y) {
         // TODO: make it so that this only works for visible blocks
         var picked = [];
-        for (var key in blocks) {
+        for (var id in blocks) {
             if (app.Utils.pointInRect(
-                blocks[key].position.x,
-                blocks[key].position.y,
-                blocks[key].geometry.width,
-                blocks[key].geometry.height,
+                blocks[id].position.x + blocks[id].geometry.routeRadius,
+                blocks[id].position.y + blocks[id].geometry.routeRadius,
+                blocks[id].geometry.width,
+                blocks[id].geometry.height,
                 x,
                 y
             )) {
-                picked.push(parseInt(key));
+                picked.push(parseInt(id));
+            }
+        }
+        return picked;
+    }
+
+    BlockCollection.prototype.pickArea = function(x, y, w, h) {
+        // should be optimized to only try to select nodes that are
+        // 1) in the current visible group
+        // 2) ideally within the visible workspace
+        var picked = [];
+
+        for (var id in blocks) {
+            // center of block 
+            var blockX = blocks[id].position.x + blocks[id].geometry.routeRadius +
+                (.5 * blocks[id].geometry.width);
+            var blockY = blocks[id].position.y + blocks[id].geometry.routeRadius +
+                (.5 * blocks[id].geometry.height);
+            if (app.Utils.pointInRect(x, y, w, h, blockX, blockY)) {
+                picked.push(parseInt(id));
             }
         }
         return picked;

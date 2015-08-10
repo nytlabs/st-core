@@ -13,6 +13,7 @@ var app = app || {};
                 id: id,
                 x: geometry.routeRadius,
                 y: (i + .5) * geometry.routeHeight,
+                direction: 'input'
             }
         });
     }
@@ -22,7 +23,8 @@ var app = app || {};
             return {
                 id: id,
                 x: geometry.width + geometry.routeRadius,
-                y: (+.5) * geometry.routeHeight
+                y: (+.5) * geometry.routeHeight,
+                direction: 'output'
             }
         });
     }
@@ -258,14 +260,18 @@ var app = app || {};
         })
 
         if (picked.length > 0) {
-            return picked;
+            return picked[0];
         }
 
         picked = block.outputs.filter(function(route) {
             return block.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
         })
 
-        return picked
+        if (picked.length > 0) {
+            return picked[0];
+        }
+
+        return null
     }
 
     BlockCollection.prototype.pickArea = function(x, y, w, h) {

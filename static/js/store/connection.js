@@ -84,8 +84,15 @@ var app = app || {};
         delete connections[id]
     }
 
+    function requestConnection(data) {
+        console.log("a request for a connection has been made");
+    }
+
     app.Dispatcher.register(function(event) {
         switch (event.action) {
+            case app.Actions.APP_REQUEST_CONNECTION:
+                requestConnection(event);
+                break;
             case app.Actions.WS_CONNECTION_CREATE:
                 console.log(event.action);
                 createConnection(event.data);

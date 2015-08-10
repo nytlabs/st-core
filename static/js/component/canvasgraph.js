@@ -13,15 +13,23 @@ var app = app || {};
                 bufferNodes: document.createElement('canvas'),
                 bufferSelection: document.createElement('canvas'),
                 bufferStage: document.createElement('canvas'),
+                bufferConnection: document.createElement('canvas'),
                 mouseDownId: null,
                 mouseDownX: null,
                 mouseDownY: null,
                 mouseLastX: null,
                 mouseLastY: null,
+                // the selection area/rect
                 selecting: false,
                 selection: [],
+                // the panning offset
                 translateX: 0, // TODO: do per-group translations, deprecate this
-                translateY: 0
+                translateY: 0,
+                // the connection tool
+                connectingFromId: null,
+                connectingFromX: null,
+                connectingFromY: null,
+                connectingFromDirection: null
             }
         },
         shouldComponentUpdate: function() {
@@ -52,6 +60,8 @@ var app = app || {};
             this.state.bufferSelection.height = height;
             this.state.bufferStage.width = width;
             this.state.bufferStage.height = height;
+            this.state.bufferConnection.width = width;
+            this.state.bufferConnection.height = height;
 
             // resize the main canvas
             React.findDOMNode(this.refs.test).width = width;
@@ -122,8 +132,22 @@ var app = app || {};
 
             // pick the first ID
             var id = ids[0];
-            console.log(app.BlockStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY));
-            if (this.state.shift === true) {
+            var route = app.BlockStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY);
+            console.log(route);
+            if (route !== null && this.state.connectingFromId === null) {
+                this.setState({
+                    connectingFromId: id,
+                    connectingFromX: route.x,
+                    connectingFromY: route.y,
+                    connectingFromDirection: route.direction
+                })
+                return
+            } else if (route !== null && this.state.connectingFromId !== null) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_REQUEST_CONNECTION,
+                    //                    fromId:  
+                })
+            } else if (this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
                     ids: [id]
@@ -136,7 +160,10 @@ var app = app || {};
             }
 
             this.setState({
-                mouseDownId: id
+                mouseDownId: id,
+                connectingFromId: null,
+                connectingFromX: null,
+                connectingFromY: null
             })
         },
         _onMouseUp: function(e) {
@@ -162,7 +189,9 @@ var app = app || {};
                 mouseLastY: e.pageY
             });
 
-            if (this.state.button === 0 && this.state.mouseDownId !== null &&
+            if (this.state.connectingFromId !== null) {
+                this._connectingUpdate(e.pageX, e.pageY);
+            } else if (this.state.button === 0 && this.state.mouseDownId !== null &&
                 this.state.shift === false) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_MOVE,
@@ -191,6 +220,23 @@ var app = app || {};
         _selectionRectClear: function() {
             var ctx = this.state.bufferSelection.getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
+
+            this._renderBuffers();
+        },
+        _connectingUpdate: function(mx, my) {
+            var block = app.BlockStore.getBlock(this.state.connectingFromId);
+            var x = block.position.x + this.state.translateX + this.state.connectingFromX;
+            var y = block.position.y + this.state.translateY + this.state.connectingFromY;
+            var ctx = this.state.bufferConnection.getContext('2d');
+            var direction = this.state.connectingFromDirection === 'input' ? -1 : 1;
+
+            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2.0
+            ctx.bezierCurveTo(x + (50 * direction), y, mx + (-50 * direction), my, mx, my);
+            ctx.stroke();
 
             this._renderBuffers();
         },
@@ -282,6 +328,7 @@ var app = app || {};
             ctx.drawImage(this.state.bufferStage, 0, 0);
             ctx.drawImage(this.state.bufferSelection, 0, 0);
             ctx.drawImage(this.state.bufferNodes, 0, 0);
+            ctx.drawImage(this.state.bufferConnection, 0, 0);
         },
         render: function() {
             return React.createElement('canvas', {

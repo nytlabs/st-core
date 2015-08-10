@@ -33,6 +33,7 @@ var app = app || {};
         'APP_SELECT',
         'APP_SELECT_TOGGLE',
         'APP_DESELECT_ALL',
+        'APP_REQUEST_CONNECTION'
     ]
 
 

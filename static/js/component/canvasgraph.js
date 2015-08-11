@@ -28,6 +28,7 @@ var app = app || {};
                 // the connection tool
                 connectingBlockId: null,
                 connectingRoute: null,
+                dirty: false
             }
         },
         shouldComponentUpdate: function() {
@@ -222,13 +223,19 @@ var app = app || {};
             var ctx = this.state.bufferSelection.getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
 
-            this._renderBuffers();
+            //this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
         },
         _connectingClear: function() {
             var ctx = this.state.bufferConnection.getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
 
-            this._renderBuffers();
+            //this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
         },
         _connectingUpdate: function(mx, my) {
             var block = app.BlockStore.getBlock(this.state.connectingBlockId);
@@ -245,7 +252,10 @@ var app = app || {};
             ctx.bezierCurveTo(x + (50 * direction), y, mx + (-50 * direction), my, mx, my);
             ctx.stroke();
 
-            this._renderBuffers();
+            //this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
         },
         _selectionRectUpdate: function(x, y) {
             var width = Math.abs(x - this.state.mouseDownX);
@@ -280,16 +290,25 @@ var app = app || {};
             ctx.fillStyle = 'rgba(200,200,200,.5)';
             ctx.fillRect(originX, originY, width, height);
 
-            this._renderBuffers();
+            //this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
         },
         _onStageUpdate: function() {
             this._renderStage();
             this._renderNodes();
-            this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
+            //            this._renderBuffers();
         },
         _onNodesUpdate: function() {
             this._renderNodes();
-            this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
+            //          this._renderBuffers();
         },
         _renderStage: function() {
             var ctx = this.state.bufferStage.getContext('2d');
@@ -330,12 +349,18 @@ var app = app || {};
             }.bind(this))
         },
         _renderBuffers: function() {
-            var ctx = React.findDOMNode(this.refs.test).getContext('2d');
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
-            ctx.drawImage(this.state.bufferStage, 0, 0);
-            ctx.drawImage(this.state.bufferSelection, 0, 0);
-            ctx.drawImage(this.state.bufferNodes, 0, 0);
-            ctx.drawImage(this.state.bufferConnection, 0, 0);
+            if (this.state.dirty) {
+                this.setState({
+                    dirty: false
+                });
+                var ctx = React.findDOMNode(this.refs.test).getContext('2d');
+                ctx.clearRect(0, 0, this.props.width, this.props.height);
+                ctx.drawImage(this.state.bufferStage, 0, 0);
+                ctx.drawImage(this.state.bufferSelection, 0, 0);
+                ctx.drawImage(this.state.bufferNodes, 0, 0);
+                ctx.drawImage(this.state.bufferConnection, 0, 0);
+            }
+            window.requestAnimationFrame(this._renderBuffers);
         },
         render: function() {
             return React.createElement('canvas', {

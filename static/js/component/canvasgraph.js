@@ -26,10 +26,8 @@ var app = app || {};
                 translateX: 0, // TODO: do per-group translations, deprecate this
                 translateY: 0,
                 // the connection tool
-                connectingFromId: null,
-                connectingFromX: null,
-                connectingFromY: null,
-                connectingFromDirection: null
+                connectingBlockId: null,
+                connectingRoute: null,
             }
         },
         shouldComponentUpdate: function() {
@@ -117,6 +115,10 @@ var app = app || {};
             // TODO: get rid of in favor of per-group translations
             var ids = app.BlockStore.pickBlock(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
 
+            if (this.state.connectingBlockId !== null) {
+                this._connectingClear();
+            }
+
             // if we've clicked on nothing, deselect everything
             if (ids.length === 0) {
                 if (this.state.shift === false) {
@@ -125,7 +127,9 @@ var app = app || {};
                     });
                 }
                 this.setState({
-                    mouseDownId: null
+                    mouseDownId: null,
+                    connectingBlockId: null,
+                    connectingRoute: null
                 })
                 return
             }
@@ -133,20 +137,18 @@ var app = app || {};
             // pick the first ID
             var id = ids[0];
             var route = app.BlockStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY);
-            console.log(route);
-            if (route !== null && this.state.connectingFromId === null) {
+
+            if (route !== null && this.state.connectingBlockId === null) {
                 this.setState({
-                    connectingFromId: id,
-                    connectingFromX: route.x,
-                    connectingFromY: route.y,
-                    connectingFromDirection: route.direction
+                    connectingBlockId: id,
+                    connectingRoute: route,
                 })
                 return
-            } else if (route !== null && this.state.connectingFromId !== null) {
+            } else if (route !== null && this.state.connectingBlockId !== null) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_REQUEST_CONNECTION,
-                    //                    fromId:  
-                })
+                    routes: [route, this.state.connectingRoute],
+                });
             } else if (this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
@@ -161,9 +163,8 @@ var app = app || {};
 
             this.setState({
                 mouseDownId: id,
-                connectingFromId: null,
-                connectingFromX: null,
-                connectingFromY: null
+                connectingBlockId: null,
+                connectingRoute: null
             })
         },
         _onMouseUp: function(e) {
@@ -189,7 +190,7 @@ var app = app || {};
                 mouseLastY: e.pageY
             });
 
-            if (this.state.connectingFromId !== null) {
+            if (this.state.connectingBlockId !== null) {
                 this._connectingUpdate(e.pageX, e.pageY);
             } else if (this.state.button === 0 && this.state.mouseDownId !== null &&
                 this.state.shift === false) {
@@ -223,12 +224,18 @@ var app = app || {};
 
             this._renderBuffers();
         },
-        _connectingUpdate: function(mx, my) {
-            var block = app.BlockStore.getBlock(this.state.connectingFromId);
-            var x = block.position.x + this.state.translateX + this.state.connectingFromX;
-            var y = block.position.y + this.state.translateY + this.state.connectingFromY;
+        _connectingClear: function() {
             var ctx = this.state.bufferConnection.getContext('2d');
-            var direction = this.state.connectingFromDirection === 'input' ? -1 : 1;
+            ctx.clearRect(0, 0, this.props.width, this.props.height);
+
+            this._renderBuffers();
+        },
+        _connectingUpdate: function(mx, my) {
+            var block = app.BlockStore.getBlock(this.state.connectingBlockId);
+            var x = block.position.x + this.state.translateX + this.state.connectingRoute.x;
+            var y = block.position.y + this.state.translateY + this.state.connectingRoute.y;
+            var ctx = this.state.bufferConnection.getContext('2d');
+            var direction = this.state.connectingRoute.direction === 'input' ? -1 : 1;
 
             ctx.clearRect(0, 0, this.props.width, this.props.height);
             ctx.beginPath();

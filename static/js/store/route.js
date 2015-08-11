@@ -8,6 +8,7 @@ var app = app || {};
         this.active = data.hasOwnProperty('value') && data.value != null;
         this.data = data;
         this.blockId = blockId;
+        this.index = data.index;
         this.direction = direction;
 
         //TODO:

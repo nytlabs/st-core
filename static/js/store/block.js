@@ -68,6 +68,7 @@ var app = app || {};
                 action: app.Actions.APP_ROUTE_CREATE,
                 id: id,
                 blockId: data.id,
+                index: i,
                 direction: 'input',
                 data: data.inputs[i]
             });
@@ -78,6 +79,7 @@ var app = app || {};
                 action: app.Actions.APP_ROUTE_CREATE,
                 id: id,
                 blockId: data.id,
+                index: i,
                 direction: 'output',
                 data: data.outputs[i]
             });

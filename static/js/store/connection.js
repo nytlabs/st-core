@@ -84,14 +84,43 @@ var app = app || {};
         delete connections[id]
     }
 
-    function requestConnection(data) {
-        console.log("a request for a connection has been made");
+    function requestConnection(pickedRoutes) {
+        var routes = pickedRoutes.map(function(route) {
+            return app.RouteStore.getRoute(route.id);
+        });
+
+        var from = routes.filter(function(route) {
+            return route.direction === 'output';
+        });
+
+        var to = routes.filter(function(route) {
+            return route.direction === 'input';
+        })
+
+        if (from.length === 0 || to.length === 0) return;
+
+        from = from[0];
+        to = to[0];
+
+        app.Utils.request(
+            'POST',
+            'connections', {
+                'from': {
+                    'id': from.blockId,
+                    'route': from.index,
+                },
+                'to': {
+                    'id': to.blockId,
+                    'route': to.index,
+                }
+            },
+            null)
     }
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_REQUEST_CONNECTION:
-                requestConnection(event);
+                requestConnection(event.routes);
                 break;
             case app.Actions.WS_CONNECTION_CREATE:
                 console.log(event.action);

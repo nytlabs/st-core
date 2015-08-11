@@ -41,6 +41,7 @@ var app = app || {};
             window.addEventListener('resize', this._onResize);
 
             this._onResize();
+            this._renderBuffers();
         },
         componentWillUnmount: function() {
             app.BlockStore.removeListener(this._onNodesUpdate);
@@ -69,7 +70,9 @@ var app = app || {};
             // render everything again
             this._renderStage();
             this._renderNodes();
-            this._renderBuffers();
+            this.setState({
+                dirty: true
+            });
         },
         _onKeyDown: function(e) {
             // only fire delete if we have the stage in focus
@@ -349,6 +352,30 @@ var app = app || {};
             }.bind(this))
         },
         _renderBuffers: function() {
+            // this is getting into the weeds of optimization, but the
+            // state.dirty flag batches renders into 16.667ms frames so that we
+            // don't encounter a situation where our model fires renders faster
+            // than 60fps.
+            //
+            // for example: it's possible for model updates to occur much
+            // faster than 60fps. in the case of a large import, or a single
+            // event causing multiple renders, our CanvasGraphComponent may
+            // receive events that are less than 16.667 apart. this can lock
+            // the interface and cause lag.
+            //
+            // the cost is that state.dirty/requestAnimationFrame spin while
+            // waiting for an update. on my machine, this amounts to ~6% CPU
+            // while doing nothing. (as opposed to ~1% of when not calling
+            // requestAnimationFrame)
+            //
+            // TODO: a potential optimization, to maybe save some battery and
+            // ultimately the planet earth, would be to make it so that a
+            // model update triggers a span of time, like 60 frames, until
+            // requestAnimationFrame clears itself. each render would tick
+            // down some of the "dirty time" until we reach  0, when we clear
+            // requestAnimationFrame, effectively debouncing render events
+            // and ceasing the spinning when not doing anything.
+            window.requestAnimationFrame(this._renderBuffers);
             if (this.state.dirty) {
                 this.setState({
                     dirty: false
@@ -360,7 +387,6 @@ var app = app || {};
                 ctx.drawImage(this.state.bufferNodes, 0, 0);
                 ctx.drawImage(this.state.bufferConnection, 0, 0);
             }
-            window.requestAnimationFrame(this._renderBuffers);
         },
         render: function() {
             return React.createElement('canvas', {

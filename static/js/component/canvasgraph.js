@@ -13,7 +13,8 @@ var app = app || {};
                 bufferNodes: document.createElement('canvas'),
                 bufferSelection: document.createElement('canvas'),
                 bufferStage: document.createElement('canvas'),
-                bufferConnection: document.createElement('canvas'),
+                bufferConnectionTool: document.createElement('canvas'),
+                bufferEdges: document.createElement('canvas'),
                 mouseDownId: null,
                 mouseDownX: null,
                 mouseDownY: null,
@@ -36,6 +37,8 @@ var app = app || {};
         },
         componentDidMount: function() {
             app.BlockStore.addListener(this._onNodesUpdate);
+            app.ConnectionStore.addListener(this._onEdgesUpdate);
+
             window.addEventListener('keydown', this._onKeyDown);
             window.addEventListener('keyup', this._onKeyUp);
             window.addEventListener('resize', this._onResize);
@@ -45,6 +48,8 @@ var app = app || {};
         },
         componentWillUnmount: function() {
             app.BlockStore.removeListener(this._onNodesUpdate);
+            app.ConnectionStore.removeListener(this._onEdgesUpdate);
+
             window.removeEventListener('keydown', this._onKeyDown);
             window.removeEventListener('keyup', this._onKeyUp);
             window.removeEventListener('resize', this._onResize);
@@ -60,8 +65,10 @@ var app = app || {};
             this.state.bufferSelection.height = height;
             this.state.bufferStage.width = width;
             this.state.bufferStage.height = height;
-            this.state.bufferConnection.width = width;
-            this.state.bufferConnection.height = height;
+            this.state.bufferConnectionTool.width = width;
+            this.state.bufferConnectionTool.height = height;
+            this.state.bufferEdges.width = width;
+            this.state.bufferEdges.height = height;
 
             // resize the main canvas
             React.findDOMNode(this.refs.test).width = width;
@@ -69,6 +76,7 @@ var app = app || {};
 
             // render everything again
             this._renderStage();
+            this._renderEdges();
             this._renderNodes();
             this.setState({
                 dirty: true
@@ -232,7 +240,7 @@ var app = app || {};
             });
         },
         _connectingClear: function() {
-            var ctx = this.state.bufferConnection.getContext('2d');
+            var ctx = this.state.bufferConnectionTool.getContext('2d');
             ctx.clearRect(0, 0, this.props.width, this.props.height);
 
             //this._renderBuffers();
@@ -244,11 +252,11 @@ var app = app || {};
             var block = app.BlockStore.getBlock(this.state.connectingBlockId);
             var x = block.position.x + this.state.translateX + this.state.connectingRoute.x;
             var y = block.position.y + this.state.translateY + this.state.connectingRoute.y;
-            var ctx = this.state.bufferConnection.getContext('2d');
+            var ctx = this.state.bufferConnectionTool.getContext('2d');
             var direction = this.state.connectingRoute.direction === 'input' ? -1 : 1;
 
             ctx.clearRect(0, 0, this.props.width, this.props.height);
-            ctx.beginPath();
+            ctx.beginPath()
             ctx.moveTo(x, y);
             ctx.setLineDash([5, 5]);
             ctx.lineWidth = 2.0
@@ -300,6 +308,7 @@ var app = app || {};
         },
         _onStageUpdate: function() {
             this._renderStage();
+            this._renderEdges();
             this._renderNodes();
             this.setState({
                 dirty: true
@@ -312,6 +321,12 @@ var app = app || {};
                 dirty: true
             });
             //          this._renderBuffers();
+        },
+        _onEdgesUpdate: function() {
+            this._renderEdges();
+            this.setState({
+                dirty: true
+            });
         },
         _renderStage: function() {
             var ctx = this.state.bufferStage.getContext('2d');
@@ -351,6 +366,16 @@ var app = app || {};
                 nodesCtx.drawImage(block.canvas, x, y);
             }.bind(this))
         },
+        _renderEdges: function() {
+            var ctx = this.state.bufferEdges.getContext('2d');
+            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            app.ConnectionStore.getConnections().forEach(function(id, i) {
+                var connection = app.ConnectionStore.getConnection(id);
+                var x = connection.position.x + this.state.translateX;
+                var y = connection.position.y + this.state.translateY;
+                ctx.drawImage(connection.canvas, x, y);
+            }.bind(this));
+        },
         _renderBuffers: function() {
             // this is getting into the weeds of optimization, but the
             // state.dirty flag batches renders into 16.667ms frames so that we
@@ -384,8 +409,9 @@ var app = app || {};
                 ctx.clearRect(0, 0, this.props.width, this.props.height);
                 ctx.drawImage(this.state.bufferStage, 0, 0);
                 ctx.drawImage(this.state.bufferSelection, 0, 0);
+                ctx.drawImage(this.state.bufferEdges, 0, 0);
                 ctx.drawImage(this.state.bufferNodes, 0, 0);
-                ctx.drawImage(this.state.bufferConnection, 0, 0);
+                ctx.drawImage(this.state.bufferConnectionTool, 0, 0);
             }
         },
         render: function() {

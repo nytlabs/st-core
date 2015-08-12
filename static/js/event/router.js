@@ -44,7 +44,6 @@ var app = app || {};
                 });
                 break;
             case 'connection':
-                console.log(event);
                 app.Dispatcher.dispatch({
                     action: action,
                     id: event.data.connection.id,

@@ -124,10 +124,9 @@ var app = app || {};
             routeRadius: Math.floor(routeHeight / 2.0),
             routeHeight: routeHeight,
         }
-
         this.inputs = createInputGeometry(inputs, this.geometry);
         this.outputs = createOutputGeometry(outputs, this.geometry);
-
+        this.connections = [];
         this.position = {
             x: data.position.x,
             y: data.position.y
@@ -142,6 +141,7 @@ var app = app || {};
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
         this.canvas.height = this.geometry.height + (this.geometry.routeRadius * 2);
+
 
         this.render();
     }
@@ -159,6 +159,7 @@ var app = app || {};
         ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(0,0,0,1)';
         ctx.strokeRect(this.geometry.routeRadius, 0, this.geometry.width, this.geometry.height);
 
+        // move to constants
         var types = {
             'number': 'rgba(170, 255, 0, 1)',
             'object': 'rgba(255, 170, 0, 1)',
@@ -189,6 +190,8 @@ var app = app || {};
             var route = app.RouteStore.getRoute(routeGeometry.id);
             renderRoute(routeGeometry, route, this.geometry);
         }.bind(this))
+
+        this.emit();
     }
 
     Block.prototype.update = function(data) {
@@ -350,14 +353,43 @@ var app = app || {};
     }
 
     function selectMove(dx, dy) {
+        // an object containing the set of connections that are effected by 
+        // this block move.
+        var connections = {};
         selected.forEach(function(id) {
             blocks[id].position.x += dx;
             blocks[id].position.y += dy;
+            blocks[id].connections.forEach(function(id) {
+                connections[id] = connections.hasOwnProperty(id) ? connections[id] + 1 : 1;
+            })
         });
+
+        // when a block moves we need to tell our connectionstore which 
+        // connections need to be either translated or re-rendered.
+        // yucky message
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_RENDER_CONNECTIONS,
+            // if only end of a connection is being moved, then we need to 
+            // re-render the whole connection
+            ids: Object.keys(connections).filter(function(id) {
+                return connections[id] === 1
+            }),
+            // if this connection is referecned more than once then we don't
+            // need to be re-rendered, simply translated
+            translate: Object.keys(connections).filter(function(id) {
+                return connections[id] != 1
+            }),
+            dx: dx,
+            dy: dy
+        })
+    }
+
+    function updateConnections(event) {
+        blocks[event.data.from.id].connections.push(event.data.id);
+        blocks[event.data.to.id].connections.push(event.data.id);
     }
 
     app.Dispatcher.register(function(event) {
-
         switch (event.action) {
             case app.Actions.WS_BLOCK_CREATE:
                 createBlock(event.data);
@@ -397,6 +429,10 @@ var app = app || {};
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
                 blocks[event.id].updateStatus(event);
+                break;
+            case app.Actions.WS_CONNECTION_CREATE:
+                updateConnections(event);
+                //rs.emit();
                 break;
         }
     })

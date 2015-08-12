@@ -33,7 +33,9 @@ var app = app || {};
         'APP_SELECT',
         'APP_SELECT_TOGGLE',
         'APP_DESELECT_ALL',
-        'APP_REQUEST_CONNECTION'
+        'APP_REQUEST_CONNECTION',
+        'APP_CONNECTION_UPDATE',
+        'APP_RENDER_CONNECTIONS'
     ]
 
 

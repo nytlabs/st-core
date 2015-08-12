@@ -55,6 +55,13 @@ var app = app || {};
         delete routes[id]
     }
 
+    function updateConnected(event) {
+        event.ids.forEach(function(id) {
+            routes[id].connections.push(event.connId);
+            console.log(routes[id]);
+        })
+    }
+
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_ROUTE_CREATE:
@@ -80,8 +87,9 @@ var app = app || {};
                 routes[event.id].update(event.blocked);
                 routes[event.id].emit();
                 break;
-            case app.Actions.APP_ROUTE_UPDATE_CONNECTED:
-                break;
+                //case app.Actions.APP_ROUTE_UPDATE_CONNECTED:
+                //    updateConnected(event);
+                //    break;
         }
     })
 

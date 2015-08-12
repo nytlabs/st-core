@@ -111,7 +111,7 @@ var app = app || {};
 
         ws.onmessage = function(m) {
             app.Router(JSON.parse(m.data));
-            this.update(JSON.parse(m.data));
+            //this.update(JSON.parse(m.data));
         }.bind(this)
 
         ws.onopen = function() {

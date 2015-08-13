@@ -409,8 +409,8 @@ var app = app || {};
                 ctx.clearRect(0, 0, this.props.width, this.props.height);
                 ctx.drawImage(this.state.bufferStage, 0, 0);
                 ctx.drawImage(this.state.bufferSelection, 0, 0);
-                ctx.drawImage(this.state.bufferEdges, 0, 0);
                 ctx.drawImage(this.state.bufferNodes, 0, 0);
+                ctx.drawImage(this.state.bufferEdges, 0, 0);
                 ctx.drawImage(this.state.bufferConnectionTool, 0, 0);
             }
         },

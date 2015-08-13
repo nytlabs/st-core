@@ -25,10 +25,13 @@ var app = app || {};
     Connection.constructor = Connection;
 
     Connection.prototype.geometry = function() {
-        // TODO: instead of blocks, this should somehow find the top-most visible geometry that
-        // the route is apart of (for groups);
+        // TODO: instead of blocks, this should somehow find the top-most 
+        // visible geometry that the route is apart of (for groups);
         var from = app.BlockStore.getBlock(this.data.from.id);
         var to = app.BlockStore.getBlock(this.data.to.id);
+        // buffer accounts for bends in the bezier that may extend outside the
+        // bounds of a non-buffered box.
+        var buffer = 10;
 
         var routeIndexFrom = from.outputs.map(function(r) {
             return r.id
@@ -38,29 +41,37 @@ var app = app || {};
             return r.id
         }).indexOf(this.routeIdTo);
 
-        var yFrom = from.geometry.routeHeight * (routeIndexFrom + 1) - (from.geometry.routeRadius * .5);
-        var xFrom = from.geometry.routeRadius * .5 + from.geometry.width;
+        var yFrom = from.geometry.routeHeight * (routeIndexFrom + 1) - (from.geometry.routeRadius);
+        var xFrom = from.geometry.routeRadius + from.geometry.width;
 
-        var yTo = to.geometry.routeHeight * (routeIndexTo + 1) - (to.geometry.routeRadius * .5);
-        var xTo = to.geometry.routeRadius * -.5 + 0;
+        var yTo = to.geometry.routeHeight * (routeIndexTo + 1) - (to.geometry.routeRadius);
+        var xTo = to.geometry.routeRadius;
 
+        // origin point for bounding box outside of connection
         this.position = {
-            x: Math.min(xFrom, xTo - 50),
-            y: Math.min(yFrom, yTo),
+            x: Math.min(from.position.x, to.position.x) - buffer,
+            y: Math.min(from.position.y, to.position.y) - buffer,
         }
 
-        xFrom += from.position.x - this.position.x;
-        yFrom += from.position.y - this.position.y;
-        xTo += to.position.x - this.position.x;
-        yTo += to.position.y - this.position.y;
+        // remove any translation from the connection as we are doing the
+        // translation on the bounding box.
+        xFrom += from.position.x - this.position.x
+        yFrom += from.position.y - this.position.y
+        xTo += to.position.x - this.position.x
+        yTo += to.position.y - this.position.y
 
         this.curve = [xFrom, yFrom, xFrom + 50, yFrom, xTo - 50, yTo, xTo, yTo];
 
-        var xMax = Math.max(xFrom + 50, xTo);
-        var yMax = Math.max(yFrom, yTo);
+        // set the bounding box on the lower right, encapsulate the farthest
+        // +x, +y block inside the bounding box. 
+        var xMax = Math.max(from.position.x, to.position.x);
+        var yMax = Math.max(from.position.y, to.position.y);
 
-        this.canvas.width = xMax - this.position.x + 100;
-        this.canvas.height = yMax - this.position.y + 100;
+        var bWidth = from.position.x > to.position.x ? from.canvas.width : to.canvas.width;
+        var bHeight = from.position.y > to.position.y ? from.canvas.height : to.canvas.height;
+
+        this.canvas.width = xMax - this.position.x + bWidth + buffer;
+        this.canvas.height = yMax - this.position.y + bHeight + buffer;
     }
 
     Connection.prototype.render = function() {
@@ -77,6 +88,11 @@ var app = app || {};
         ctx.lineWidth = 2.0
         ctx.bezierCurveTo(c[2], c[3], c[4], c[5], c[6], c[7]);
         ctx.stroke();
+
+        var path = new Path2D();
+        path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
+        path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
+        ctx.fill(path);
 
         this.emit();
 

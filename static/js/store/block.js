@@ -142,7 +142,6 @@ var app = app || {};
         this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
         this.canvas.height = this.geometry.height;
 
-
         this.render();
     }
 
@@ -182,7 +181,9 @@ var app = app || {};
             ctx.font = '16px helvetica';
             ctx.textAlign = route.direction === 'input' ? 'left' : 'right';
             ctx.fillStyle = 'black';
-            ctx.fillText(route.data.name, routeGeometry.x + (route.direction === 'input' ? 1 : -1) * geometry.routeRadius, routeGeometry.y + geometry.routeRadius)
+            ctx.fillText(route.data.name,
+                routeGeometry.x + (route.direction === 'input' ? 1 : -1) * geometry.routeRadius,
+                routeGeometry.y + geometry.routeRadius)
         };
 
         this.inputs.forEach(function(routeGeometry) {
@@ -223,7 +224,6 @@ var app = app || {};
 
         this.crank.update(event.data.type);
     }
-
 
     function BlockCollection() {}
     BlockCollection.prototype = Object.create(app.Emitter.prototype);

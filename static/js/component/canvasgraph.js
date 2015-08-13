@@ -29,7 +29,9 @@ var app = app || {};
                 // the connection tool
                 connectingBlockId: null,
                 connectingRoute: null,
-                dirty: false
+                dirty: false,
+                width: 0,
+                height: 0
             }
         },
         shouldComponentUpdate: function() {
@@ -79,7 +81,9 @@ var app = app || {};
             this._renderEdges();
             this._renderNodes();
             this.setState({
-                dirty: true
+                dirty: true,
+                width: width,
+                height: height
             });
         },
         _onKeyDown: function(e) {
@@ -232,7 +236,7 @@ var app = app || {};
         },
         _selectionRectClear: function() {
             var ctx = this.state.bufferSelection.getContext('2d');
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.clearRect(0, 0, this.state.width, this.state.height);
 
             //this._renderBuffers();
             this.setState({
@@ -241,7 +245,7 @@ var app = app || {};
         },
         _connectingClear: function() {
             var ctx = this.state.bufferConnectionTool.getContext('2d');
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.clearRect(0, 0, this.state.width, this.state.height);
 
             //this._renderBuffers();
             this.setState({
@@ -255,7 +259,7 @@ var app = app || {};
             var ctx = this.state.bufferConnectionTool.getContext('2d');
             var direction = this.state.connectingRoute.direction === 'input' ? -1 : 1;
 
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.clearRect(0, 0, this.state.width, this.state.height);
             ctx.beginPath()
             ctx.moveTo(x, y);
             ctx.setLineDash([5, 5]);
@@ -297,7 +301,7 @@ var app = app || {};
             })
 
             var ctx = this.state.bufferSelection.getContext('2d');
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.clearRect(0, 0, this.state.width, this.state.height);
             ctx.fillStyle = 'rgba(200,200,200,.5)';
             ctx.fillRect(originX, originY, width, height);
 
@@ -358,7 +362,7 @@ var app = app || {};
         },
         _renderNodes: function() {
             var nodesCtx = this.state.bufferNodes.getContext('2d');
-            nodesCtx.clearRect(0, 0, this.props.width, this.props.height);
+            nodesCtx.clearRect(0, 0, this.state.width, this.state.height);
             app.BlockStore.getBlocks().forEach(function(id, i) {
                 var block = app.BlockStore.getBlock(id);
                 var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
@@ -368,7 +372,7 @@ var app = app || {};
         },
         _renderEdges: function() {
             var ctx = this.state.bufferEdges.getContext('2d');
-            ctx.clearRect(0, 0, this.props.width, this.props.height);
+            ctx.clearRect(0, 0, this.state.width, this.state.height);
             app.ConnectionStore.getConnections().forEach(function(id, i) {
                 var connection = app.ConnectionStore.getConnection(id);
                 var x = connection.position.x + this.state.translateX;
@@ -406,7 +410,7 @@ var app = app || {};
                     dirty: false
                 });
                 var ctx = React.findDOMNode(this.refs.test).getContext('2d');
-                ctx.clearRect(0, 0, this.props.width, this.props.height);
+                ctx.clearRect(0, 0, this.state.width, this.state.height);
                 ctx.drawImage(this.state.bufferStage, 0, 0);
                 ctx.drawImage(this.state.bufferSelection, 0, 0);
                 ctx.drawImage(this.state.bufferNodes, 0, 0);
@@ -417,8 +421,8 @@ var app = app || {};
         render: function() {
             return React.createElement('canvas', {
                 ref: 'test',
-                width: this.props.width,
-                height: this.props.height,
+                width: this.state.width,
+                height: this.state.height,
                 onMouseDown: this._onMouseDown,
                 onMouseUp: this._onMouseUp,
                 onDoubleClick: this.props.doubleClick,

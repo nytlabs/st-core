@@ -23,10 +23,7 @@ var app = app || {};
         'connection_delete': app.Actions.WS_CONNECTION_DELETE,
     }
 
-    var blocks = {}
-
     function router(event) {
-
         var action = sanitizeEvent[event.type + '_' + event.action];
         switch (event.type) {
             case 'block':
@@ -56,10 +53,18 @@ var app = app || {};
                 break;
             case 'link':
                 break;
-
         }
-
     }
+
+    var ws = new WebSocket('ws://localhost:7071/updates');
+    ws.onmessage = function(m) {
+        app.Router(JSON.parse(m.data));
+    }.bind(this)
+
+    ws.onopen = function() {
+        ws.send('list');
+    }
+
 
     app.Router = router;
 })();

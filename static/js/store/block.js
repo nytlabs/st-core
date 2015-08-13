@@ -95,11 +95,11 @@ var app = app || {};
         // calculate block width
         // potentially make a util so that this can be shared with Group.
         var inputMeasures = inputs.map(function(r) {
-            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '');
+            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
         });
 
         var outputMeasures = outputs.map(function(r) {
-            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '');
+            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
         });
 
         var maxInputWidth = inputMeasures.length ? Math.max.apply(null, inputMeasures.map(function(im) {
@@ -119,7 +119,7 @@ var app = app || {};
 
         // the following is derived data for use with UI
         this.geometry = {
-            width: maxInputWidth + maxOutputWidth + padding.horizontal,
+            width: maxInputWidth + maxOutputWidth + padding.horizontal + routeHeight,
             height: Math.max(inputs.length, outputs.length) * routeHeight + padding.vertical,
             routeRadius: Math.floor(routeHeight / 2.0),
             routeHeight: routeHeight,
@@ -140,7 +140,7 @@ var app = app || {};
 
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
-        this.canvas.height = this.geometry.height + (this.geometry.routeRadius * 2);
+        this.canvas.height = this.geometry.height;
 
 
         this.render();
@@ -178,6 +178,11 @@ var app = app || {};
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'black';
             ctx.stroke();
+
+            ctx.font = '16px helvetica';
+            ctx.textAlign = route.direction === 'input' ? 'left' : 'right';
+            ctx.fillStyle = 'black';
+            ctx.fillText(route.data.name, routeGeometry.x + (route.direction === 'input' ? 1 : -1) * geometry.routeRadius, routeGeometry.y + geometry.routeRadius)
         };
 
         this.inputs.forEach(function(routeGeometry) {

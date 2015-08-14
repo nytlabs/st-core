@@ -290,11 +290,13 @@ var app = app || {};
                 return selectRect.indexOf(id) === -1
             }));
 
-            // toggle all new nodes, all nodes that have left the rect
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_SELECT_TOGGLE,
-                ids: toggles
-            })
+            if (toggles.length > 0) {
+                // toggle all new nodes, all nodes that have left the rect
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_SELECT_TOGGLE,
+                    ids: toggles
+                })
+            }
 
             this.setState({
                 selection: selectRect

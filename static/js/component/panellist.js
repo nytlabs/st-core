@@ -9,17 +9,43 @@ var app = app || {};
 
     app.PanelListComponent = React.createClass({
         displayName: 'PanelListComponent',
+        getInitialState: function() {
+            return {
+                ids: app.BlockStore.getSelected(),
+            }
+        },
+        componentDidMount: function() {
+            app.BlockSelection.addListener(this._onUpdate);
+        },
+        componentWillUnmount: function() {
+            app.BlockSelection.addListener(this._onUpdate);
+        },
+        _onUpdate: function() {
+            console.log("hello friends")
+            this.setState({
+                ids: app.BlockStore.getSelected(),
+            })
+        },
         render: function() {
             return React.createElement('div', {
                 className: 'panel_list'
-            }, this.props.nodes.filter(function(r) {
-                return r instanceof app.Entity
-            }).map(function(n) {
-              if (n instanceof app.Source){
-                return React.createElement(app.ParametersPanelComponent, { model: n, key: n.data.id }, null)
-              } else {
-                return React.createElement(app.RoutesPanelComponent, { model: n, key: n.data.id }, null)
-              }
+            }, this.state.ids.map(function(id) {
+                console.log(id);
+                return React.createElement(app.RoutesPanelComponent, {
+                        key: id,
+                        id: id
+                    })
+                    /*if (n instanceof app.Source) {
+                        return React.createElement(app.ParametersPanelComponent, {
+                            model: n,
+                            key: id
+                        }, null)
+                    } else {
+                        return React.createElement(app.RoutesPanelComponent, {
+                            model: n,
+                            key: n.data.id
+                        }, null)
+                    }*/
             }))
         },
     })

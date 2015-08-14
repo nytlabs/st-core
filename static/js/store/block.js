@@ -225,6 +225,16 @@ var app = app || {};
         this.crank.update(event.data.type);
     }
 
+    function Selection() {}
+    Selection.prototype = Object.create(app.Emitter.prototype);
+    Selection.constructor = Selection;
+
+    Selection.prototype.getSelected = function() {
+        return selected
+    }
+
+    var selection = new Selection();
+
     function BlockCollection() {}
     BlockCollection.prototype = Object.create(app.Emitter.prototype);
     BlockCollection.constructor = BlockCollection;
@@ -331,7 +341,6 @@ var app = app || {};
     function moveBlock(id, dx, dy) {
         blocks[id].position.x += dx;
         blocks[id].position.y += dy;
-        //blocks[id].emit();
     }
 
 
@@ -417,14 +426,17 @@ var app = app || {};
                 deselectAll();
                 selectToggle([event.id]);
                 rs.emit();
+                selection.emit();
                 break;
             case app.Actions.APP_SELECT_TOGGLE:
                 selectToggle(event.ids);
                 rs.emit();
+                selection.emit();
                 break;
             case app.Actions.APP_DESELECT_ALL:
                 deselectAll();
                 rs.emit();
+                selection.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE:
                 if (!blocks.hasOwnProperty(event.id)) return;
@@ -442,4 +454,5 @@ var app = app || {};
     })
 
     app.BlockStore = rs;
+    app.BlockSelection = selection;
 }())

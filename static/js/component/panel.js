@@ -15,7 +15,7 @@ var app = app || {};
         getInitialState: function() {
             return {
                 isEditing: false,
-                value: this.props.value
+                //value: this.props.value
             }
         },
         handleClick: function() {
@@ -41,7 +41,7 @@ var app = app || {};
             });
         },
         render: function() {
-            var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
+            /*var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
             var inputStyle = {
                 display: this.state.isEditing ? 'block' : 'none'
             }
@@ -49,7 +49,11 @@ var app = app || {};
                 display: this.state.isEditing ? 'none' : 'block'
             }
 
-            return React.createElement('div', {
+            var children = [React.createElement('div', {
+                className: 'label',
+            }, r.data.name)]
+
+            React.createElement('div', {
                 className: 'editable'
             }, [
                 React.createElement('input', {
@@ -65,7 +69,8 @@ var app = app || {};
                     style: style,
                     key: 'editableDisplay'
                 }, value)
-            ]);
+            ]);*/
+            return React.createElement('div', {}, null);
         }
     })
 })();
@@ -128,13 +133,16 @@ var app = app || {};
     app.RoutesPanelComponent = React.createClass({
         displayName: 'PanelComponent',
         render: function() {
+            var block = app.BlockStore.getBlock(this.props.id);
+            console.log(this.props.key);
+            console.log(block);
             return React.createElement('div', {
                 className: 'panel'
             }, [
                 React.createElement('div', {
                     key: 'block_header',
                     className: 'block_header',
-                }, this.props.model.data.type),
+                }, block.data.type),
                 React.createElement('div', {
                     key: 'block_Label',
                     className: 'label',
@@ -142,36 +150,16 @@ var app = app || {};
                 React.createElement(app.PanelEditableComponent, {
                     key: 'route_label',
                     className: 'editable',
-                    value: this.props.model.data.label,
-                    onChange: function(value) {
-                        app.Utils.request(
-                            'PUT',
-                            this.props.model.instance() + 's/' + this.props.model.data.id + '/label',
-                            value,
-                            null
-                        )
-                    }.bind(this)
+                    value: block.data.label,
+                    onChange: function() {},
                 }, null),
-                this.props.model.routes.filter(function(r) {
-                    return r.direction === 'input'
-                }).map(function(r, i) {
+                block.inputs.map(function(r, i) {
+                    console.log(r);
                     return [
-                        React.createElement('div', {
-                            className: 'label',
-                        }, r.data.name),
                         React.createElement(app.PanelEditableComponent, {
-                                key: r.id + r.data.name + r.index,
-                                value: JSON.stringify(r.data.value),
-                                onChange: function(value) {
-                                    app.Utils.request(
-                                        'PUT',
-                                        'blocks/' + r.id + '/routes/' + r.index,
-                                        JSON.parse(value),
-                                        null
-                                    )
-                                }.bind(this)
-                            },
-                            null)
+                            key: r.id,
+                            onChange: function() {},
+                        }, null)
                     ]
                 }.bind(this))
             ]);

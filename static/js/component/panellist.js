@@ -21,7 +21,6 @@ var app = app || {};
             app.BlockSelection.addListener(this._onUpdate);
         },
         _onUpdate: function() {
-            console.log("hello friends")
             this.setState({
                 ids: app.BlockStore.getSelected(),
             })
@@ -30,7 +29,6 @@ var app = app || {};
             return React.createElement('div', {
                 className: 'panel_list'
             }, this.state.ids.map(function(id) {
-                console.log(id);
                 return React.createElement(app.RoutesPanelComponent, {
                         key: id,
                         id: id

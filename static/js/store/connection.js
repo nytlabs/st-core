@@ -95,10 +95,6 @@ var app = app || {};
         ctx.fill(path);
 
         this.emit();
-
-        //app.Dispatcher.dispatch({
-        //    action: app.Actions.APP_CONNECTION_UPDATE,
-        //})
     }
 
     function ConnectionStore() {}
@@ -121,6 +117,13 @@ var app = app || {};
             return
         }
         connections[connection.id] = new Connection(connection);
+
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_ADD_NODE_CONNECTION,
+            fromId: connection.from.id,
+            toId: connection.to.id,
+            id: connection.id,
+        })
     }
 
     function deleteConnection(id) {
@@ -128,6 +131,14 @@ var app = app || {};
             console.warn('could not delete connections: ', id, ' does not exist');
             return
         }
+
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_DELETE_NODE_CONNECTION,
+            fromId: connections[id].data.from.id,
+            toId: connections[id].data.to.id,
+            id: id,
+        });
+
         delete connections[id]
     }
 
@@ -182,21 +193,21 @@ var app = app || {};
             case app.Actions.APP_REQUEST_CONNECTION:
                 requestConnection(event.routes);
                 break;
-                //case app.Actions.APP_CONNECTION_UPDATE:
-                //     rs.emit();
-                //    break;
             case app.Actions.WS_CONNECTION_CREATE:
                 createConnection(event.data);
                 rs.emit();
                 break;
             case app.Actions.WS_CONNECTION_DELETE:
-                console.log(event.action);
                 deleteConnection(event.id);
                 rs.emit();
                 break;
             case app.Actions.APP_RENDER_CONNECTIONS:
                 renderConnections(event.ids);
+                rs.emit();
+                break;
+            case app.Actions.APP_TRANSLATE_CONNECTIONS:
                 translateConnections(event.translate, event.dx, event.dy);
+                renderConnections(event.ids);
                 rs.emit();
                 break;
         }

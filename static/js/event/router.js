@@ -65,6 +65,5 @@ var app = app || {};
         ws.send('list');
     }
 
-
     app.Router = router;
 })();

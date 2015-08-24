@@ -11,14 +11,31 @@ var app = app || {};
     app.CoreApp = React.createClass({
         displayName: 'CoreApp',
         getInitialState: function() {
-            return {}
+            return {
+                autoCompleteVisible: false,
+                autoCompleteX: null,
+                autoCompleteY: null,
+            }
+        },
+        _showAutoComplete: function(e) {
+            this.setState({
+                autoCompleteVisible: true,
+                autoCompleteX: e.pageX,
+                autoCompleteY: e.pageY,
+            });
+        },
+        _hideAutoComplete: function() {
+            this.setState({
+                autoCompleteVisible: false,
+            });
         },
         render: function() {
             var canvasGraph = React.createElement(app.CanvasGraphComponent, {
                 key: 'canvas_graph',
                 width: function() {},
                 height: function() {},
-                doubleClick: function() {}
+                onDoubleClick: this._showAutoComplete,
+                onClick: this._hideAutoComplete,
             }, null);
 
             var tools = React.createElement(app.ToolsComponent, {
@@ -33,6 +50,15 @@ var app = app || {};
             });
 
             var children = [canvasGraph, /*groupList,*/ panelList, tools];
+
+            if (this.state.autoCompleteVisible === true) {
+                children.push(React.createElement(app.AutoCompleteComponent, {
+                    key: 'autocomplete',
+                    x: this.state.autoCompleteX,
+                    y: this.state.autoCompleteY,
+                    onEnter: this._hideAutoComplete,
+                }));
+            }
 
             var container = React.createElement('div', {
                 className: 'app',

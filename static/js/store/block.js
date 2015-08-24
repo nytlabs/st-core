@@ -127,16 +127,13 @@ var app = app || {};
         this.inputs = createInputGeometry(inputs, this.geometry);
         this.outputs = createOutputGeometry(outputs, this.geometry);
         this.connections = [];
-        this.position = {
-            x: data.position.x,
-            y: data.position.y
-        }
+        this.data = {};
+        this.update(data);
 
         // when the state of the block changes, we need to know what status
         // was set last so that we can clear it. 
         this.lastRouteStatus = null;
         this.crank = new Crank();
-        this.data = data;
 
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
@@ -195,14 +192,21 @@ var app = app || {};
             var route = app.RouteStore.getRoute(routeGeometry.id);
             renderRoute(routeGeometry, route, this.geometry);
         }.bind(this))
-
-        this.emit();
     }
 
     Block.prototype.update = function(data) {
         for (var key in data) {
             this.data[key] = data[key];
         }
+        this.position = data.position;
+
+        // re-render this block's connections.
+        // TODO: this can probably be ignored in the future in cases where the
+        // block is not visible in the current top most group.
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_RENDER_CONNECTIONS,
+            ids: this.connections,
+        });
     }
 
     Block.prototype.updateStatus = function(event) {
@@ -354,6 +358,7 @@ var app = app || {};
                 });
             }
             blocks[id].render();
+            blocks[id].emit();
         })
     }
 
@@ -362,7 +367,21 @@ var app = app || {};
         selected = [];
         toRender.forEach(function(id) {
             blocks[id].render();
+            blocks[id].emit();
         });
+    }
+
+    function deleteSelection() {
+        // TODO: update this for when we add sources
+        selected.forEach(function(id) {
+            app.Utils.request(
+                'DELETE',
+                'blocks/' + id, {},
+                null
+            )
+        })
+
+        selected = [];
     }
 
     function selectMove(dx, dy) {
@@ -381,7 +400,7 @@ var app = app || {};
         // connections need to be either translated or re-rendered.
         // yucky message
         app.Dispatcher.dispatch({
-            action: app.Actions.APP_RENDER_CONNECTIONS,
+            action: app.Actions.APP_TRANSLATE_CONNECTIONS,
             // if only end of a connection is being moved, then we need to 
             // re-render the whole connection
             ids: Object.keys(connections).filter(function(id) {
@@ -397,20 +416,45 @@ var app = app || {};
         })
     }
 
-    function updateConnections(event) {
-        blocks[event.data.from.id].connections.push(event.data.id);
-        blocks[event.data.to.id].connections.push(event.data.id);
+    function finishMove() {
+        selected.forEach(function(id) {
+            app.Utils.request(
+                'PUT',
+                'blocks/' + id + '/position', {
+                    x: blocks[id].position.x,
+                    y: blocks[id].position.y
+                },
+                null
+            )
+        })
+    }
+
+    function addConnection(event) {
+        blocks[event.fromId].connections.push(event.id);
+        blocks[event.toId].connections.push(event.id);
+    }
+
+    function deleteConnection(event) {
+        blocks[event.fromId].connections = blocks[event.fromId].connections.filter(function(id) {
+            return !(id == event.id)
+        })
+
+        blocks[event.toId].connections = blocks[event.toId].connections.filter(function(id) {
+            return !(id == event.id)
+        })
     }
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
+            case app.Actions.APP_REQUEST_NODE_MOVE:
+                finishMove();
+                break;
             case app.Actions.WS_BLOCK_CREATE:
                 createBlock(event.data);
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_DELETE:
-                //console.log(event.action);
-                //deleteBlock(action.id);
+                deleteBlock(event.id);
                 rs.emit();
                 break;
             case app.Actions.APP_MOVE: // this is deprecated
@@ -442,13 +486,19 @@ var app = app || {};
                 if (!blocks.hasOwnProperty(event.id)) return;
                 blocks[event.id].update(event.data);
                 blocks[event.id].emit();
+                rs.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
                 blocks[event.id].updateStatus(event);
                 break;
-            case app.Actions.WS_CONNECTION_CREATE:
-                updateConnections(event);
-                //rs.emit();
+            case app.Actions.APP_ADD_NODE_CONNECTION:
+                addConnection(event);
+                break;
+            case app.Actions.APP_DELETE_NODE_CONNECTION:
+                deleteConnection(event);
+                break;
+            case app.Actions.APP_DELETE_SELECTION:
+                deleteSelection();
                 break;
         }
     })

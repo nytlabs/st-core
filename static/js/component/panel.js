@@ -13,6 +13,7 @@ var app = app || {};
     app.PanelEditableComponent = React.createClass({
         displayName: 'PanelEditableComponent',
         getInitialState: function() {
+            //console.log(app.RouteStore.getRoute(this.props.id));
             return {
                 isEditing: false,
                 //value: this.props.value
@@ -41,6 +42,15 @@ var app = app || {};
             });
         },
         render: function() {
+            return React.createElement('div', {}, [
+                React.createElement('div', {
+                    className: 'label',
+                }, null),
+                React.createElement('input', {
+                    ref: 'input'
+                }, null)
+            ])
+
             /*var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
             var inputStyle = {
                 display: this.state.isEditing ? 'block' : 'none'
@@ -70,7 +80,7 @@ var app = app || {};
                     key: 'editableDisplay'
                 }, value)
             ]);*/
-            return React.createElement('div', {}, null);
+            //return React.createElement('div', {}, null);
         }
     })
 })();
@@ -134,8 +144,8 @@ var app = app || {};
         displayName: 'PanelComponent',
         render: function() {
             var block = app.BlockStore.getBlock(this.props.id);
-            console.log(this.props.key);
-            console.log(block);
+            //console.log(this.props.key);
+            //console.log(block);
             return React.createElement('div', {
                 className: 'panel'
             }, [
@@ -154,10 +164,11 @@ var app = app || {};
                     onChange: function() {},
                 }, null),
                 block.inputs.map(function(r, i) {
-                    console.log(r);
+                    //console.log(r);
                     return [
                         React.createElement(app.PanelEditableComponent, {
                             key: r.id,
+                            id: r.id,
                             onChange: function() {},
                         }, null)
                     ]

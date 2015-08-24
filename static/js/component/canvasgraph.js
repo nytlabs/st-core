@@ -91,7 +91,9 @@ var app = app || {};
             if (e.keyCode === 8 && e.target === document.body) {
                 e.preventDefault();
                 e.stopPropagation();
-                this.deleteSelection();
+                app.Dispatcher.dispatch({
+                    action: app.Actions.DELETE_SELECTION,
+                })
             }
 
             // only fire ctrl key state if we don't have anything in focus
@@ -195,8 +197,13 @@ var app = app || {};
                 });
                 this._selectionRectClear();
             }
+
+            if (this.state.mouseDownId !== null && this.state.shift === false) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_REQUEST_NODE_MOVE,
+                });
+            }
         },
-        _onClick: function(e) {},
         _onContextMenu: function(e) {
             e.nativeEvent.preventDefault();
         },
@@ -427,8 +434,8 @@ var app = app || {};
                 height: this.state.height,
                 onMouseDown: this._onMouseDown,
                 onMouseUp: this._onMouseUp,
-                onDoubleClick: this.props.doubleClick,
-                onClick: this._onClick,
+                onClick: this.props.onClick,
+                onDoubleClick: this.props.onDoubleClick,
                 onMouseMove: this._onMouseMove,
                 onContextMenu: this._onContextMenu,
             }, null);

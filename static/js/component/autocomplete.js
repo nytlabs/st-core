@@ -5,77 +5,96 @@ var app = app || {};
  * Fires onChange event to parent node when item is selected.
  */
 
+// TODO: somehow get current group's translation and add that to the X and Y 
+// upon creation of a block!
+
 (function() {
     'use strict';
 
     app.AutoCompleteComponent = React.createClass({
         displayName: 'AutoCompleteComponent',
         getInitialState: function() {
+            var options = app.LibraryStore.getLibrary();
             return {
                 text: '',
-                options: [],
+                options: options,
+                filtered: [],
             }
         },
         componentWillMount: function() {
-            this.autocomplete(this.state.text);
+            this._autocomplete(this.state.text);
         },
         componentDidMount: function() {
-          this.getDOMNode().children[0].focus()
+            this.getDOMNode().children[0].focus()
         },
-        autocomplete: function(s) {
+        _autocomplete: function(s) {
             var reBegin = new RegExp('^' + app.Utils.escape(s), 'i');
             var reIn = new RegExp(app.Utils.escape(s), 'i');
 
-            var beginList = this.props.options.filter(function(o) {
-                return o.type.match(reBegin)
+            var beginList = this.state.options.filter(function(o) {
+                return o.name.match(reBegin)
             }).sort(function(a, b) {
-                if (a.type > b.type) return 1;
-                if (a.type < b.type) return -1;
+                if (a.name > b.name) return 1;
+                if (a.name < b.name) return -1;
                 return 0
             });
 
-            var inList = this.props.options.filter(function(o) {
-                return o.type.match(reIn);
+            var inList = this.state.options.filter(function(o) {
+                return o.name.match(reIn);
             }).sort(function(a, b) {
-                if (a.type > b.type) return 1;
-                if (a.type < b.type) return -1;
+                if (a.name > b.name) return 1;
+                if (a.name < b.name) return -1;
                 return 0;
             })
 
             this.setState({
-                options: beginList.concat(inList.filter(function(o) {
+                filtered: beginList.concat(inList.filter(function(o) {
                     return beginList.indexOf(o) === -1;
                 }))
             });
         },
-        handleChange: function(e) {
-            this.autocomplete(e.target.value);
+        _handleChange: function(e) {
+            this._autocomplete(e.target.value);
         },
-        handleKeyUp: function(e) {
+        _handleKeyUp: function(e) {
             if (e.nativeEvent.keyCode === 13) {
-                var match = this.props.options.filter(function(o) {
-                    return o.type === e.target.value
+                var match = this.state.options.filter(function(o) {
+                    return o.name === e.target.value
                 });
                 if (match.length === 1) {
-                    this.props.onChange(match[0]);
+                    this._onEnter(match[0]);
                 }
+                this.props.onEnter();
             }
+        },
+        _onEnter: function(match) {
+            // TODO: move this to a api actions receiver.
+            app.Utils.request(
+                'POST',
+                match.type, {
+                    'type': match.name,
+                    'position': {
+                        'x': this.props.x,
+                        'y': this.props.y
+                    }
+                },
+                null)
         },
         render: function() {
             var input = React.createElement('input', {
-                onChange: this.handleChange,
-                onKeyUp: this.handleKeyUp,
-                key: 'autocomplete_input'
+                onChange: this._handleChange,
+                onKeyUp: this._handleKeyUp,
+                key: '_autocomplete_input'
             }, null);
 
-            var options = this.state.options.map(function(o) {
+            var options = this.state.filtered.map(function(o) {
                 return React.createElement('li', {
-                    key: o.type
-                }, o.type);
+                    key: o.name
+                }, o.name);
             });
 
             var list = React.createElement('ul', {
-                key: 'autocomplete_list',
+                key: '_autocomplete_list',
             }, options);
 
             return React.createElement('div', {

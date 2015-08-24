@@ -32,7 +32,6 @@ var app = app || {};
             return React.createElement('div', {
                 className: 'panel_list'
             }, this.state.ids.map(function(id) {
-                //console.log(id);
                 return React.createElement(app.RoutesPanelComponent, {
                         key: id,
                         id: id

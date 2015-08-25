@@ -41,6 +41,7 @@ var app = app || {};
 
         'APP_ADD_NODE_CONNECTION',
         'APP_DELETE_NODE_CONNECTION',
+        'APP_REQUEST_ROUTE_UPDATE'
     ]
 
 

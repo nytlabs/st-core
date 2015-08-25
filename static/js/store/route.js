@@ -61,6 +61,16 @@ var app = app || {};
         })
     }
 
+    function requestRouteUpdate(event) {
+        var route = routes[event.id];
+        console.log(route);
+        app.Utils.request(
+            'PUT',
+            '/blocks/' + route.blockId + '/routes/' + route.index,
+            event.value, {},
+            null)
+    }
+
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_ROUTE_CREATE:
@@ -76,6 +86,9 @@ var app = app || {};
             case app.Actions.APP_ROUTE_UPDATE:
                 routes[event.id].updateData(event.value);
                 routes[event.id].emit();
+                break;
+            case app.Actions.APP_REQUEST_ROUTE_UPDATE:
+                requestRouteUpdate(event);
                 break;
             case app.Actions.APP_ROUTE_UPDATE_STATUS:
                 // TODO: it's possible for the server to emit statuses of blocks

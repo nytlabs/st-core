@@ -7,7 +7,7 @@ var app = app || {};
  * TODO: fix the {'data': ...} nonsense
  */
 
-(function() {
+/*(function() {
     'use strict';
 
     app.PanelEditableComponent = React.createClass({
@@ -45,14 +45,16 @@ var app = app || {};
             return React.createElement('div', {}, [
                 React.createElement('div', {
                     className: 'label',
+                    key: 'label',
                 }, null),
                 React.createElement('input', {
-                    ref: 'input'
+                    ref: 'input',
+                    key: 'input',
                 }, null)
             ])
         }
     })
-})();
+})();*/
 
 /*(function() {
 
@@ -108,7 +110,7 @@ var app = app || {};
 
 }());*/
 
-(function() {
+/*(function() {
     'use strict';
 
     app.RouteEditableComponent = React.createClass({
@@ -149,57 +151,105 @@ var app = app || {};
             }, null);
         }
     });
+})();*/
+
+(function() {
+    app.RoutePanelInput = React.createClass({
+        getInitialState: function() {
+            return {
+                name: '',
+                type: '',
+                value: '',
+            }
+        },
+        componentDidMount: function() {
+            app.RouteStore.getRoute(this.props.id).addListener(this._update);
+            this._update();
+        },
+        componentWillUnmount: function() {
+            app.RouteStore.getRoute(this.props.id).removeListener(this._update);
+        },
+        _update: function() {
+            var route = app.RouteStore.getRoute(this.props.id);
+            var value = '';
+            if (route.data.value !== null) {
+                value = JSON.stringify(route.data.value.data);
+            }
+
+            this.setState({
+                name: route.data.name,
+                type: route.data.type,
+                value: value,
+            })
+        },
+        _handleChange: function(event) {
+            this.setState({
+                value: event.target.value
+            });
+        },
+        _onKeyDown: function(event) {
+            if (event.keyCode !== 13) return;
+
+            var value = null;
+            if (this.state.value !== null) {
+                try {
+                    value = {
+                        data: JSON.parse(this.state.value)
+                    }
+                } catch (e) {
+                    return
+                }
+            }
+
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_REQUEST_ROUTE_UPDATE,
+                id: this.props.id,
+                value: value
+            })
+        },
+        render: function() {
+            return React.createElement('div', {}, [
+                React.createElement('div', {
+                    className: 'label',
+                    key: 'label',
+                }, this.state.name),
+                React.createElement('input', {
+                    type: 'text',
+                    ref: 'value',
+                    key: 'value',
+                    value: this.state.value,
+                    onChange: this._handleChange,
+                    onKeyDown: this._onKeyDown,
+                }, null)
+            ]);
+        }
+    });
+
 })();
 
 (function() {
     app.RoutesPanelComponent = React.createClass({
         displayName: 'PanelComponent',
-        getInitialState: function() {
-            var block = app.BlockStore.getBlock(this.props.id);
-            return {
-                label: block.data.label
-            }
-        },
-        componentDidMount: function() {
-            app.BlockStore.addListener(this._onUpdate);
-        },
-        componentWillUnmount: function() {
-            app.BlockStore.removeListener(this._onUpdate);
-        },
-        shouldComponentUpdate: function(props, state) {
-            return state.label != this.state.label
-        },
-        _onUpdate: function() {
-            var block = app.BlockStore.getBlock(this.props.id);
-            this.setState({
-                label: block.data.label
-            })
-        },
-        _requestChange: function(a) {
-            console.log("NEW LABEL:", a);
-        },
         render: function() {
             var block = app.BlockStore.getBlock(this.props.id);
-            return React.createElement('div', {
-                className: 'panel'
-            }, [
+
+            var children = [
                 React.createElement('div', {
                     key: 'block_header',
                     className: 'block_header',
                 }, block.data.type),
-                React.createElement(app.PanelEditableComponent, {
-                    key: 'label',
-                    value: block.data.label,
-                    name: 'label',
-                    onChange: this._requestChange
-                }, null),
-                block.inputs.map(function(r, i) {
-                    return React.createElement(app.RouteEditableComponent, {
-                        key: r.id,
-                        id: r.id,
-                    }, null)
-                }.bind(this))
-            ]);
+            ];
+
+            children = children.concat(block.inputs.map(function(r) {
+                return React.createElement(app.RoutePanelInput, {
+                    id: r.id,
+                    key: r.id,
+                }, null)
+            }));
+
+            return React.createElement('div', {
+                className: 'panel'
+            }, children);
         }
     })
 })();

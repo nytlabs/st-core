@@ -23,7 +23,7 @@ var app = app || {};
             return {
                 id: id,
                 x: geometry.width + geometry.routeRadius,
-                y: (+.5) * geometry.routeHeight,
+                y: (i + .5) * geometry.routeHeight,
                 direction: 'output'
             }
         });
@@ -331,6 +331,14 @@ var app = app || {};
             console.warn('could not delete block: ', id, ' does not exist');
             return
         }
+
+        // if this id is currently selected, ensure that we remove it and fire
+        // selection event
+        if (selected.indexOf(id) !== -1) {
+            deselect(id);
+            selection.emit();
+        }
+
         delete blocks[id]
     }
 
@@ -362,6 +370,14 @@ var app = app || {};
         })
     }
 
+    function deselect(id) {
+        selected = selected.slice().filter(function(i) {
+            return i != id;
+        });
+        blocks[id].render();
+        blocks[id].emit();
+    }
+
     function deselectAll() {
         var toRender = selected.slice();
         selected = [];
@@ -380,8 +396,6 @@ var app = app || {};
                 null
             )
         })
-
-        selected = [];
     }
 
     function selectMove(dx, dy) {
@@ -489,6 +503,7 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
+                if (!blocks.hasOwnProperty(event.id)) return;
                 blocks[event.id].updateStatus(event);
                 break;
             case app.Actions.APP_ADD_NODE_CONNECTION:

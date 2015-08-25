@@ -25,9 +25,6 @@ var app = app || {};
                 ids: app.BlockStore.getSelected(),
             })
         },
-        shouldComponentUpdate: function(props, state) {
-            return state.ids.length != 0 && this.state.ids.length != 0;
-        },
         render: function() {
             return React.createElement('div', {
                 className: 'panel_list'

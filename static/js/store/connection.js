@@ -27,8 +27,8 @@ var app = app || {};
     Connection.prototype.geometry = function() {
         // TODO: instead of blocks, this should somehow find the top-most 
         // visible geometry that the route is apart of (for groups);
-        var from = app.BlockStore.getBlock(this.data.from.id);
-        var to = app.BlockStore.getBlock(this.data.to.id);
+        var from = app.NodeStore.getNode(this.data.from.id);
+        var to = app.NodeStore.getNode(this.data.to.id);
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;

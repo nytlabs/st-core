@@ -38,7 +38,7 @@ var app = app || {};
             return false;
         },
         componentDidMount: function() {
-            app.BlockStore.addListener(this._onNodesUpdate);
+            app.NodeStore.addListener(this._onNodesUpdate);
             app.ConnectionStore.addListener(this._onEdgesUpdate);
 
             window.addEventListener('keydown', this._onKeyDown);
@@ -49,7 +49,7 @@ var app = app || {};
             this._renderBuffers();
         },
         componentWillUnmount: function() {
-            app.BlockStore.removeListener(this._onNodesUpdate);
+            app.NodeStore.removeListener(this._onNodesUpdate);
             app.ConnectionStore.removeListener(this._onEdgesUpdate);
 
             window.removeEventListener('keydown', this._onKeyDown);
@@ -131,7 +131,7 @@ var app = app || {};
             })
 
             // TODO: get rid of in favor of per-group translations
-            var ids = app.BlockStore.pickBlock(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
+            var ids = app.NodeStore.pickNode(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
 
             if (this.state.connectingBlockId !== null) {
                 this._connectingClear();
@@ -154,7 +154,7 @@ var app = app || {};
 
             // pick the first ID
             var id = ids[0];
-            var route = app.BlockStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY);
+            var route = app.NodeStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY);
 
             if (route !== null && this.state.connectingBlockId === null) {
                 this.setState({
@@ -172,7 +172,7 @@ var app = app || {};
                     action: app.Actions.APP_SELECT_TOGGLE,
                     ids: [id]
                 })
-            } else if (app.BlockStore.getSelected().indexOf(id) === -1) {
+            } else if (app.NodeStore.getSelected().indexOf(id) === -1) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT,
                     id: id
@@ -260,7 +260,7 @@ var app = app || {};
             });
         },
         _connectingUpdate: function(mx, my) {
-            var block = app.BlockStore.getBlock(this.state.connectingBlockId);
+            var block = app.NodeStore.getNode(this.state.connectingBlockId);
             var x = block.position.x + this.state.translateX + this.state.connectingRoute.x;
             var y = block.position.y + this.state.translateY + this.state.connectingRoute.y;
             var ctx = this.state.bufferConnectionTool.getContext('2d');
@@ -285,7 +285,7 @@ var app = app || {};
             var originX = Math.min(x, this.state.mouseDownX);
             var originY = Math.min(y, this.state.mouseDownY);
             // TODO: get rid of translate in favor of per-group translations
-            var selectRect = app.BlockStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
+            var selectRect = app.NodeStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
 
             // get all nodes new to the selection rect
             var toggles = selectRect.filter(function(id) {
@@ -372,8 +372,8 @@ var app = app || {};
         _renderNodes: function() {
             var nodesCtx = this.state.bufferNodes.getContext('2d');
             nodesCtx.clearRect(0, 0, this.state.width, this.state.height);
-            app.BlockStore.getBlocks().forEach(function(id, i) {
-                var block = app.BlockStore.getBlock(id);
+            app.NodeStore.getNodes().forEach(function(id, i) {
+                var block = app.NodeStore.getNode(id);
                 var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
                 var y = block.position.y + this.state.translateY;
                 nodesCtx.drawImage(block.canvas, x, y);

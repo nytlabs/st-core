@@ -1,10 +1,10 @@
 var app = app || {};
 
 (function() {
-    // canonical store for all block objects
-    var blocks = {};
+    // canonical store for all node objects
+    var nodes = {};
 
-    // ids for all selected blocks
+    // ids for all selected nodes
     var selected = [];
 
     function createInputGeometry(inputs, geometry) {
@@ -30,6 +30,8 @@ var app = app || {};
         });
     }
 
+    /*
+    TODO: implement crank
     function Crank() {
         this.status = null;
     }
@@ -43,11 +45,12 @@ var app = app || {};
             this.emit();
         }
     }
+    */
 
 
     function Source(data) {}
 
-    function Block(data) {
+    function Node(data) {
 
         // TODO: drop the whole "inputs" and "outputs" part of the schema, put
         // distinction inside the map as a field. 
@@ -92,7 +95,7 @@ var app = app || {};
             return ctx.measureText(text);
         }
 
-        // calculate block width
+        // calculate node width
         // potentially make a util so that this can be shared with Group.
         var inputMeasures = inputs.map(function(r) {
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
@@ -129,10 +132,10 @@ var app = app || {};
         this.connections = [];
         this.data = {};
         this.update(data);
-        // when the state of the block changes, we need to know what status
+        // when the state of the node changes, we need to know what status
         // was set last so that we can clear it. 
         this.lastRouteStatus = null;
-        this.crank = new Crank();
+        //this.crank = new Crank();
 
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
@@ -141,10 +144,10 @@ var app = app || {};
         this.render();
     }
 
-    Block.prototype = Object.create(app.Emitter.prototype);
-    Block.constructor = Block;
+    Node.prototype = Object.create(app.Emitter.prototype);
+    Node.constructor = Node;
 
-    Block.prototype.render = function() {
+    Node.prototype.render = function() {
         var ctx = this.canvas.getContext('2d');
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fillStyle = 'rgba(230,230,230,1)';
@@ -181,46 +184,46 @@ var app = app || {};
         }.bind(this))
     }
 
-    Block.prototype.update = function(data) {
+    Node.prototype.update = function(data) {
         for (var key in data) {
             this.data[key] = data[key];
         }
         this.position = data.position;
 
-        // re-render this block's connections.
+        // re-render this node's connections.
         // TODO: this can probably be ignored in the future in cases where the
-        // block is not visible in the current top most group.
+        // node is not visible in the current top most group.
         app.Dispatcher.dispatch({
             action: app.Actions.APP_RENDER_CONNECTIONS,
             ids: this.connections,
         });
     }
 
-    Block.prototype.updateStatus = function(event) {
+    Node.prototype.updateStatus = function(event) {
         if (event.data.type === 'input' || event.data.type === 'output') {
             var id = event.data.id + '_' + event.data.data + '_' + event.data.type;
             this.lastRouteStatus = id;
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_UPDATE_STATUS,
                 id: id,
-                blocked: true,
+                nodeed: true,
             })
         } else {
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_UPDATE_STATUS,
                 id: this.lastRouteStatus,
-                blocked: false,
+                nodeed: false,
             })
         }
 
-        this.crank.update(event.data.type);
+        //this.crank.update(event.data.type);
     }
 
     function Group(data) {
-        Block.apply(this, data);
+        Node.apply(this, data);
     }
 
-    Group.prototype = Object.create(Block.prototype);
+    Group.prototype = Object.create(Node.prototype);
     Group.constructor = Group;
 
     function Selection() {}
@@ -233,31 +236,31 @@ var app = app || {};
 
     var selection = new Selection();
 
-    function BlockCollection() {}
-    BlockCollection.prototype = Object.create(app.Emitter.prototype);
-    BlockCollection.constructor = BlockCollection;
+    function NodeCollection() {}
+    NodeCollection.prototype = Object.create(app.Emitter.prototype);
+    NodeCollection.constructor = NodeCollection;
 
-    BlockCollection.prototype.getBlock = function(id) {
-        return blocks[id];
+    NodeCollection.prototype.getNode = function(id) {
+        return nodes[id];
     }
 
-    BlockCollection.prototype.getBlocks = function() {
-        return Object.keys(blocks);
+    NodeCollection.prototype.getNodes = function() {
+        return Object.keys(nodes);
     }
 
-    BlockCollection.prototype.getSelected = function() {
+    NodeCollection.prototype.getSelected = function() {
         return selected;
     }
 
-    // TODO: make it so that this only works for visible blocks
-    BlockCollection.prototype.pickBlock = function(x, y) {
+    // TODO: make it so that this only works for visible nodes
+    NodeCollection.prototype.pickNode = function(x, y) {
         var picked = [];
-        for (var id in blocks) {
+        for (var id in nodes) {
             if (app.Utils.pointInRect(
-                blocks[id].position.x,
-                blocks[id].position.y,
-                blocks[id].canvas.width,
-                blocks[id].canvas.height,
+                nodes[id].position.x,
+                nodes[id].position.y,
+                nodes[id].canvas.width,
+                nodes[id].canvas.height,
                 x,
                 y
             )) {
@@ -267,21 +270,21 @@ var app = app || {};
         return picked;
     }
 
-    BlockCollection.prototype.pickRoute = function(id, x, y) {
-        var block = blocks[id];
-        x -= block.position.x;
-        y -= block.position.y;
+    NodeCollection.prototype.pickRoute = function(id, x, y) {
+        var node = nodes[id];
+        x -= node.position.x;
+        y -= node.position.y;
 
-        var picked = block.inputs.filter(function(route) {
-            return block.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        var picked = node.inputs.filter(function(route) {
+            return node.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
         })
 
         if (picked.length > 0) {
             return picked[0];
         }
 
-        picked = block.outputs.filter(function(route) {
-            return block.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        picked = node.outputs.filter(function(route) {
+            return node.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
         })
 
         if (picked.length > 0) {
@@ -291,38 +294,38 @@ var app = app || {};
         return null
     }
 
-    BlockCollection.prototype.pickArea = function(x, y, w, h) {
+    NodeCollection.prototype.pickArea = function(x, y, w, h) {
         // should be optimized to only try to select nodes that are
         // 1) in the current visible group
         // 2) ideally within the visible workspace
         var picked = [];
 
-        for (var id in blocks) {
-            // center of block 
-            var blockX = blocks[id].position.x + blocks[id].geometry.routeRadius +
-                (.5 * blocks[id].geometry.width);
-            var blockY = blocks[id].position.y + blocks[id].geometry.routeRadius +
-                (.5 * blocks[id].geometry.height);
-            if (app.Utils.pointInRect(x, y, w, h, blockX, blockY)) {
+        for (var id in nodes) {
+            // center of node 
+            var nodeX = nodes[id].position.x + nodes[id].geometry.routeRadius +
+                (.5 * nodes[id].geometry.width);
+            var nodeY = nodes[id].position.y + nodes[id].geometry.routeRadius +
+                (.5 * nodes[id].geometry.height);
+            if (app.Utils.pointInRect(x, y, w, h, nodeX, nodeY)) {
                 picked.push(parseInt(id));
             }
         }
         return picked;
     }
 
-    var rs = new BlockCollection();
+    var rs = new NodeCollection();
 
-    function createBlock(block) {
-        if (blocks.hasOwnProperty(block.id) === true) {
-            console.warn('could not create block:', block.id, ' already exists');
+    function createNode(node) {
+        if (nodes.hasOwnProperty(node.id) === true) {
+            console.warn('could not create node:', node.id, ' already exists');
             return
         }
-        blocks[block.id] = new Block(block);
+        nodes[node.id] = new Node(node);
     }
 
-    function deleteBlock(id) {
-        if (blocks.hasOwnProperty(id) === false) {
-            console.warn('could not delete block: ', id, ' does not exist');
+    function deleteNode(id) {
+        if (nodes.hasOwnProperty(id) === false) {
+            console.warn('could not delete node: ', id, ' does not exist');
             return
         }
 
@@ -333,20 +336,20 @@ var app = app || {};
             selection.emit();
         }
 
-        delete blocks[id]
+        delete nodes[id]
     }
 
-    function updateBlock(block) {
-        if (blocks.hasOwnProperty(block.id) === false) {
-            console.warn('could not update block: ', block.id, ' does not exist');
+    function updateNode(node) {
+        if (nodes.hasOwnProperty(node.id) === false) {
+            console.warn('could not update node: ', node.id, ' does not exist');
             return
         }
-        block[block.id] = block;
+        node[node.id] = node;
     }
 
-    function moveBlock(id, dx, dy) {
-        blocks[id].position.x += dx;
-        blocks[id].position.y += dy;
+    function moveNode(id, dx, dy) {
+        nodes[id].position.x += dx;
+        nodes[id].position.y += dy;
     }
 
     function selectToggle(ids) {
@@ -358,8 +361,8 @@ var app = app || {};
                     return i != id;
                 });
             }
-            blocks[id].render();
-            blocks[id].emit();
+            nodes[id].render();
+            nodes[id].emit();
         })
     }
 
@@ -367,16 +370,16 @@ var app = app || {};
         selected = selected.slice().filter(function(i) {
             return i != id;
         });
-        blocks[id].render();
-        blocks[id].emit();
+        nodes[id].render();
+        nodes[id].emit();
     }
 
     function deselectAll() {
         var toRender = selected.slice();
         selected = [];
         toRender.forEach(function(id) {
-            blocks[id].render();
-            blocks[id].emit();
+            nodes[id].render();
+            nodes[id].emit();
         });
     }
 
@@ -385,7 +388,7 @@ var app = app || {};
         selected.forEach(function(id) {
             app.Utils.request(
                 'DELETE',
-                'blocks/' + id, {},
+                'nodes/' + id, {},
                 null
             )
         })
@@ -393,17 +396,17 @@ var app = app || {};
 
     function selectMove(dx, dy) {
         // an object containing the set of connections that are effected by 
-        // this block move.
+        // this node move.
         var connections = {};
         selected.forEach(function(id) {
-            blocks[id].position.x += dx;
-            blocks[id].position.y += dy;
-            blocks[id].connections.forEach(function(id) {
+            nodes[id].position.x += dx;
+            nodes[id].position.y += dy;
+            nodes[id].connections.forEach(function(id) {
                 connections[id] = connections.hasOwnProperty(id) ? connections[id] + 1 : 1;
             })
         });
 
-        // when a block moves we need to tell our connectionstore which 
+        // when a node moves we need to tell our connectionstore which 
         // connections need to be either translated or re-rendered.
         // yucky message
         app.Dispatcher.dispatch({
@@ -428,8 +431,8 @@ var app = app || {};
             app.Utils.request(
                 'PUT',
                 'blocks/' + id + '/position', {
-                    x: blocks[id].position.x,
-                    y: blocks[id].position.y
+                    x: nodes[id].position.x,
+                    y: nodes[id].position.y
                 },
                 null
             )
@@ -437,16 +440,16 @@ var app = app || {};
     }
 
     function addConnection(event) {
-        blocks[event.fromId].connections.push(event.id);
-        blocks[event.toId].connections.push(event.id);
+        nodes[event.fromId].connections.push(event.id);
+        nodes[event.toId].connections.push(event.id);
     }
 
     function deleteConnection(event) {
-        blocks[event.fromId].connections = blocks[event.fromId].connections.filter(function(id) {
+        nodes[event.fromId].connections = nodes[event.fromId].connections.filter(function(id) {
             return !(id == event.id)
         })
 
-        blocks[event.toId].connections = blocks[event.toId].connections.filter(function(id) {
+        nodes[event.toId].connections = nodes[event.toId].connections.filter(function(id) {
             return !(id == event.id)
         })
     }
@@ -460,23 +463,23 @@ var app = app || {};
                 finishMove();
                 break;
             case app.Actions.WS_BLOCK_CREATE:
-                createBlock(event.data);
+                createNode(event.data);
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_DELETE:
-                deleteBlock(event.id);
+                deleteNode(event.id);
                 rs.emit();
                 break;
             case app.Actions.APP_MOVE: // this is deprecated
-                if (!blocks.hasOwnProperty(event.id)) return;
-                moveBlock(event.id, event.dx, event.dy);
+                if (!nodes.hasOwnProperty(event.id)) return;
+                moveNode(event.id, event.dx, event.dy);
                 break;
             case app.Actions.APP_SELECT_MOVE:
                 selectMove(event.dx, event.dy);
                 rs.emit();
                 break;
             case app.Actions.APP_SELECT:
-                if (!blocks.hasOwnProperty(event.id)) return;
+                if (!nodes.hasOwnProperty(event.id)) return;
                 deselectAll();
                 selectToggle([event.id]);
                 rs.emit();
@@ -493,14 +496,14 @@ var app = app || {};
                 selection.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE:
-                if (!blocks.hasOwnProperty(event.id)) return;
-                blocks[event.id].update(event.data);
-                blocks[event.id].emit();
+                if (!nodes.hasOwnProperty(event.id)) return;
+                nodes[event.id].update(event.data);
+                nodes[event.id].emit();
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
-                if (!blocks.hasOwnProperty(event.id)) return;
-                blocks[event.id].updateStatus(event);
+                if (!nodes.hasOwnProperty(event.id)) return;
+                nodes[event.id].updateStatus(event);
                 break;
             case app.Actions.APP_ADD_NODE_CONNECTION:
                 addConnection(event);
@@ -514,6 +517,6 @@ var app = app || {};
         }
     })
 
-    app.BlockStore = rs;
-    app.BlockSelection = selection;
+    app.NodeStore = rs;
+    app.NodeSelection = selection;
 }())

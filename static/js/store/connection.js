@@ -42,10 +42,10 @@ var app = app || {};
         }).indexOf(this.routeIdTo);
 
         var yFrom = from.geometry.routeHeight * (routeIndexFrom + 1) - (from.geometry.routeRadius);
-        var xFrom = from.geometry.routeRadius + from.geometry.width;
+        var xFrom = from.geometry.routeRadius * 2 + from.geometry.width - 1;
 
         var yTo = to.geometry.routeHeight * (routeIndexTo + 1) - (to.geometry.routeRadius);
-        var xTo = to.geometry.routeRadius;
+        var xTo = 1;
 
         // origin point for bounding box outside of connection
         this.position = {
@@ -80,19 +80,32 @@ var app = app || {};
         var ctx = this.canvas.getContext('2d');
         var c = this.curve;
 
+        // TODO: gradient coloring of connections is a test and should be evaluated for performance!
+        var fromColor = app.Constants.TypeColors[app.RouteStore.getRoute(this.routeIdFrom).data.type];
+        var toColor = app.Constants.TypeColors[app.RouteStore.getRoute(this.routeIdTo).data.type];
+
+        var gradient = ctx.createLinearGradient(c[0], c[1], c[6], c[7]);
+        gradient.addColorStop("0", fromColor);
+        gradient.addColorStop("1.0", toColor);
+
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        ctx.beginPath()
-        ctx.moveTo(c[0], c[1]);
         ctx.setLineDash([]);
-        ctx.lineWidth = 2.0
-        ctx.bezierCurveTo(c[2], c[3], c[4], c[5], c[6], c[7]);
-        ctx.stroke();
+        ctx.lineWidth = 4.0
 
-        var path = new Path2D();
+        ctx.strokeStyle = 'black';
+        var conn = new Path2D();
+        conn.moveTo(c[0], c[1]);
+        conn.bezierCurveTo(c[2], c[3], c[4], c[5], c[6], c[7]);
+        ctx.stroke(conn);
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 2.0;
+        ctx.stroke(conn);
+
+        /*var path = new Path2D();
         path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
         path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
-        ctx.fill(path);
+        ctx.fill(path);*/
 
         this.emit();
     }

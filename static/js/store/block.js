@@ -154,22 +154,10 @@ var app = app || {};
         ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(0,0,0,1)';
         ctx.strokeRect(this.geometry.routeRadius, 0, this.geometry.width, this.geometry.height);
 
-        // move to constants
-        var types = {
-            'number': 'rgba(170, 255, 0, 1)',
-            'object': 'rgba(255, 170, 0, 1)',
-            'array': 'rgba(255, 0, 170, 1)',
-            'string': 'rgba(170, 0, 255, 1)',
-            'boolean': 'rgba(0, 170, 255, 1)',
-            'writer': 'rgba(0, 255, 170, 1)',
-            'any': 'rgba(255, 255, 255, 1)',
-            'error': 'rgba(255, 0, 0, 1)'
-        }
-
         function renderRoute(routeGeometry, route, geometry) {
             ctx.beginPath();
             ctx.arc(routeGeometry.x, routeGeometry.y, geometry.routeRadius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = types[route.data.type];
+            ctx.fillStyle = app.Constants.TypeColors[route.data.type];
             ctx.fill();
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'black';

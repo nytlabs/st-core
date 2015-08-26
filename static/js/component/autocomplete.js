@@ -25,7 +25,7 @@ var app = app || {};
             this._autocomplete(this.state.text);
         },
         componentDidMount: function() {
-            this.getDOMNode().children[0].focus()
+            React.findDOMNode(this.refs.auto_input).focus()
         },
         _autocomplete: function(s) {
             var reBegin = new RegExp('^' + app.Utils.escape(s), 'i');
@@ -84,7 +84,8 @@ var app = app || {};
             var input = React.createElement('input', {
                 onChange: this._handleChange,
                 onKeyUp: this._handleKeyUp,
-                key: '_autocomplete_input'
+                key: '_autocomplete_input',
+                ref: 'auto_input'
             }, null);
 
             var options = this.state.filtered.map(function(o) {

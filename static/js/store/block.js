@@ -13,7 +13,8 @@ var app = app || {};
                 id: id,
                 x: geometry.routeRadius,
                 y: (i + .5) * geometry.routeHeight,
-                direction: 'input'
+                direction: 'input',
+                hasValue: false
             }
         });
     }
@@ -24,7 +25,7 @@ var app = app || {};
                 id: id,
                 x: geometry.width + geometry.routeRadius,
                 y: (i + .5) * geometry.routeHeight,
-                direction: 'output'
+                direction: 'output',
             }
         });
     }
@@ -43,7 +44,6 @@ var app = app || {};
         }
     }
 
-    function Group(data) {}
 
     function Source(data) {}
 
@@ -129,7 +129,6 @@ var app = app || {};
         this.connections = [];
         this.data = {};
         this.update(data);
-
         // when the state of the block changes, we need to know what status
         // was set last so that we can clear it. 
         this.lastRouteStatus = null;
@@ -216,6 +215,13 @@ var app = app || {};
 
         this.crank.update(event.data.type);
     }
+
+    function Group(data) {
+        Block.apply(this, data);
+    }
+
+    Group.prototype = Object.create(Block.prototype);
+    Group.constructor = Group;
 
     function Selection() {}
     Selection.prototype = Object.create(app.Emitter.prototype);
@@ -343,7 +349,6 @@ var app = app || {};
         blocks[id].position.y += dy;
     }
 
-
     function selectToggle(ids) {
         ids.forEach(function(id) {
             if (selected.indexOf(id) === -1) {
@@ -448,6 +453,9 @@ var app = app || {};
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
+            case app.Actions.APP_CREATE_GROUP:
+                console.log(event);
+                break;
             case app.Actions.APP_REQUEST_NODE_MOVE:
                 finishMove();
                 break;

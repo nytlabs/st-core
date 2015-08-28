@@ -6,6 +6,7 @@ var app = app || {};
 
     // ids for all selected nodes
     var selected = [];
+    var groups = [];
 
     function createInputGeometry(inputs, geometry) {
         return inputs.map(function(id, i) {
@@ -47,61 +48,50 @@ var app = app || {};
     }
     */
 
+    function canvasMeasureText(text, style) {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.font = style;
+        return ctx.measureText(text);
+    }
+
 
     function Source(data) {}
 
     function Node(data) {
 
-        // TODO: drop the whole "inputs" and "outputs" part of the schema, put
-        // distinction inside the map as a field. 
-        var inputs = data.inputs.map(function(input, i) {
-            return data.id + '_' + i + '_input';
-        });
-
-        var outputs = data.outputs.map(function(output, i) {
-            return data.id + '_' + i + '_output';
-        });
-
-        // ask the RouteStore to create some routes.
-        // TODO: consider using facebook's waitFor() in the future. in that case, 
-        // we'd just make RouteStore consume the WS_BLOCK_CREATE message,
-        // and have the RouteStore do the job of what is happening here.
-        inputs.map(function(id, i) {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_CREATE,
-                id: id,
-                blockId: data.id,
-                index: i,
-                direction: 'input',
-                data: data.inputs[i]
-            });
-        });
-
-        outputs.map(function(id, i) {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_CREATE,
-                id: id,
-                blockId: data.id,
-                index: i,
-                direction: 'output',
-                data: data.outputs[i]
-            });
-        });
-
-        function canvasMeasureText(text, style) {
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            ctx.font = style;
-            return ctx.measureText(text);
-        }
-
+        this.canvas = document.createElement('canvas');
         // calculate node width
         // potentially make a util so that this can be shared with Group.
-        var inputMeasures = inputs.map(function(r) {
+        this.data = {};
+        this.inputs = [];
+        this.outputs = [];
+        this.connections = [];
+        this.update(data);
+        // when the state of the node changes, we need to know what status
+        // was set last so that we can clear it. 
+        this.lastRouteStatus = null;
+        //this.crank = new Crank();
+
+    }
+
+    Node.prototype = Object.create(app.Emitter.prototype);
+    Node.constructor = Node;
+
+    Node.prototype.addInput = function(id) {
+        this.inputs.push(id);
+    }
+
+    Node.prototype.addOutput = function(id) {
+        this.outputs.push(id);
+    }
+
+    Node.prototype.geometry = function() {
+        var inputMeasures = this.inputs.map(function(r) {
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
         });
 
-        var outputMeasures = outputs.map(function(r) {
+        var outputMeasures = this.outputs.map(function(r) {
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
         });
 
@@ -121,40 +111,29 @@ var app = app || {};
         }
 
         // the following is derived data for use with UI
-        this.geometry = {
+        this.nodeGeometry = {
             width: maxInputWidth + maxOutputWidth + padding.horizontal + routeHeight,
-            height: Math.max(inputs.length, outputs.length) * routeHeight + padding.vertical,
+            height: Math.max(this.inputs.length, this.outputs.length) * routeHeight + padding.vertical,
             routeRadius: Math.floor(routeHeight / 2.0),
             routeHeight: routeHeight,
         }
-        this.inputs = createInputGeometry(inputs, this.geometry);
-        this.outputs = createOutputGeometry(outputs, this.geometry);
-        this.connections = [];
-        this.data = {};
-        this.update(data);
-        // when the state of the node changes, we need to know what status
-        // was set last so that we can clear it. 
-        this.lastRouteStatus = null;
-        //this.crank = new Crank();
 
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = this.geometry.width + (this.geometry.routeRadius * 2);
-        this.canvas.height = this.geometry.height;
-
-        this.render();
+        this.inputsGeometry = createInputGeometry(this.inputs, this.nodeGeometry);
+        this.outputsGeometry = createOutputGeometry(this.outputs, this.nodeGeometry);
+        this.canvas.width = this.nodeGeometry.width + (this.nodeGeometry.routeRadius * 2);
+        this.canvas.height = this.nodeGeometry.height;
     }
 
-    Node.prototype = Object.create(app.Emitter.prototype);
-    Node.constructor = Node;
-
     Node.prototype.render = function() {
+        this.geometry();
+
         var ctx = this.canvas.getContext('2d');
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fillStyle = 'rgba(230,230,230,1)';
-        ctx.fillRect(this.geometry.routeRadius, 0, this.geometry.width, this.geometry.height);
+        ctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
         ctx.lineWidth = selected.indexOf(this.data.id) !== -1 ? 2 : 1;
         ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(0,0,0,1)';
-        ctx.strokeRect(this.geometry.routeRadius, 0, this.geometry.width, this.geometry.height);
+        ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
         function renderRoute(routeGeometry, route, geometry) {
             ctx.beginPath();
@@ -173,14 +152,14 @@ var app = app || {};
                 routeGeometry.y + geometry.routeRadius)
         };
 
-        this.inputs.forEach(function(routeGeometry) {
+        this.inputsGeometry.forEach(function(routeGeometry) {
             var route = app.RouteStore.getRoute(routeGeometry.id);
-            renderRoute(routeGeometry, route, this.geometry);
+            renderRoute(routeGeometry, route, this.nodeGeometry);
         }.bind(this))
 
-        this.outputs.forEach(function(routeGeometry, i) {
+        this.outputsGeometry.forEach(function(routeGeometry, i) {
             var route = app.RouteStore.getRoute(routeGeometry.id);
-            renderRoute(routeGeometry, route, this.geometry);
+            renderRoute(routeGeometry, route, this.nodeGeometry);
         }.bind(this))
     }
 
@@ -220,7 +199,12 @@ var app = app || {};
     }
 
     function Group(data) {
-        Node.apply(this, data);
+        Node.call(this, data);
+        this.children = [];
+        this.translation = {
+            x: 0,
+            y: 0,
+        }
     }
 
     Group.prototype = Object.create(Node.prototype);
@@ -275,16 +259,16 @@ var app = app || {};
         x -= node.position.x;
         y -= node.position.y;
 
-        var picked = node.inputs.filter(function(route) {
-            return node.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        var picked = node.inputsGeometry.filter(function(route) {
+            return node.nodeGeometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
         })
 
         if (picked.length > 0) {
             return picked[0];
         }
 
-        picked = node.outputs.filter(function(route) {
-            return node.geometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
+        picked = node.outputsGeometry.filter(function(route) {
+            return node.nodeGeometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
         })
 
         if (picked.length > 0) {
@@ -302,10 +286,10 @@ var app = app || {};
 
         for (var id in nodes) {
             // center of node 
-            var nodeX = nodes[id].position.x + nodes[id].geometry.routeRadius +
-                (.5 * nodes[id].geometry.width);
-            var nodeY = nodes[id].position.y + nodes[id].geometry.routeRadius +
-                (.5 * nodes[id].geometry.height);
+            var nodeX = nodes[id].position.x + nodes[id].nodeGeometry.routeRadius +
+                (.5 * nodes[id].nodeGeometry.width);
+            var nodeY = nodes[id].position.y + nodes[id].nodeGeometry.routeRadius +
+                (.5 * nodes[id].nodeGeometry.height);
             if (app.Utils.pointInRect(x, y, w, h, nodeX, nodeY)) {
                 picked.push(parseInt(id));
             }
@@ -315,12 +299,83 @@ var app = app || {};
 
     var rs = new NodeCollection();
 
-    function createNode(node) {
+    function createGroup(node) {
         if (nodes.hasOwnProperty(node.id) === true) {
             console.warn('could not create node:', node.id, ' already exists');
             return
         }
+
+        nodes[node.id] = new Group(node);
+        nodes[node.id].render();
+    }
+
+    function addChildToGroup(event) {
+        if (!nodes.hasOwnProperty(event.child)) {
+            console.log(event);
+        }
+        nodes[event.child].inputs.forEach(function(id) {
+            nodes[event.id].addInput(id);
+        })
+        nodes[event.child].outputs.forEach(function(id) {
+            nodes[event.id].addOutput(id);
+        })
+        nodes[event.id].children.push(event.child);
+        nodes[event.id].render();
+    }
+
+    function createBlock(node) {
+        if (nodes.hasOwnProperty(node.id) === true) {
+            console.warn('could not create node:', node.id, ' already exists');
+            return
+        }
+        // TODO: drop the whole "inputs" and "outputs" part of the schema, put
+        // distinction inside the map as a field. 
+        var inputs = node.inputs.map(function(input, i) {
+            return node.id + '_' + i + '_input';
+        });
+
+        var outputs = node.outputs.map(function(output, i) {
+            return node.id + '_' + i + '_output';
+        });
+
+        // ask the RouteStore to create some routes.
+        // TODO: consider using facebook's waitFor() in the future. in that case, 
+        // we'd just make RouteStore consume the WS_BLOCK_CREATE message,
+        // and have the RouteStore do the job of what is happening here.
+        inputs.map(function(id, i) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_CREATE,
+                id: id,
+                blockId: node.id,
+                index: i,
+                direction: 'input',
+                data: node.inputs[i]
+            });
+        });
+
+        outputs.map(function(id, i) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_CREATE,
+                id: id,
+                blockId: node.id,
+                index: i,
+                direction: 'output',
+                data: node.outputs[i]
+            });
+        });
+
         nodes[node.id] = new Node(node);
+
+        inputs.forEach(function(id) {
+            nodes[node.id].addInput(id);
+        })
+
+        outputs.forEach(function(id) {
+            nodes[node.id].addOutput(id);
+        })
+
+        nodes[node.id].render();
+
     }
 
     function deleteNode(id) {
@@ -388,7 +443,7 @@ var app = app || {};
         selected.forEach(function(id) {
             app.Utils.request(
                 'DELETE',
-                'nodes/' + id, {},
+                'blocks/' + id, {},
                 null
             )
         })
@@ -456,14 +511,19 @@ var app = app || {};
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
-            case app.Actions.APP_CREATE_GROUP:
-                console.log(event);
+            case app.Actions.WS_GROUP_CREATE:
+                createGroup(event.data);
+                rs.emit();
+                break;
+            case app.Actions.WS_GROUP_ADD_CHILD:
+                addChildToGroup(event);
+                rs.emit();
                 break;
             case app.Actions.APP_REQUEST_NODE_MOVE:
                 finishMove();
                 break;
             case app.Actions.WS_BLOCK_CREATE:
-                createNode(event.data);
+                createBlock(event.data);
                 rs.emit();
                 break;
             case app.Actions.WS_BLOCK_DELETE:

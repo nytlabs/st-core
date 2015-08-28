@@ -94,10 +94,10 @@ var app = app || {};
                 }, block.data.type),
             ];
 
-            children = children.concat(block.inputs.map(function(r) {
+            children = children.concat(block.inputs.map(function(id) {
                 return React.createElement(app.RoutePanelInput, {
-                    id: r.id,
-                    key: r.id,
+                    id: id,
+                    key: id,
                 }, null)
             }));
 

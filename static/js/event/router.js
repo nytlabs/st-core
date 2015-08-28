@@ -48,11 +48,25 @@ var app = app || {};
                 });
                 break;
             case 'group':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.group.id,
+                    data: event.data.group
+                });
+                break;
+            case 'child':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.group.id,
+                    child: event.data.child.id
+                })
                 break;
             case 'source':
                 break;
             case 'link':
                 break;
+            default:
+                //console.log(event);
         }
     }
 

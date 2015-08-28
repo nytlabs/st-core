@@ -1,5 +1,7 @@
 var app = app || {};
 
+// TODO: move emit() out of Connection.render();
+
 (function() {
     'use strict';
 
@@ -33,18 +35,18 @@ var app = app || {};
         // bounds of a non-buffered box.
         var buffer = 10;
 
-        var routeIndexFrom = from.outputs.map(function(r) {
+        var routeIndexFrom = from.outputsGeometry.map(function(r) {
             return r.id
         }).indexOf(this.routeIdFrom);
 
-        var routeIndexTo = to.inputs.map(function(r) {
+        var routeIndexTo = to.inputsGeometry.map(function(r) {
             return r.id
         }).indexOf(this.routeIdTo);
 
-        var yFrom = from.geometry.routeHeight * (routeIndexFrom + 1) - (from.geometry.routeRadius);
-        var xFrom = from.geometry.routeRadius * 2 + from.geometry.width - 1;
+        var yFrom = from.nodeGeometry.routeHeight * (routeIndexFrom + 1) - (from.nodeGeometry.routeRadius);
+        var xFrom = from.nodeGeometry.routeRadius * 2 + from.nodeGeometry.width - 1;
 
-        var yTo = to.geometry.routeHeight * (routeIndexTo + 1) - (to.geometry.routeRadius);
+        var yTo = to.nodeGeometry.routeHeight * (routeIndexTo + 1) - (to.nodeGeometry.routeRadius);
         var xTo = 1;
 
         // origin point for bounding box outside of connection

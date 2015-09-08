@@ -51,7 +51,7 @@ var app = app || {};
                         data: JSON.parse(this.state.value)
                     }
                 } catch (e) {
-                    return
+                    console.log(e);
                 }
             }
 

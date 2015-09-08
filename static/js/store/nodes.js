@@ -80,6 +80,8 @@ var app = app || {};
 
     Node.prototype.addInput = function(id) {
         this.inputs.push(id);
+        var route = app.RouteStore.getRoute(id);
+        route.addListener(this.renderAndEmit.bind(this));
     }
 
     Node.prototype.addOutput = function(id) {
@@ -88,6 +90,22 @@ var app = app || {};
 
     Node.prototype.removeInput = function(id) {
         this.inputs.splice(this.inputs.indexOf(id), 1);
+        route.removeListener(this.renderAndEmit.bind(this));
+    }
+
+    Node.prototype.renderAndEmit = function() {
+        // really don't like this -- somewhat confusing handling of events
+        //
+        // this function is fired when a route has emitted an update event.
+        // this means we need to re-render that route, because somehow its
+        // state has changed (had a value set, etc). 
+        //
+        // we bind this function (renderAndEmit) to that event, and whenever
+        // that happens we call a render on the block, and then we tell the
+        // NodeStore to emit an update event. Since the canvasgraph component
+        // is listening to NodeStore events, the render is fully propagated.
+        this.render();
+        app.NodeStore.emit();
     }
 
     Node.prototype.removeOutput = function(id) {
@@ -157,7 +175,14 @@ var app = app || {};
             ctx.fillStyle = 'black';
             ctx.fillText(route.data.name,
                 routeGeometry.x + (route.direction === 'input' ? 1 : -1) * geometry.routeRadius,
-                routeGeometry.y + geometry.routeRadius)
+                routeGeometry.y + geometry.routeRadius);
+
+            if (route.direction === 'input' && route.data.value !== null) {
+                ctx.beginPath();
+                ctx.fillStlye = 'rgba(100,100,100,1)';
+                ctx.arc(routeGeometry.x, routeGeometry.y, 4, 0, 2 * Math.PI, false);
+                ctx.fill();
+            }
         };
 
         this.inputsGeometry.forEach(function(routeGeometry) {

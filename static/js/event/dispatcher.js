@@ -7,6 +7,7 @@ var app = app || {};
         _callbacks.push(callback);
     }
     Dispatcher.prototype.dispatch = function(payload) {
+        console.log(payload);
         _callbacks.forEach(function(callback) {
             callback(payload);
         })

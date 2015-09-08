@@ -86,6 +86,14 @@ var app = app || {};
         this.outputs.push(id);
     }
 
+    Node.prototype.removeInput = function(id) {
+        this.inputs.splice(this.inputs.indexOf(id), 1);
+    }
+
+    Node.prototype.removeOutput = function(id) {
+        this.outputs.splice(this.outputs.indexOf(id), 1);
+    }
+
     Node.prototype.geometry = function() {
         var inputMeasures = this.inputs.map(function(r) {
             return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
@@ -179,7 +187,10 @@ var app = app || {};
     }
 
     Node.prototype.updateStatus = function(event) {
-        if (event.data.type === 'input' || event.data.type === 'output') {
+        // good gravy what did this ever do?
+        // what is a nodeed?
+        // why is id undefiend?
+        /*if (event.data.type === 'input' || event.data.type === 'output') {
             var id = event.data.id + '_' + event.data.data + '_' + event.data.type;
             this.lastRouteStatus = id;
             app.Dispatcher.dispatch({
@@ -193,7 +204,7 @@ var app = app || {};
                 id: this.lastRouteStatus,
                 nodeed: false,
             })
-        }
+        }*/
 
         //this.crank.update(event.data.type);
     }
@@ -323,6 +334,17 @@ var app = app || {};
         nodes[event.id].render();
     }
 
+    function removeChildFromGroup(event) {
+        nodes[event.child].inputs.forEach(function(id) {
+            nodes[event.id].removeInput(id);
+        })
+
+        nodes[event.child].outputs.forEach(function(id) {
+            nodes[event.id].removeOutput(id);
+        });
+        nodes[event.id].render();
+    }
+
     function createBlock(node) {
         if (nodes.hasOwnProperty(node.id) === true) {
             console.warn('could not create node:', node.id, ' already exists');
@@ -447,6 +469,9 @@ var app = app || {};
                 null
             )
         })
+
+        // worried this may be async madness
+        selected = [];
     }
 
     function selectMove(dx, dy) {
@@ -464,6 +489,7 @@ var app = app || {};
         // when a node moves we need to tell our connectionstore which 
         // connections need to be either translated or re-rendered.
         // yucky message
+        if (Object.keys(connections).length == 0) return;
         app.Dispatcher.dispatch({
             action: app.Actions.APP_TRANSLATE_CONNECTIONS,
             // if only end of a connection is being moved, then we need to 
@@ -519,6 +545,9 @@ var app = app || {};
                 addChildToGroup(event);
                 rs.emit();
                 break;
+            case app.Actions.WS_GROUP_REMOVE_CHILD:
+                removeChildFromGroup(event);
+                rs.emit();
             case app.Actions.APP_REQUEST_NODE_MOVE:
                 finishMove();
                 break;

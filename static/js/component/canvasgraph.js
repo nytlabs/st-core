@@ -92,7 +92,7 @@ var app = app || {};
                 e.preventDefault();
                 e.stopPropagation();
                 app.Dispatcher.dispatch({
-                    action: app.Actions.DELETE_SELECTION,
+                    action: app.Actions.APP_DELETE_SELECTION,
                 })
             }
 

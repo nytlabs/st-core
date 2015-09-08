@@ -90,6 +90,7 @@ var app = app || {};
 
     Node.prototype.removeInput = function(id) {
         this.inputs.splice(this.inputs.indexOf(id), 1);
+        var route = app.RouteStore.getRoute(id);
         route.removeListener(this.renderAndEmit.bind(this));
     }
 
@@ -104,6 +105,9 @@ var app = app || {};
         // that happens we call a render on the block, and then we tell the
         // NodeStore to emit an update event. Since the canvasgraph component
         // is listening to NodeStore events, the render is fully propagated.
+        //
+        // TODO: an optimized version of this would check to see if the block is
+        // visible. if it's not then don't do anything
         this.render();
         app.NodeStore.emit();
     }

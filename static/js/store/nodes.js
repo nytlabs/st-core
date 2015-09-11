@@ -6,7 +6,8 @@ var app = app || {};
 
     // ids for all selected nodes
     var selected = [];
-    var groups = [];
+    //    var groups = []; not needed yet
+    var root = null;
 
     function createInputGeometry(inputs, geometry) {
         return inputs.map(function(id, i) {
@@ -72,7 +73,6 @@ var app = app || {};
         // was set last so that we can clear it. 
         this.lastRouteStatus = null;
         //this.crank = new Crank();
-
     }
 
     Node.prototype = Object.create(app.Emitter.prototype);
@@ -268,8 +268,10 @@ var app = app || {};
         return nodes[id];
     }
 
+    // getNodes returns all nodes that should be on-screen
     NodeCollection.prototype.getNodes = function() {
-        return Object.keys(nodes);
+        // if for some reason we don't have a root set, return all nodes
+        return root === null ? Object.keys(nodes) : nodes[root].children;
     }
 
     NodeCollection.prototype.getSelected = function() {
@@ -279,7 +281,8 @@ var app = app || {};
     // TODO: make it so that this only works for visible nodes
     NodeCollection.prototype.pickNode = function(x, y) {
         var picked = [];
-        for (var id in nodes) {
+        //for (var id in this.getNodes) {
+        this.getNodes().forEach(function(id) {
             if (app.Utils.pointInRect(
                 nodes[id].position.x,
                 nodes[id].position.y,
@@ -290,7 +293,7 @@ var app = app || {};
             )) {
                 picked.push(parseInt(id));
             }
-        }
+        })
         return picked;
     }
 
@@ -324,7 +327,7 @@ var app = app || {};
         // 2) ideally within the visible workspace
         var picked = [];
 
-        for (var id in nodes) {
+        this.getNodes().forEach(function(id) {
             // center of node 
             var nodeX = nodes[id].position.x + nodes[id].nodeGeometry.routeRadius +
                 (.5 * nodes[id].nodeGeometry.width);
@@ -333,7 +336,7 @@ var app = app || {};
             if (app.Utils.pointInRect(x, y, w, h, nodeX, nodeY)) {
                 picked.push(parseInt(id));
             }
-        }
+        })
         return picked;
     }
 
@@ -347,20 +350,36 @@ var app = app || {};
 
         nodes[node.id] = new Group(node);
         nodes[node.id].render();
+
+        // set group 0 as our current parent when we recieve it
+        // TODO: in the future, we may want multiple patterns with a 'null'
+        // parent, thus making them 'root' groups the same way that group 0
+        // is. Currently, all groups descend from a single root, and there 
+        // isn't necessarily a reason for that.
+        if (node.id === 0) setRoot(node.id);
+    }
+
+    function setRoot(id) {
+        root = id;
+
+        // we need to re-render right now!
+        app.NodeStore.emit();
     }
 
     function addChildToGroup(event) {
-        if (!nodes.hasOwnProperty(event.child)) {
-            console.log(event);
-        }
         nodes[event.child].inputs.forEach(function(id) {
             nodes[event.id].addInput(id);
         })
         nodes[event.child].outputs.forEach(function(id) {
             nodes[event.id].addOutput(id);
         })
+
         nodes[event.id].children.push(event.child);
-        nodes[event.id].render();
+
+        // if our group is a child of the current root, then we need to render
+        if (nodes[root].children.indexOf(event.id) !== -1) {
+            nodes[event.id].render();
+        }
     }
 
     function removeChildFromGroup(event) {
@@ -371,7 +390,13 @@ var app = app || {};
         nodes[event.child].outputs.forEach(function(id) {
             nodes[event.id].removeOutput(id);
         });
-        nodes[event.id].render();
+
+        nodes[event.id].children.splice(nodes[event.id].children.indexOf(event.child), 1);
+
+        //if our group is a child of the current root, then we need to render
+        if (nodes[root].children.indexOf(event.id) !== -1) {
+            nodes[event.id].render();
+        }
     }
 
     function createBlock(node) {
@@ -536,17 +561,84 @@ var app = app || {};
         })
     }
 
+    function nodeType(id) {
+        if (nodes[id] instanceof Group) return 'group';
+        return 'block';
+    }
+
     function finishMove() {
         selected.forEach(function(id) {
             app.Utils.request(
                 'PUT',
-                'blocks/' + id + '/position', {
+                nodeType(id) + 's/' + id + '/position', {
                     x: nodes[id].position.x,
                     y: nodes[id].position.y
                 },
                 null
             )
         })
+    }
+
+    function selectGroup() {
+        var position = {
+            x: 0,
+            y: 0
+        }
+
+        selected.forEach(function(id) {
+            position.x += nodes[id].position.x;
+            position.y += nodes[id].position.y;
+        })
+
+        position.x /= selected.length;
+        position.y /= selected.length;
+
+        console.log(selected, position);
+
+        app.Utils.request(
+            'POST',
+            'groups', {
+                parent: root,
+                children: selected,
+                position: position
+            }, function(e) {
+                console.log(e);
+            }
+        )
+
+    }
+
+    function selectUnGroup() {
+        var children = [];
+        selected.forEach(function(id) {
+            if (nodes[id] instanceof Group) {
+                children = children.concat(nodes[id].children);
+            }
+        })
+
+        function jobsDone() {
+            if (children.length === 0) {
+                selected.forEach(function(id) {
+                    app.Utils.request(
+                        'DELETE',
+                        'groups/' + id, {}, function() {}
+                    )
+                })
+            }
+        }
+
+        for (var i = 0; i < children.length; i++) {
+            app.Utils.request(
+                'PUT',
+                'groups/' + root + '/children/' + children[i], null,
+                function() {
+                    children.splice(children.indexOf(children[i]), 1);
+                    jobsDone();
+                }
+            )
+        }
+
+
     }
 
     function addConnection(event) {
@@ -566,6 +658,12 @@ var app = app || {};
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
+            case app.Actions.APP_GROUP_SELECTION:
+                selectGroup();
+                break;
+            case app.Actions.APP_UNGROUP_SELECTION:
+                selectUnGroup();
+                break;
             case app.Actions.WS_GROUP_CREATE:
                 createGroup(event.data);
                 rs.emit();
@@ -577,6 +675,7 @@ var app = app || {};
             case app.Actions.WS_GROUP_REMOVE_CHILD:
                 removeChildFromGroup(event);
                 rs.emit();
+                break;
             case app.Actions.APP_REQUEST_NODE_MOVE:
                 finishMove();
                 break;
@@ -613,6 +712,7 @@ var app = app || {};
                 rs.emit();
                 selection.emit();
                 break;
+            case app.Actions.WS_GROUP_UPDATE:
             case app.Actions.WS_BLOCK_UPDATE:
                 if (!nodes.hasOwnProperty(event.id)) return;
                 nodes[event.id].update(event.data);

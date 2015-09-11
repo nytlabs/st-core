@@ -42,7 +42,9 @@ var app = app || {};
         'APP_ADD_NODE_CONNECTION',
         'APP_DELETE_NODE_CONNECTION',
         'APP_REQUEST_ROUTE_UPDATE',
-        'APP_DELETE_SELECTION'
+        'APP_DELETE_SELECTION',
+        'APP_GROUP_SELECTION',
+        'APP_UNGROUP_SELECTION'
     ];
 
 

@@ -109,6 +109,18 @@ var app = app || {};
                     shift: true
                 })
             }
+
+            if (e.keyCode === 71) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_GROUP_SELECTION
+                })
+            }
+
+            if (e.keyCode === 85) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_UNGROUP_SELECTION
+                })
+            }
         },
         _onKeyUp: function(e) {
             if (e.keyCode === 91 || e.keyCode === 17) {

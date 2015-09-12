@@ -9,7 +9,7 @@ import (
 func UniformRandom() Spec {
 	return Spec{
 		Name:    "uniform",
-		Inputs:  []Pin{Pin{"trigger", ANY}},
+		Inputs:  []Pin{},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			out[0] = rand.Float64()

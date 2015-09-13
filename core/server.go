@@ -110,7 +110,7 @@ func (s *Server) Serve() {
 		if err != nil {
 			log.Println(err)
 		}
-	}).Methods("GET")
+	}).Methods("GET","POST","PUT","DELETE")
 
 	log.Println("starting HTTP server on", server.Addr)
 	go server.ListenAndServe()
@@ -165,6 +165,7 @@ func FromRequest() Spec {
 				out[0] = r.request
 				out[1] = r
 				out[2] = string(body)
+				server.removeHandler <- name
 			case f := <-i:
 				server.removeHandler <- name
 				return f

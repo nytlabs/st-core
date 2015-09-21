@@ -45,8 +45,8 @@ func procTestResponse(res *http.Response, t *testing.T, expectedCode int) {
 }
 
 func TestEndpoints(t *testing.T) {
-
-	s := NewServer()
+	settings := NewSettings()
+	s := NewServer(settings)
 	r := s.NewRouter()
 	server := httptest.NewServer(r)
 	defer server.Close()

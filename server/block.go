@@ -134,7 +134,7 @@ func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Reque
 func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 	blockSpec, ok := s.library[p.Type]
 	if !ok {
-		return nil, errors.New("spec not found")
+		return nil, errors.New("spec " + p.Type + " not found")
 	}
 
 	block := core.NewBlock(blockSpec)

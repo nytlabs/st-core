@@ -43,7 +43,8 @@ func (pq queue) Len() int {
 }
 
 func (pq queue) Less(i, j int) bool {
-	return pq[i].t > pq[j].t
+	// TODO this less than should be an option in the block holy shit
+	return pq[i].t < pq[j].t
 }
 
 func (pq queue) Swap(i, j int) {
@@ -104,6 +105,32 @@ func pqPush() Spec {
 	}
 }
 
+func pqShift() Spec {
+	return Spec{
+		Name: "pqShift",
+		Inputs: []Pin{
+			Pin{"trigger", ANY},
+		},
+		Outputs: []Pin{
+			Pin{"out", ANY},
+			Pin{"priority", NUMBER},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			if pq.queue.Len() == 0 {
+				out[0] = NewError("empty PriorityQueue")
+				return nil
+			}
+			item := (*pq.queue)[0]
+			heap.Remove(pq.queue, 0)
+			out[0] = item.val
+			out[1] = float64(item.t)
+			return nil
+		},
+	}
+}
+
 func pqPop() Spec {
 	return Spec{
 		Name: "pqPop",
@@ -117,6 +144,10 @@ func pqPop() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
+			if pq.queue.Len() == 0 {
+				out[0] = NewError("empty PriorityQueue")
+				return nil
+			}
 			msgI := pq.queue.Pop()
 			msg, ok := msgI.(*PQMessage)
 			if !ok {
@@ -143,6 +174,10 @@ func pqPeek() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
+			if pq.queue.Len() == 0 {
+				out[0] = NewError("empty PriorityQueue")
+				return nil
+			}
 			msgI := pq.queue.Peek()
 			msg, ok := msgI.(*PQMessage)
 			if !ok {
@@ -168,7 +203,7 @@ func pqLen() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
-			out[0] = len(*pq.queue)
+			out[0] = float64(len(*pq.queue))
 			return nil
 		},
 	}

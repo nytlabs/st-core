@@ -64,6 +64,8 @@ var app = app || {};
         this.canvas = document.createElement('canvas');
         // calculate node width
         // potentially make a util so that this can be shared with Group.
+        this.visibleParent = null;
+        this.parent = null;
         this.data = {};
         this.inputs = [];
         this.outputs = [];
@@ -268,6 +270,11 @@ var app = app || {};
         return nodes[id];
     }
 
+    // given a block id, gets the top-most group to be visible in the tree
+    NodeCollection.prototype.getVisibleParent = function(id) {
+        return nodes[nodes[id].visibleParent];
+    }
+
     // getNodes returns all nodes that should be on-screen
     NodeCollection.prototype.getNodes = function() {
         // if for some reason we don't have a root set, return all nodes
@@ -359,8 +366,22 @@ var app = app || {};
         if (node.id === 0) setRoot(node.id);
     }
 
+    function setVisibleParent(id) {
+        var node = nodes[id];
+        while (nodes[root].children.indexOf(node.data.id) === -1) {
+            node = nodes[node.parent];
+        }
+        nodes[id].visibleParent = node.data.id;
+    }
+
     function setRoot(id) {
         root = id;
+
+        Object.keys(nodes).filter(function(node) {
+            return node !== "0"
+        }).forEach(function(node) {
+            setVisibleParent(id);
+        })
 
         // we need to re-render right now!
         app.NodeStore.emit();
@@ -375,11 +396,18 @@ var app = app || {};
         })
 
         nodes[event.id].children.push(event.child);
+        nodes[event.child].parent = event.id;
+        setVisibleParent(event.child);
 
         // if our group is a child of the current root, then we need to render
         if (nodes[root].children.indexOf(event.id) !== -1) {
             nodes[event.id].render();
         }
+
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_RENDER_CONNECTIONS,
+            ids: nodes[event.child].connections,
+        });
     }
 
     function removeChildFromGroup(event) {
@@ -528,6 +556,24 @@ var app = app || {};
         selected = [];
     }
 
+    // recursively search group for connections
+    function recurseConnections(id) {
+        var connections = {};
+        nodes[id].children.forEach(function(nodeId) {
+            if (nodes[nodeId] instanceof Group) {
+                var rConns = recurseConnections(nodeId);
+                for (var key in rConns) {
+                    connections[key] = rConns[key];
+                }
+            } else {
+                nodes[nodeId].connections.forEach(function(connId) {
+                    connections[connId] = connections.hasOwnProperty(connId) ? connections[connId] + 1 : 1;
+                });
+            }
+        })
+        return connections;
+    }
+
     function selectMove(dx, dy) {
         // an object containing the set of connections that are effected by 
         // this node move.
@@ -537,7 +583,14 @@ var app = app || {};
             nodes[id].position.y += dy;
             nodes[id].connections.forEach(function(id) {
                 connections[id] = connections.hasOwnProperty(id) ? connections[id] + 1 : 1;
-            })
+            });
+
+            if (nodes[id] instanceof Group) {
+                var rConns = recurseConnections(id);
+                for (var key in rConns) {
+                    connections[key] = rConns[key];
+                }
+            }
         });
 
         // when a node moves we need to tell our connectionstore which 

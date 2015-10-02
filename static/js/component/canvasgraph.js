@@ -110,13 +110,13 @@ var app = app || {};
                 })
             }
 
-            if (e.keyCode === 71) {
+            if (document.activeElement === document.body && e.keyCode === 71) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_GROUP_SELECTION
                 })
             }
 
-            if (e.keyCode === 85) {
+            if (document.activeElement === document.body && e.keyCode === 85) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_UNGROUP_SELECTION
                 })

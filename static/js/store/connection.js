@@ -20,6 +20,7 @@ var app = app || {};
         //});
 
         this.canvas = document.createElement('canvas');
+        this.geometry();
         this.render();
     }
 
@@ -29,8 +30,8 @@ var app = app || {};
     Connection.prototype.geometry = function() {
         // TODO: instead of blocks, this should somehow find the top-most 
         // visible geometry that the route is apart of (for groups);
-        var from = app.NodeStore.getNode(this.data.from.id);
-        var to = app.NodeStore.getNode(this.data.to.id);
+        var from = app.NodeStore.getVisibleParent(this.data.from.id);
+        var to = app.NodeStore.getVisibleParent(this.data.to.id);
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;
@@ -77,7 +78,6 @@ var app = app || {};
     }
 
     Connection.prototype.render = function() {
-        this.geometry();
 
         var ctx = this.canvas.getContext('2d');
         var c = this.curve;
@@ -159,6 +159,7 @@ var app = app || {};
 
     function renderConnections(ids) {
         ids.forEach(function(id) {
+            connections[id].geometry();
             connections[id].render()
         })
     }

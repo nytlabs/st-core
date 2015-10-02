@@ -70,15 +70,18 @@ var app = app || {};
         var xMax = Math.max(from.position.x, to.position.x);
         var yMax = Math.max(from.position.y, to.position.y);
 
-        var bWidth = from.position.x > to.position.x ? from.canvas.width : to.canvas.width;
-        var bHeight = from.position.y > to.position.y ? from.canvas.height : to.canvas.height;
+        var bWidth = from.position.x + from.canvas.width >
+            to.position.x + to.canvas.width ?
+            from.canvas.width : to.canvas.width;
+        var bHeight = from.position.y + from.canvas.height >
+            to.position.y + to.canvas.height ?
+            from.canvas.height : to.canvas.height;
 
         this.canvas.width = xMax - this.position.x + bWidth + buffer;
         this.canvas.height = yMax - this.position.y + bHeight + buffer;
     }
 
     Connection.prototype.render = function() {
-
         var ctx = this.canvas.getContext('2d');
         var c = this.curve;
 
@@ -94,6 +97,10 @@ var app = app || {};
         ctx.setLineDash([]);
         ctx.lineWidth = 4.0
 
+        // debug bounding boxes
+        // ctx.fillStyle = "rgba(255,0,0,.1)";
+        // ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
         ctx.strokeStyle = 'black';
         var conn = new Path2D();
         conn.moveTo(c[0], c[1]);
@@ -104,10 +111,11 @@ var app = app || {};
         ctx.lineWidth = 2.0;
         ctx.stroke(conn);
 
-        /*var path = new Path2D();
-        path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
-        path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
-        ctx.fill(path);*/
+        // if we want circles filled for connections
+        // var path = new Path2D();
+        // path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
+        // path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
+        // ctx.fill(path);
 
         this.emit();
     }

@@ -40,6 +40,8 @@ func GetLibrary() map[string]Spec {
 		Pusher(),
 		Merge(),
 		Len(),
+		Timestamp(),
+
 		// monads
 		Exp(),
 		Log10(),
@@ -108,6 +110,7 @@ func GetLibrary() map[string]Spec {
 		pqPop(),
 		pqPeek(),
 		pqLen(),
+		pqShift(),
 
 		// stateful
 		First(),

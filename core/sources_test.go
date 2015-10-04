@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -237,8 +238,13 @@ func TestPriorityQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 	lenTrigger.C <- true
-	if <-out != 1 {
-		t.Fatal("pqLen did not generate expected output")
+
+	if l := <-out; l != 1.0 {
+		length, ok := l.(float64)
+		if !ok {
+			t.Fatal("length produced something that's not a float")
+		}
+		t.Fatal(fmt.Sprint("pqLen did not generate expected output. Expecting 1 got", length))
 	}
 
 	// pop the message
@@ -256,7 +262,7 @@ func TestPriorityQueue(t *testing.T) {
 
 	// check the length of the queue again to make sure pop did its thing
 	lenTrigger.C <- true
-	if <-out != 0 {
+	if <-out != 0.0 {
 		t.Fatal("pqPop did not remove the message")
 	}
 

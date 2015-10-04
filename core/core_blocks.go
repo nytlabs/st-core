@@ -12,7 +12,7 @@ func First() Spec {
 	return Spec{
 		Name:    "first",
 		Inputs:  []Pin{Pin{"in", ANY}},
-		Outputs: []Pin{Pin{"first", ANY}},
+		Outputs: []Pin{Pin{"first", BOOLEAN}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			_, ok := internal[0]
 			if !ok {
@@ -367,12 +367,12 @@ func GreaterThan() Spec {
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
-				out[0] = NewError("GreaterThan requires floats")
+				out[0] = NewError("GreaterThan requires float on x")
 				return nil
 			}
 			d2, ok := in[1].(float64)
 			if !ok {
-				out[0] = NewError("GreaterThan requires floats")
+				out[0] = NewError("GreaterThan requires float on y")
 				return nil
 			}
 			out[0] = d1 > d2

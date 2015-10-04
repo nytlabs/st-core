@@ -244,7 +244,7 @@ func TestPriorityQueue(t *testing.T) {
 		if !ok {
 			t.Fatal("length produced something that's not a float")
 		}
-		t.Fatal("pqLen did not generate expected output. Expecting 1 got " + fmt.Sprint(length))
+		t.Fatal(fmt.Sprint("pqLen did not generate expected output. Expecting 1 got", length))
 	}
 
 	// pop the message

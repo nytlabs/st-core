@@ -77,8 +77,8 @@ var app = app || {};
             to.position.y + to.canvas.height ?
             from.canvas.height : to.canvas.height;
 
-        this.canvas.width = xMax - this.position.x + bWidth + buffer;
-        this.canvas.height = yMax - this.position.y + bHeight + buffer;
+        this.canvas.width = Math.floor(.5 + xMax - this.position.x + bWidth + buffer);
+        this.canvas.height = Math.floor(.5 + yMax - this.position.y + bHeight + buffer);
     }
 
     Connection.prototype.render = function() {

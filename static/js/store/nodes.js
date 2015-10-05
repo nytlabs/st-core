@@ -144,8 +144,8 @@ var app = app || {};
 
         // the following is derived data for use with UI
         this.nodeGeometry = {
-            width: maxInputWidth + maxOutputWidth + padding.horizontal + routeHeight,
-            height: Math.max(this.inputs.length, this.outputs.length) * routeHeight + padding.vertical,
+            width: Math.floor(maxInputWidth + maxOutputWidth + padding.horizontal + routeHeight),
+            height: Math.floor(Math.max(this.inputs.length, this.outputs.length) * routeHeight + padding.vertical),
             routeRadius: Math.floor(routeHeight / 2.0),
             routeHeight: routeHeight,
         }
@@ -646,7 +646,8 @@ var app = app || {};
         position.x /= selected.length;
         position.y /= selected.length;
 
-        console.log(selected, position);
+        position.x = Math.round(position.x);
+        position.y = Math.round(position.y);
 
         app.Utils.request(
             'POST',

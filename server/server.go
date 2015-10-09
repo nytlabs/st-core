@@ -29,14 +29,12 @@ const (
 
 // user-session specific settings
 type Settings struct {
-	Autosave        bool
 	GithubUserToken string
 }
 
 // NewSettings returns the default settings object
 func NewSettings() Settings {
 	return Settings{
-		Autosave:        true,
 		GithubUserToken: "",
 	}
 }

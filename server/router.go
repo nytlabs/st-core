@@ -58,10 +58,22 @@ func (s *Server) NewRouter() *mux.Router {
 			s.GroupExportHandler,
 		},
 		Route{
+			"GroupExportGist",
+			"/groups/{id}/export/gist",
+			"GET",
+			s.GroupExportGistHandler,
+		},
+		Route{
 			"GroupImport",
 			"/groups/{id}/import",
 			"POST",
 			s.GroupImportHandler,
+		},
+		Route{
+			"GroupImportGist",
+			"/groups/{id}/import/gist",
+			"GET",
+			s.GroupImportGistHandler,
 		},
 		Route{
 			"GroupModifyLabel",

@@ -4,14 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
 	"github.com/nytlabs/st-core/core"
+	"golang.org/x/oauth2"
 )
 
 type Pattern struct {
+	Label       string             `json:"label"`
 	Blocks      []BlockLedger      `json:"blocks"`
 	Connections []ConnectionLedger `json:"connections"`
 	Groups      []Group            `json:"groups"`
@@ -295,18 +300,97 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, p)
 }
 
+func (s *Server) newGithubClient() *github.Client {
+	client := github.NewClient(nil)
+
+	// check to see if we should auth into github
+	if s.settings.GithubUserToken != "" {
+		log.Println("authenticating with github")
+		// auth
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: s.settings.GithubUserToken},
+		)
+		tc := oauth2.NewClient(oauth2.NoContext, ts)
+
+		client = github.NewClient(tc)
+	}
+	return client
+
+}
+
+func (s *Server) GroupExportGistHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+	p, err := s.Export(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	client := s.newGithubClient()
+
+	contentBytes, err := json.Marshal(p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	fname := strings.Replace(p.Label, " ", "_", -1) + ".json"
+
+	public := true
+	content := string(contentBytes)
+
+	g := github.Gist{
+		Description: &p.Label,
+		Public:      &public,
+		Files: map[github.GistFilename]github.GistFile{
+			github.GistFilename(fname): github.GistFile{
+				Content: &content,
+			},
+		},
+	}
+
+	gist, _, err := client.Gists.Create(&g)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	gistBytes, err := json.Marshal(gist)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write(gistBytes)
+}
+
 func (s *Server) ExportGroup(id int) (*Pattern, error) {
+
+	g, ok := s.groups[id]
+	if !ok {
+		return nil, errors.New("could not find group to export")
+	}
+
 	p := &Pattern{
+		Label:       g.Label,
 		Blocks:      []BlockLedger{},
 		Sources:     []SourceLedger{},
 		Groups:      []Group{},
 		Connections: []ConnectionLedger{},
 		Links:       []LinkLedger{},
-	}
-
-	g, ok := s.groups[id]
-	if !ok {
-		return nil, errors.New("could not find group to export")
 	}
 
 	p.Groups = append(p.Groups, *g)
@@ -370,6 +454,52 @@ func (s *Server) Export(id int) (*Pattern, error) {
 	}
 
 	return p, nil
+}
+
+func (s *Server) GroupImportGistHandler(w http.ResponseWriter, r *http.Request) {
+
+	gist_id := r.URL.Query().Get("id")
+	if gist_id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, errors.New("must provide gist id to import"))
+	}
+	c := s.newGithubClient()
+	g, _, err := c.Gists.Get(gist_id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	for filename, file := range g.Files {
+		var p Pattern
+		p.Label = strings.TrimSuffix(string(filename), ".json")
+		err = json.Unmarshal([]byte(*file.Content), &p)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{err.Error()})
+			return
+		}
+		s.Lock()
+		defer s.Unlock()
+
+		_, err = s.ImportGroup(id, p)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(w, Error{err.Error()})
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+	//writeJSON(w, snew)
+
 }
 
 func (s *Server) GroupImportHandler(w http.ResponseWriter, r *http.Request) {

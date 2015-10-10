@@ -575,9 +575,12 @@ var app = app || {};
     function deleteSelection() {
         // TODO: update this for when we add sources
         selected.forEach(function(id) {
+            var type = 'blocks';
+            if (nodes[id] instanceof Group) type = 'groups';
+
             app.Utils.request(
                 'DELETE',
-                'blocks/' + id, {},
+                type + '/' + id, {},
                 null
             )
         })

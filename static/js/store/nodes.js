@@ -152,19 +152,22 @@ var app = app || {};
 
         this.inputsGeometry = createInputGeometry(this.inputs, this.nodeGeometry);
         this.outputsGeometry = createOutputGeometry(this.outputs, this.nodeGeometry);
-        this.canvas.width = this.nodeGeometry.width + (this.nodeGeometry.routeRadius * 2);
-        this.canvas.height = this.nodeGeometry.height;
+        this.canvas.width = this.nodeGeometry.width + (this.nodeGeometry.routeRadius * 2) + 1; // magic number for buffer...
+        this.canvas.height = this.nodeGeometry.height + 1; // 1 is magic buffer number :(
     }
 
     Node.prototype.render = function() {
+        // TODO: move colors to constants
         this.geometry();
 
         var ctx = this.canvas.getContext('2d');
+        // seriously? http://www.mobtowers.com/html5-canvas-crisp-lines-every-time/
+        ctx.translate(.5, .5);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        ctx.fillStyle = 'rgba(230,230,230,1)';
+        ctx.fillStyle = this instanceof Group ? 'rgba(210,230,255,1)' : 'rgba(230,230,230,1)';
         ctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
         ctx.lineWidth = selected.indexOf(this.data.id) !== -1 ? 2 : 1;
-        ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(0,0,0,1)';
+        ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
         ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
         function renderRoute(routeGeometry, route, geometry) {

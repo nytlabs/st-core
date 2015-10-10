@@ -366,12 +366,12 @@ var app = app || {};
         if (node.id === 0) setRoot(node.id);
     }
 
-    function setVisibleParent(id) {
+    function getVisibleParent(id) {
         var node = nodes[id];
         while (nodes[root].children.indexOf(node.data.id) === -1) {
             node = nodes[node.parent];
         }
-        nodes[id].visibleParent = node.data.id;
+        return node.data.id;
     }
 
     function setRoot(id) {
@@ -380,33 +380,63 @@ var app = app || {};
         Object.keys(nodes).filter(function(node) {
             return node !== "0"
         }).forEach(function(node) {
-            setVisibleParent(id);
+            // TODO: setvisibleparents for all children of new root. 
         })
 
         // we need to re-render right now!
         app.NodeStore.emit();
     }
 
-    function addChildToGroup(event) {
-        nodes[event.child].inputs.forEach(function(id) {
-            nodes[event.id].addInput(id);
-        })
-        nodes[event.child].outputs.forEach(function(id) {
-            nodes[event.id].addOutput(id);
-        })
+    function addInputAscending(id, routeId) {
+        nodes[id].addInput(routeId);
+        if (nodes[id].parent !== null) {
+            addInputAscending(nodes[id].parent, routeId);
+        }
+    }
 
+    function addOutputAscending(id, routeId) {
+        nodes[id].addOutput(routeId);
+        if (nodes[id].parent !== null) {
+            addOutputAscending(nodes[id].parent, routeId);
+        }
+    }
+
+    function setVisibleParentDescending(id, parent) {
+        nodes[id].visibleParent = parent;
+        if (nodes[id] instanceof Group) {
+            nodes[id].children.forEach(function(childId) {
+                setVisibleParentDescending(childId, parent);
+            })
+        }
+    }
+
+    function addChildToGroup(event) {
         nodes[event.id].children.push(event.child);
         nodes[event.child].parent = event.id;
-        setVisibleParent(event.child);
 
-        // if our group is a child of the current root, then we need to render
-        if (nodes[root].children.indexOf(event.id) !== -1) {
-            nodes[event.id].render();
-        }
+        // add routes to all parent nodes
+        nodes[event.child].inputs.forEach(function(routeId) {
+            addInputAscending(event.id, routeId);
+        });
+
+        nodes[event.child].outputs.forEach(function(routeId) {
+            addOutputAscending(event.id, routeId);
+        });
+
+        nodes[event.child].connections.forEach(function(connId) {
+            addConnectionAscending(event.child, connId);
+        })
+
+        // find the top-most visible node and store that id in all child nodes.
+        var visibleParent = getVisibleParent(event.child);
+        setVisibleParentDescending(event.child, visibleParent);
+
+        // only need to render the top-most visible node.
+        nodes[visibleParent].render();
 
         app.Dispatcher.dispatch({
             action: app.Actions.APP_RENDER_CONNECTIONS,
-            ids: nodes[event.child].connections,
+            ids: nodes[visibleParent].connections,
         });
     }
 
@@ -556,27 +586,7 @@ var app = app || {};
         selected = [];
     }
 
-    // recursively search group for connections
-    function recurseConnections(id) {
-        var connections = {};
-        nodes[id].children.forEach(function(nodeId) {
-            if (nodes[nodeId] instanceof Group) {
-                var rConns = recurseConnections(nodeId);
-                for (var key in rConns) {
-                    connections[key] = rConns[key];
-                }
-            } else {
-                nodes[nodeId].connections.forEach(function(connId) {
-                    connections[connId] = connections.hasOwnProperty(connId) ? connections[connId] + 1 : 1;
-                });
-            }
-        })
-        return connections;
-    }
-
     function selectMove(dx, dy) {
-        // an object containing the set of connections that are effected by 
-        // this node move.
         var connections = {};
         selected.forEach(function(id) {
             nodes[id].position.x += dx;
@@ -584,34 +594,12 @@ var app = app || {};
             nodes[id].connections.forEach(function(id) {
                 connections[id] = connections.hasOwnProperty(id) ? connections[id] + 1 : 1;
             });
-
-            if (nodes[id] instanceof Group) {
-                var rConns = recurseConnections(id);
-                for (var key in rConns) {
-                    connections[key] = rConns[key];
-                }
-            }
         });
 
-        // when a node moves we need to tell our connectionstore which 
-        // connections need to be either translated or re-rendered.
-        // yucky message
-        if (Object.keys(connections).length == 0) return;
         app.Dispatcher.dispatch({
-            action: app.Actions.APP_TRANSLATE_CONNECTIONS,
-            // if only end of a connection is being moved, then we need to 
-            // re-render the whole connection
-            ids: Object.keys(connections).filter(function(id) {
-                return connections[id] === 1
-            }),
-            // if this connection is referecned more than once then we don't
-            // need to be re-rendered, simply translated
-            translate: Object.keys(connections).filter(function(id) {
-                return connections[id] != 1
-            }),
-            dx: dx,
-            dy: dy
-        })
+            action: app.Actions.APP_RENDER_CONNECTIONS,
+            ids: Object.keys(connections),
+        });
     }
 
     function nodeType(id) {
@@ -655,11 +643,7 @@ var app = app || {};
                 parent: root,
                 children: selected,
                 position: position
-            }, function(e) {
-                console.log(e);
-            }
-        )
-
+            }, null)
     }
 
     function selectUnGroup() {
@@ -691,13 +675,18 @@ var app = app || {};
                 }
             )
         }
+    }
 
-
+    function addConnectionAscending(id, connectionId) {
+        nodes[id].connections.push(connectionId);
+        if (nodes[id].parent !== null) {
+            addConnectionAscending(nodes[id].parent, connectionId);
+        }
     }
 
     function addConnection(event) {
-        nodes[event.fromId].connections.push(event.id);
-        nodes[event.toId].connections.push(event.id);
+        addConnectionAscending(event.fromId, event.id);
+        addConnectionAscending(event.toId, event.id);
     }
 
     function deleteConnection(event) {

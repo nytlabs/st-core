@@ -627,6 +627,8 @@ var app = app || {};
     }
 
     function selectGroup() {
+        if (selected.length === 0) return;
+
         var position = {
             x: 0,
             y: 0
@@ -684,7 +686,10 @@ var app = app || {};
     }
 
     function addConnectionAscending(id, connectionId) {
-        nodes[id].connections.push(connectionId);
+        if (nodes[id].connections.indexOf(connectionId) === -1) {
+            nodes[id].connections.push(connectionId);
+        }
+
         if (nodes[id].parent !== null) {
             addConnectionAscending(nodes[id].parent, connectionId);
         }

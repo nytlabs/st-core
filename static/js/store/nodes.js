@@ -577,6 +577,7 @@ var app = app || {};
 
     function deleteSelection() {
         // TODO: update this for when we add sources
+        console.log("requesting", selected);
         selected.forEach(function(id) {
             var type = 'blocks';
             if (nodes[id] instanceof Group) type = 'groups';
@@ -700,14 +701,18 @@ var app = app || {};
         addConnectionAscending(event.toId, event.id);
     }
 
-    function deleteConnection(event) {
-        nodes[event.fromId].connections = nodes[event.fromId].connections.filter(function(id) {
-            return !(id == event.id)
-        })
+    function removeConnectionAscending(id, connectionId) {
+        if (nodes[id].connections.indexOf(connectionId) !== -1) {
+            nodes[id].connections.splice(nodes[id].connections.indexOf(connectionId), 1);
+        }
+        if (nodes[id].parent !== null) {
+            removeConnectionAscending(nodes[id].parent, connectionId);
+        }
+    }
 
-        nodes[event.toId].connections = nodes[event.toId].connections.filter(function(id) {
-            return !(id == event.id)
-        })
+    function deleteConnection(event) {
+        removeConnectionAscending(event.fromId, event.id);
+        removeConnectionAscending(event.toId, event.id);
     }
 
     app.Dispatcher.register(function(event) {

@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -213,10 +214,16 @@ func (s *Server) DeleteGroup(id int) error {
 		return errors.New("could not find group to delete")
 	}
 
-	for _, c := range group.Children {
+	childrenToDelete := make([]int, len(group.Children), len(group.Children))
+	for i, c := range group.Children {
+		childrenToDelete[i] = c
+	}
+
+	for _, c := range childrenToDelete {
 		if _, ok := s.blocks[c]; ok {
 			err := s.DeleteBlock(c)
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
 		} else if _, ok := s.groups[c]; ok {

@@ -569,11 +569,6 @@ var app = app || {};
         // remove the picking color from the store so that we can re-use it later
         app.PickingStore.removeColor(nodes[id].pickColor);
 
-        // this is probaby bad!
-        //        app.inputs = [];
-        //        app.outputs = [];
-        //        nodes[id].emit();
-
         // if this is a block then we need to remove its routes
         // if it is a group we do nothing.
         if (nodes[id].constructor === Node) {
@@ -656,9 +651,6 @@ var app = app || {};
                 null
             )
         })
-
-        // worried this may be async madness
-        selected = [];
     }
 
     function selectMove(dx, dy) {

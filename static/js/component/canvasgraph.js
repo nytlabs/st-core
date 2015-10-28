@@ -150,8 +150,6 @@ var app = app || {};
             var col = ctx.getImageData(e.pageX, e.pageY, 1, 1).data;
             var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
             var node = app.PickingStore.colorToNode(colString);
-            console.log(node);
-
 
             // TODO: get rid of in favor of per-group translations
             var ids = app.NodeStore.pickNode(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
@@ -399,7 +397,7 @@ var app = app || {};
                 var block = app.NodeStore.getNode(id);
                 var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
                 var y = block.position.y + this.state.translateY;
-                nodesCtx.drawImage(block.pickCanvas, x, y);
+                nodesCtx.drawImage(block.canvas, x, y);
             }.bind(this))
         },
         _renderEdges: function() {
@@ -409,7 +407,7 @@ var app = app || {};
                 var connection = app.ConnectionStore.getConnection(id);
                 var x = connection.position.x + this.state.translateX;
                 var y = connection.position.y + this.state.translateY;
-                ctx.drawImage(connection.pickCanvas, x, y);
+                ctx.drawImage(connection.canvas, x, y);
             }.bind(this));
         },
         _renderPickingBuffer: function() {

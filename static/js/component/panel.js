@@ -84,6 +84,27 @@ var app = app || {};
 (function() {
     app.RoutesPanelComponent = React.createClass({
         displayName: 'PanelComponent',
+        componentDidMount: function() {
+            app.NodeStore.getNode(this.props.id).addListener(this._update);
+            this._update();
+        },
+        componentWillUnmount: function() {
+            app.NodeStore.getNode(this.props.id).removeListener(this._update);
+        },
+        _update: function() {
+            this.render();
+            /*var route = app.RouteStore.getRoute(this.props.id);
+            var value = '';
+            if (route.data.value !== null) {
+                value = JSON.stringify(route.data.value.data);
+            }
+
+            this.setState({
+                name: route.data.name,
+                type: route.data.type,
+                value: value,
+            })*/
+        },
         render: function() {
             var block = app.NodeStore.getNode(this.props.id);
 

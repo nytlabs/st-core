@@ -13,10 +13,9 @@ var app = app || {};
         this.index = index;
         this.direction = direction;
         this.pickColor = app.PickingStore.getColor(this);
-        //        this.pickColor = app.PickingStore.getColor(
 
-        //TODO:
-        this.connections = [];
+        // this is unused i believe
+        // this.connections = [];
     }
 
     Route.prototype = Object.create(app.Emitter.prototype);
@@ -52,22 +51,19 @@ var app = app || {};
     }
 
     function deleteRoute(id) {
-        console.log("????");
         if (routes.hasOwnProperty(id) === false) {
             console.warn('could not delete route: ', id, ' does not exist');
             return
         }
-        console.log("deleting route", id);
-        app.PickingStore.removeColor(this.pickColor);
-
+        app.PickingStore.removeColor(routes[id].pickColor);
         delete routes[id]
     }
 
-    function updateConnected(event) {
-        event.ids.forEach(function(id) {
-            routes[id].connections.push(event.connId);
-        })
-    }
+    /*    function updateConnected(event) {
+            event.ids.forEach(function(id) {
+                routes[id].connections.push(event.connId);
+            })
+        }*/
 
     function requestRouteUpdate(event) {
         var route = routes[event.id];
@@ -89,7 +85,6 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.APP_ROUTE_DELETE:
-                console.log("???");
                 deleteRoute(event.id);
                 rs.emit();
                 break;

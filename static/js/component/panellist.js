@@ -18,12 +18,12 @@ var app = app || {};
             app.NodeSelection.addListener(this._onUpdate);
         },
         componentWillUnmount: function() {
-            app.NodeSelection.addListener(this._onUpdate);
+            app.NodeSelection.removeListener(this._onUpdate);
         },
         _onUpdate: function() {
             this.setState({
                 ids: app.NodeStore.getSelected(),
-            })
+            });
         },
         render: function() {
             return React.createElement('div', {

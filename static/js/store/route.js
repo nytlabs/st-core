@@ -3,13 +3,17 @@ var app = app || {};
 (function() {
     var routes = {};
 
-    function Route(data, blockId, direction, index) {
+    function Route(data, blockId, direction, index, id) {
+        this.id = id;
         this.blocked = false;
         this.active = data.hasOwnProperty('value') && data.value != null;
         this.data = data;
         this.blockId = blockId;
+        this.visibleParent = blockId;
         this.index = index;
         this.direction = direction;
+        this.pickColor = app.PickingStore.getColor(this);
+        //        this.pickColor = app.PickingStore.getColor(
 
         //TODO:
         this.connections = [];
@@ -44,14 +48,18 @@ var app = app || {};
             console.warn('could not create route:', route.id, ' already exists');
             return
         }
-        routes[route.id] = new Route(route.data, route.blockId, route.direction, route.index);
+        routes[route.id] = new Route(route.data, route.blockId, route.direction, route.index, route.id);
     }
 
     function deleteRoute(id) {
+        console.log("????");
         if (routes.hasOwnProperty(id) === false) {
             console.warn('could not delete route: ', id, ' does not exist');
             return
         }
+        console.log("deleting route", id);
+        app.PickingStore.removeColor(this.pickColor);
+
         delete routes[id]
     }
 
@@ -70,6 +78,10 @@ var app = app || {};
             null)
     }
 
+    function setVisibleParent(id, visibleParent) {
+        routes[id].visibleParent = visibleParent;
+    }
+
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_ROUTE_CREATE:
@@ -77,7 +89,8 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.APP_ROUTE_DELETE:
-                deleteRoute(action.id);
+                console.log("???");
+                deleteRoute(event.id);
                 rs.emit();
                 break;
             case app.Actions.APP_ROUTE_UPDATE_POSITION:
@@ -88,6 +101,9 @@ var app = app || {};
                 break;
             case app.Actions.APP_REQUEST_ROUTE_UPDATE:
                 requestRouteUpdate(event);
+                break;
+            case app.Actions.APP_ROUTE_VISIBLE_PARENT:
+                setVisibleParent(event.id, event.visibleParent);
                 break;
             case app.Actions.APP_ROUTE_UPDATE_STATUS:
                 // TODO: it's possible for the server to emit statuses of blocks

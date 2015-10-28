@@ -15,6 +15,7 @@ var app = app || {};
                 bufferStage: document.createElement('canvas'),
                 bufferConnectionTool: document.createElement('canvas'),
                 bufferEdges: document.createElement('canvas'),
+                bufferPicking: document.createElement('canvas'),
                 mouseDownId: null,
                 mouseDownX: null,
                 mouseDownY: null,
@@ -71,6 +72,8 @@ var app = app || {};
             this.state.bufferConnectionTool.height = height;
             this.state.bufferEdges.width = width;
             this.state.bufferEdges.height = height;
+            this.state.bufferPicking.width = width;
+            this.state.bufferPicking.height = height;
 
             // resize the main canvas
             React.findDOMNode(this.refs.test).width = width;
@@ -141,6 +144,14 @@ var app = app || {};
                 mouseDownX: e.pageX,
                 mouseDownY: e.pageY
             })
+
+            this._renderPickingBuffer();
+            var ctx = this.state.bufferPicking.getContext('2d');
+            var col = ctx.getImageData(e.pageX, e.pageY, 1, 1).data;
+            var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
+            var node = app.PickingStore.colorToNode(colString);
+            console.log(node);
+
 
             // TODO: get rid of in favor of per-group translations
             var ids = app.NodeStore.pickNode(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
@@ -388,7 +399,7 @@ var app = app || {};
                 var block = app.NodeStore.getNode(id);
                 var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
                 var y = block.position.y + this.state.translateY;
-                nodesCtx.drawImage(block.canvas, x, y);
+                nodesCtx.drawImage(block.pickCanvas, x, y);
             }.bind(this))
         },
         _renderEdges: function() {
@@ -398,7 +409,26 @@ var app = app || {};
                 var connection = app.ConnectionStore.getConnection(id);
                 var x = connection.position.x + this.state.translateX;
                 var y = connection.position.y + this.state.translateY;
-                ctx.drawImage(connection.canvas, x, y);
+                ctx.drawImage(connection.pickCanvas, x, y);
+            }.bind(this));
+        },
+        _renderPickingBuffer: function() {
+            // renders all the picking-elements to a single canvas in the same
+            // order as to how the non-picking elements are rendered.
+            // TODO: d-r-y 
+            var pickCtx = this.state.bufferPicking.getContext('2d');
+            pickCtx.clearRect(0, 0, this.state.width, this.state.height);
+            app.NodeStore.getNodes().forEach(function(id, i) {
+                var block = app.NodeStore.getNode(id);
+                var x = block.position.x + this.state.translateX;
+                var y = block.position.y + this.state.translateY;
+                pickCtx.drawImage(block.pickCanvas, x, y);
+            }.bind(this));
+            app.ConnectionStore.getConnections().forEach(function(id, i) {
+                var connection = app.ConnectionStore.getConnection(id);
+                var x = connection.position.x + this.state.translateX;
+                var y = connection.position.y + this.state.translateY;
+                pickCtx.drawImage(connection.pickCanvas, x, y);
             }.bind(this));
         },
         _renderBuffers: function() {

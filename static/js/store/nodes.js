@@ -1,5 +1,8 @@
 var app = app || {};
 
+// TODO: remove inputs/outputs ascending
+// TODO: node emit event for route removal.
+
 (function() {
     // canonical store for all node objects
     var nodes = {};
@@ -62,6 +65,8 @@ var app = app || {};
     function Node(data) {
 
         this.canvas = document.createElement('canvas');
+        this.pickCanvas = document.createElement('canvas');
+        this.pickColor = app.PickingStore.getColor(this);
         // calculate node width
         // potentially make a util so that this can be shared with Group.
         this.visibleParent = null;
@@ -78,7 +83,7 @@ var app = app || {};
     }
 
     Node.prototype = Object.create(app.Emitter.prototype);
-    Node.constructor = Node;
+    Node.prototype.constructor = Node;
 
     Node.prototype.addInput = function(id) {
         this.inputs.push(id);
@@ -154,6 +159,9 @@ var app = app || {};
         this.outputsGeometry = createOutputGeometry(this.outputs, this.nodeGeometry);
         this.canvas.width = this.nodeGeometry.width + (this.nodeGeometry.routeRadius * 2) + 1; // magic number for buffer...
         this.canvas.height = this.nodeGeometry.height + 1; // 1 is magic buffer number :(
+
+        this.pickCanvas.width = this.canvas.width;
+        this.pickCanvas.height = this.canvas.height;
     }
 
     Node.prototype.render = function() {
@@ -169,6 +177,13 @@ var app = app || {};
         ctx.lineWidth = selected.indexOf(this.data.id) !== -1 ? 2 : 1;
         ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
         ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
+
+        // now to do the picking buffer.
+        var pctx = this.pickCanvas.getContext('2d');
+        pctx.translate(.5, .5);
+        pctx.clearRect(0, 0, this.pickCanvas.width, this.pickCanvas.height);
+        pctx.fillStyle = this.pickColor;
+        pctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
         function renderRoute(routeGeometry, route, geometry) {
             ctx.beginPath();
@@ -192,6 +207,11 @@ var app = app || {};
                 ctx.arc(routeGeometry.x, routeGeometry.y, 4, 0, 2 * Math.PI, false);
                 ctx.fill();
             }
+
+            pctx.beginPath();
+            pctx.arc(routeGeometry.x, routeGeometry.y, geometry.routeRadius, 0, 2 * Math.PI, false);
+            pctx.fillStyle = route.pickColor;
+            pctx.fill();
         };
 
         this.inputsGeometry.forEach(function(routeGeometry) {
@@ -203,6 +223,7 @@ var app = app || {};
             var route = app.RouteStore.getRoute(routeGeometry.id);
             renderRoute(routeGeometry, route, this.nodeGeometry);
         }.bind(this))
+
     }
 
     Node.prototype.update = function(data) {
@@ -434,6 +455,23 @@ var app = app || {};
         var visibleParent = getVisibleParent(event.child);
         setVisibleParentDescending(event.child, visibleParent);
 
+
+        nodes[visibleParent].inputs.forEach(function(route) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
+                id: route,
+                visibleParent: visibleParent,
+            })
+        })
+
+        nodes[visibleParent].outputs.forEach(function(route) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
+                id: route,
+                visibleParent: visibleParent,
+            })
+        })
+
         // only need to render the top-most visible node.
         nodes[visibleParent].render();
 
@@ -528,7 +566,38 @@ var app = app || {};
             selection.emit();
         }
 
+        // remove the picking color from the store so that we can re-use it later
+        app.PickingStore.removeColor(nodes[id].pickColor);
+
+        // this is probaby bad!
+        //        app.inputs = [];
+        //        app.outputs = [];
+        //        nodes[id].emit();
+
+        // if this is a block then we need to remove its routes
+        // if it is a group we do nothing.
+        if (nodes[id].constructor === Node) {
+            nodes[id].inputs.forEach(function(route) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_ROUTE_DELETE,
+                    id: route
+                })
+            })
+
+            nodes[id].outputs.forEach(function(route) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_ROUTE_DELETE,
+                    id: route
+                })
+            })
+        }
+
         delete nodes[id]
+    }
+
+    function cleanup(id) {
+
+
     }
 
     function updateNode(node) {
@@ -744,6 +813,7 @@ var app = app || {};
             case app.Actions.WS_BLOCK_DELETE:
                 deleteNode(event.id);
                 rs.emit();
+                cleanup(event.id);
                 break;
             case app.Actions.APP_MOVE: // this is deprecated
                 if (!nodes.hasOwnProperty(event.id)) return;

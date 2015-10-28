@@ -19,7 +19,9 @@ var app = app || {};
         //    ids: [this.routeIdFrom, this.routeIdTo],
         //});
 
+        this.pickColor = app.PickingStore.getColor(this);
         this.canvas = document.createElement('canvas');
+        this.pickCanvas = document.createElement('canvas');
         this.geometry();
         this.render();
     }
@@ -79,6 +81,8 @@ var app = app || {};
 
         this.canvas.width = Math.floor(.5 + xMax - this.position.x + bWidth + buffer);
         this.canvas.height = Math.floor(.5 + yMax - this.position.y + bHeight + buffer);
+        this.pickCanvas.width = this.canvas.width;
+        this.pickCanvas.height = this.canvas.height;
     }
 
     Connection.prototype.render = function() {
@@ -116,6 +120,13 @@ var app = app || {};
         // path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
         // path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
         // ctx.fill(path);
+
+        // now to render the picking...        
+        var pctx = this.pickCanvas.getContext('2d');
+        pctx.fillStyle = this.pickColor;
+        pctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        pctx.globalCompositeOperation = 'destination-atop';
+        pctx.drawImage(this.canvas, 0, 0);
 
         this.emit();
     }

@@ -590,11 +590,6 @@ var app = app || {};
         delete nodes[id]
     }
 
-    function cleanup(id) {
-
-
-    }
-
     function updateNode(node) {
         if (nodes.hasOwnProperty(node.id) === false) {
             console.warn('could not update node: ', node.id, ' does not exist');
@@ -854,7 +849,7 @@ var app = app || {};
                 break;
         }
     })
-
+    app.Node = Node;
     app.NodeStore = rs;
     app.NodeSelection = selection;
 }())

@@ -28,7 +28,7 @@ var app = app || {};
                 translateX: 0, // TODO: do per-group translations, deprecate this
                 translateY: 0,
                 // the connection tool
-                connectingBlockId: null,
+                connectingBlock: null,
                 connectingRoute: null,
                 dirty: false,
                 width: 0,
@@ -149,17 +149,16 @@ var app = app || {};
             var ctx = this.state.bufferPicking.getContext('2d');
             var col = ctx.getImageData(e.pageX, e.pageY, 1, 1).data;
             var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
-            var node = app.PickingStore.colorToNode(colString);
+            var picked = app.PickingStore.colorToNode(colString);
+            var isNode = picked instanceof app.Node;
+            var isRoute = picked instanceof app.Route;
+            var isConnection = picked instanceof app.Connection;
 
-            // TODO: get rid of in favor of per-group translations
-            var ids = app.NodeStore.pickNode(e.pageX - this.state.translateX, e.pageY - this.state.translateY);
-
-            if (this.state.connectingBlockId !== null) {
+            if (this.state.connectingBlock !== null) {
                 this._connectingClear();
             }
 
-            // if we've clicked on nothing, deselect everything
-            if (ids.length === 0) {
+            if (picked === null) {
                 if (this.state.shift === false) {
                     app.Dispatcher.dispatch({
                         action: app.Actions.APP_DESELECT_ALL,
@@ -167,42 +166,42 @@ var app = app || {};
                 }
                 this.setState({
                     mouseDownId: null,
-                    connectingBlockId: null,
+                    connectingBlock: null,
                     connectingRoute: null
                 })
                 return
             }
 
-            // pick the first ID
-            var id = ids[0];
-            var route = app.NodeStore.pickRoute(id, e.pageX - this.state.translateX, e.pageY - this.state.translateY);
-
-            if (route !== null && this.state.connectingBlockId === null) {
+            if (isRoute && this.state.connectingBlock === null) {
+                var block = app.NodeStore.getNode(picked.visibleParent);
+                var route = picked.direction === 'input' ?
+                    block.inputsGeometry[block.inputs.indexOf(picked.id)] :
+                    block.outputsGeometry[block.outputs.indexOf(picked.id)];
                 this.setState({
-                    connectingBlockId: id,
+                    connectingBlock: block,
                     connectingRoute: route,
                 })
                 return
-            } else if (route !== null && this.state.connectingBlockId !== null) {
+            } else if (isRoute && this.state.connectingBlock !== null) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_REQUEST_CONNECTION,
-                    routes: [route, this.state.connectingRoute],
+                    routes: [picked, this.state.connectingRoute],
                 });
-            } else if (this.state.shift === true) {
+            } else if (isNode && this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    ids: [id]
+                    ids: [picked.data.id]
                 })
-            } else if (app.NodeStore.getSelected().indexOf(id) === -1) {
+            } else if (isNode && app.NodeStore.getSelected().indexOf(picked.data.id) === -1) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT,
-                    id: id
+                    id: picked.data.id
                 })
             }
 
             this.setState({
-                mouseDownId: id,
-                connectingBlockId: null,
+                mouseDownId: true, // fix this its stupid, it doesn't need to nbe an id apparently?
+                connectingBlock: null,
                 connectingRoute: null
             })
         },
@@ -234,7 +233,7 @@ var app = app || {};
                 mouseLastY: e.pageY
             });
 
-            if (this.state.connectingBlockId !== null) {
+            if (this.state.connectingBlock !== null) {
                 this._connectingUpdate(e.pageX, e.pageY);
             } else if (this.state.button === 0 && this.state.mouseDownId !== null &&
                 this.state.shift === false) {
@@ -266,7 +265,6 @@ var app = app || {};
             var ctx = this.state.bufferSelection.getContext('2d');
             ctx.clearRect(0, 0, this.state.width, this.state.height);
 
-            //this._renderBuffers();
             this.setState({
                 dirty: true
             });
@@ -281,7 +279,7 @@ var app = app || {};
             });
         },
         _connectingUpdate: function(mx, my) {
-            var block = app.NodeStore.getNode(this.state.connectingBlockId);
+            var block = this.state.connectingBlock;
             var x = block.position.x + this.state.translateX + this.state.connectingRoute.x;
             var y = block.position.y + this.state.translateY + this.state.connectingRoute.y;
             var ctx = this.state.bufferConnectionTool.getContext('2d');
@@ -295,7 +293,6 @@ var app = app || {};
             ctx.bezierCurveTo(x + (50 * direction), y, mx + (-50 * direction), my, mx, my);
             ctx.stroke();
 
-            //this._renderBuffers();
             this.setState({
                 dirty: true
             });
@@ -335,7 +332,6 @@ var app = app || {};
             ctx.fillStyle = 'rgba(200,200,200,.5)';
             ctx.fillRect(originX, originY, width, height);
 
-            //this._renderBuffers();
             this.setState({
                 dirty: true
             });
@@ -347,14 +343,12 @@ var app = app || {};
             this.setState({
                 dirty: true
             });
-            //            this._renderBuffers();
         },
         _onNodesUpdate: function() {
             this._renderNodes();
             this.setState({
                 dirty: true
             });
-            //          this._renderBuffers();
         },
         _onEdgesUpdate: function() {
             this._renderEdges();

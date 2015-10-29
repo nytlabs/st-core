@@ -19,7 +19,7 @@ var app = app || {};
     }
 
     Route.prototype = Object.create(app.Emitter.prototype);
-    Route.constructor = Route;
+    Route.prototype.constructor = Route;
 
     // we've received an update for the value of the route
     Route.prototype.updateData = function(data) {
@@ -116,4 +116,5 @@ var app = app || {};
     })
 
     app.RouteStore = rs;
+    app.Route = Route;
 }())

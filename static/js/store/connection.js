@@ -27,7 +27,7 @@ var app = app || {};
     }
 
     Connection.prototype = Object.create(app.Emitter.prototype);
-    Connection.constructor = Connection;
+    Connection.prototype.constructor = Connection;
 
     Connection.prototype.geometry = function() {
         // TODO: instead of blocks, this should somehow find the top-most 
@@ -249,4 +249,5 @@ var app = app || {};
     })
 
     app.ConnectionStore = rs;
+    app.Connection = Connection;
 }())

@@ -6,6 +6,7 @@ var app = app || {};
     'use strict';
 
     var connections = {};
+    var selected = {};
 
     function Connection(data) {
         this.data = data;
@@ -141,6 +142,10 @@ var app = app || {};
 
     ConnectionStore.prototype.getConnections = function() {
         return Object.keys(connections);
+    }
+
+    ConnectionStore.prototype.getSelected = function() {
+        return selected;
     }
 
     var rs = new ConnectionStore();

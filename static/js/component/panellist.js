@@ -11,18 +11,18 @@ var app = app || {};
         displayName: 'PanelListComponent',
         getInitialState: function() {
             return {
-                ids: app.NodeStore.getSelected(),
+                ids: app.SelectionStore.getSelected(),
             }
         },
         componentDidMount: function() {
-            app.NodeSelection.addListener(this._onUpdate);
+            app.SelectionStore.addListener(this._onUpdate);
         },
         componentWillUnmount: function() {
-            app.NodeSelection.removeListener(this._onUpdate);
+            app.SelectionStore.removeListener(this._onUpdate);
         },
         _onUpdate: function() {
             this.setState({
-                ids: app.NodeStore.getSelected(),
+                ids: app.selectionStore.getSelected(),
             });
         },
         render: function() {

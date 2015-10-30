@@ -45,7 +45,8 @@ var app = app || {};
         'APP_DELETE_SELECTION',
         'APP_GROUP_SELECTION',
         'APP_UNGROUP_SELECTION',
-        'APP_ROUTE_VISIBLE_PARENT'
+        'APP_ROUTE_VISIBLE_PARENT',
+        'APP_RENDER'
     ];
 
 

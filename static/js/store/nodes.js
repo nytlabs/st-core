@@ -7,9 +7,6 @@ var app = app || {};
     // canonical store for all node objects
     var nodes = {};
 
-    // ids for all selected nodes
-    var selected = [];
-    //    var groups = []; not needed yet
     var root = null;
 
     function createInputGeometry(inputs, geometry) {
@@ -174,8 +171,8 @@ var app = app || {};
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fillStyle = this instanceof Group ? 'rgba(210,230,255,1)' : 'rgba(230,230,230,1)';
         ctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
-        ctx.lineWidth = selected.indexOf(this.data.id) !== -1 ? 2 : 1;
-        ctx.strokeStyle = selected.indexOf(this.data.id) !== -1 ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
+        ctx.lineWidth = app.SelectionStore.isSelected(this.data.id) ? 2 : 1;
+        ctx.strokeStyle = app.SelectionStore.isSelected(this.data.id) ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
         ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
         // now to do the picking buffer.
@@ -280,10 +277,6 @@ var app = app || {};
     Selection.prototype = Object.create(app.Emitter.prototype);
     Selection.constructor = Selection;
 
-    Selection.prototype.getSelected = function() {
-        return selected
-    }
-
     var selection = new Selection();
 
     function NodeCollection() {}
@@ -303,10 +296,6 @@ var app = app || {};
     NodeCollection.prototype.getNodes = function() {
         // if for some reason we don't have a root set, return all nodes
         return root === null ? Object.keys(nodes) : nodes[root].children;
-    }
-
-    NodeCollection.prototype.getSelected = function() {
-        return selected;
     }
 
     // TODO: make it so that this only works for visible nodes
@@ -561,9 +550,11 @@ var app = app || {};
 
         // if this id is currently selected, ensure that we remove it and fire
         // selection event
-        if (selected.indexOf(id) !== -1) {
-            deselect(id);
-            selection.emit();
+        if (app.SelectionStore.isSelected(id) !== -1) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_DESELECT,
+                id: id,
+            });
         }
 
         // remove the picking color from the store so that we can re-use it later
@@ -603,41 +594,12 @@ var app = app || {};
         nodes[id].position.y += dy;
     }
 
-    function selectToggle(ids) {
-        ids.forEach(function(id) {
-            if (selected.indexOf(id) === -1) {
-                selected.push(id);
-            } else {
-                selected = selected.slice().filter(function(i) {
-                    return i != id;
-                });
-            }
-            nodes[id].render();
-            nodes[id].emit();
-        })
-    }
-
-    function deselect(id) {
-        selected = selected.slice().filter(function(i) {
-            return i != id;
-        });
-        nodes[id].render();
-        nodes[id].emit();
-    }
-
-    function deselectAll() {
-        var toRender = selected.slice();
-        selected = [];
-        toRender.forEach(function(id) {
-            nodes[id].render();
-            nodes[id].emit();
-        });
-    }
-
     function deleteSelection() {
         // TODO: update this for when we add sources
-        selected.forEach(function(id) {
-            var type = 'blocks';
+        app.SelectionStore.getSelected().forEach(function(id) {
+            if (!nodes.hasOwnProperty(id)) return; // dont like this, filters out edges
+            var type;
+            if (nodes[id] instanceof Node) type = 'blocks'
             if (nodes[id] instanceof Group) type = 'groups';
 
             app.Utils.request(
@@ -645,12 +607,13 @@ var app = app || {};
                 type + '/' + id, {},
                 null
             )
-        })
+        });
     }
 
     function selectMove(dx, dy) {
         var connections = {};
-        selected.forEach(function(id) {
+        app.SelectionStore.getSelected().forEach(function(id) {
+            if (!nodes.hasOwnProperty(id)) return; // dont like this, filters out edges
             nodes[id].position.x += dx;
             nodes[id].position.y += dy;
             nodes[id].connections.forEach(function(id) {
@@ -670,7 +633,8 @@ var app = app || {};
     }
 
     function finishMove() {
-        selected.forEach(function(id) {
+        app.SelectionStore.getSelected().forEach(function(id) {
+            if (!nodes.hasOwnProperty(id)) return;
             app.Utils.request(
                 'PUT',
                 nodeType(id) + 's/' + id + '/position', {
@@ -683,6 +647,11 @@ var app = app || {};
     }
 
     function selectGroup() {
+        var selected = app.SelectionStore.getSelected().filter(function(id) {
+            // again, dont like this. gets all selected elements, filters out edges.
+            return nodes.hasOwnProperty(id);
+        });
+
         if (selected.length === 0) return;
 
         var position = {
@@ -712,7 +681,9 @@ var app = app || {};
 
     function selectUnGroup() {
         var children = [];
-        selected.forEach(function(id) {
+        app.SelectionStore.getSelected().filter(function(id) {
+            return nodes.hasOwnProperty(id); // again, dont like this. filters out edges.
+        }).forEach(function(id) {
             if (nodes[id] instanceof Group) {
                 children = children.concat(nodes[id].children);
             }
@@ -720,7 +691,9 @@ var app = app || {};
 
         function jobsDone() {
             if (children.length === 0) {
-                selected.forEach(function(id) {
+                app.SelectionStore.getSelected().filter(function(id) {
+                    return nodes.hasOwnProperty(id); // again, dont like this. filters out edges.
+                }).forEach(function(id) {
                     app.Utils.request(
                         'DELETE',
                         'groups/' + id, {}, function() {}
@@ -800,7 +773,6 @@ var app = app || {};
             case app.Actions.WS_BLOCK_DELETE:
                 deleteNode(event.id);
                 rs.emit();
-                cleanup(event.id);
                 break;
             case app.Actions.APP_MOVE: // this is deprecated
                 if (!nodes.hasOwnProperty(event.id)) return;
@@ -809,23 +781,6 @@ var app = app || {};
             case app.Actions.APP_SELECT_MOVE:
                 selectMove(event.dx, event.dy);
                 rs.emit();
-                break;
-            case app.Actions.APP_SELECT:
-                if (!nodes.hasOwnProperty(event.id)) return;
-                deselectAll();
-                selectToggle([event.id]);
-                rs.emit();
-                selection.emit();
-                break;
-            case app.Actions.APP_SELECT_TOGGLE:
-                selectToggle(event.ids);
-                rs.emit();
-                selection.emit();
-                break;
-            case app.Actions.APP_DESELECT_ALL:
-                deselectAll();
-                rs.emit();
-                selection.emit();
                 break;
             case app.Actions.WS_GROUP_UPDATE:
             case app.Actions.WS_BLOCK_UPDATE:
@@ -846,6 +801,11 @@ var app = app || {};
                 break;
             case app.Actions.APP_DELETE_SELECTION:
                 deleteSelection();
+                break;
+            case app.Actions.APP_RENDER:
+                if (!nodes.hasOwnProperty(event.id)) return;
+                nodes[event.id].render();
+                rs.emit();
                 break;
         }
     })

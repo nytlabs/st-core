@@ -190,9 +190,9 @@ var app = app || {};
             } else if (isNode && this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    ids: [picked.data.id]
+                    element: [picked.data.id]
                 })
-            } else if (isNode && app.NodeStore.getSelected().indexOf(picked.data.id) === -1) {
+            } else if (isNode && !app.SelectionStore.isSelected(picked.data.id)) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT,
                     id: picked.data.id

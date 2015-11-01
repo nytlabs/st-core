@@ -11,7 +11,7 @@ var app = app || {};
         displayName: 'PanelListComponent',
         getInitialState: function() {
             return {
-                ids: app.SelectionStore.getSelected(),
+                ids: app.SelectionStore.getIdsByKind(app.Node),
             }
         },
         componentDidMount: function() {
@@ -22,7 +22,7 @@ var app = app || {};
         },
         _onUpdate: function() {
             this.setState({
-                ids: app.selectionStore.getSelected(),
+                ids: app.SelectionStore.getIdsByKind(app.Node),
             });
         },
         render: function() {

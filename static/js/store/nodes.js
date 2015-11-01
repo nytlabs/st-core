@@ -171,8 +171,8 @@ var app = app || {};
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fillStyle = this instanceof Group ? 'rgba(210,230,255,1)' : 'rgba(230,230,230,1)';
         ctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
-        ctx.lineWidth = app.SelectionStore.isSelected(this.data.id) ? 2 : 1;
-        ctx.strokeStyle = app.SelectionStore.isSelected(this.data.id) ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
+        ctx.lineWidth = app.SelectionStore.isSelected(this) ? 2 : 1;
+        ctx.strokeStyle = app.SelectionStore.isSelected(this) ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
         ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
         // now to do the picking buffer.

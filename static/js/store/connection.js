@@ -100,16 +100,15 @@ var app = app || {};
 
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.setLineDash([]);
-        ctx.lineWidth = 4.0
 
         // debug bounding boxes
         // ctx.fillStyle = "rgba(255,0,0,.1)";
         // ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = app.SelectionStore.isSelected(this) ? 'blue' : 'black';
         var conn = new Path2D();
         conn.moveTo(c[0], c[1]);
         conn.bezierCurveTo(c[2], c[3], c[4], c[5], c[6], c[7]);
+        ctx.lineWidth = app.SelectionStore.isSelected(this) ? 6.0 : 4.0;
         ctx.stroke(conn);
 
         ctx.strokeStyle = gradient;
@@ -124,10 +123,10 @@ var app = app || {};
 
         // now to render the picking...        
         var pctx = this.pickCanvas.getContext('2d');
-        pctx.fillStyle = this.pickColor;
-        pctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        pctx.globalCompositeOperation = 'destination-atop';
-        pctx.drawImage(this.canvas, 0, 0);
+        pctx.clearRect(0, 0, this.pickCanvas.width, this.pickCanvas.height);
+        pctx.strokeStyle = this.pickColor;
+        pctx.lineWidth = 6.0;
+        pctx.stroke(conn);
 
         this.emit();
     }
@@ -230,6 +229,11 @@ var app = app || {};
 
     app.Dispatcher.register(function(event) {
         switch (event.action) {
+            case app.Actions.APP_RENDER:
+                if (!connections.hasOwnProperty(event.id)) return;
+                connections[event.id].render();
+                rs.emit();
+                break;
             case app.Actions.APP_REQUEST_CONNECTION:
                 requestConnection(event.routes);
                 break;

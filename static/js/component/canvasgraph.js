@@ -148,11 +148,14 @@ var app = app || {};
             this._renderPickingBuffer();
             var ctx = this.state.bufferPicking.getContext('2d');
             var col = ctx.getImageData(e.pageX, e.pageY, 1, 1).data;
-            var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
-            var picked = app.PickingStore.colorToNode(colString);
-            var isNode = picked instanceof app.Node;
+            var picked = null;
+            // important! this throws away anti-aliased parts of a line!
+            if (col[3] === 255) {
+                var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
+                picked = app.PickingStore.colorToNode(colString);
+            }
+            var isElement = picked instanceof app.Node || picked instanceof app.Connection;
             var isRoute = picked instanceof app.Route;
-            var isConnection = picked instanceof app.Connection;
 
             if (this.state.connectingBlock !== null) {
                 this._connectingClear();
@@ -187,15 +190,15 @@ var app = app || {};
                     action: app.Actions.APP_REQUEST_CONNECTION,
                     routes: [picked, this.state.connectingRoute],
                 });
-            } else if (isNode && this.state.shift === true) {
+            } else if (isElement && this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    element: [picked.data.id]
+                    element: [picked]
                 })
-            } else if (isNode && !app.SelectionStore.isSelected(picked.data.id)) {
+            } else if (isElement && !app.SelectionStore.isSelected(picked)) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT,
-                    id: picked.data.id
+                    id: picked
                 })
             }
 
@@ -319,7 +322,9 @@ var app = app || {};
                 // toggle all new nodes, all nodes that have left the rect
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    ids: toggles
+                    ids: toggles.map(function(id) {
+                        return app.NodeStore.getNode(id);
+                    })
                 })
             }
 

@@ -9,11 +9,21 @@ var app = app || {};
 
     SelectionStore.prototype.getSelected = function() {
         // return a copy, not the original
-        return selected.slice();
+        return selected.slice().map(function(element) {
+            return element.data.id
+        });
     }
 
     SelectionStore.prototype.isSelected = function(id) {
         return selected.indexOf(id) !== -1 ? true : false;
+    }
+
+    SelectionStore.prototype.getIdsByKind = function(kind) {
+        return selected.filter(function(item) {
+            return item instanceof kind;
+        }).map(function(element) {
+            return element.data.id
+        });
     }
 
     var rs = new SelectionStore();
@@ -37,13 +47,13 @@ var app = app || {};
                 selected.push(id);
             } else {
                 selected = selected.slice().filter(function(i) {
-                    return i != id;
+                    return i !== id;
                 });
             }
 
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_RENDER,
-                id: id
+                id: id.data.id
             });
         })
     }
@@ -55,7 +65,7 @@ var app = app || {};
         toRender.forEach(function(id) {
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_RENDER,
-                id: id
+                id: id.data.id
             });
         });
     }

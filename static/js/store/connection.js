@@ -10,7 +10,7 @@ var app = app || {};
 
     function Connection(data) {
         this.data = data;
-
+        this.dirtyPicking = false;
         this.routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
         this.routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
 
@@ -31,6 +31,7 @@ var app = app || {};
     Connection.prototype.constructor = Connection;
 
     Connection.prototype.geometry = function() {
+        this.dirtyPicking = true;
         // TODO: instead of blocks, this should somehow find the top-most 
         // visible geometry that the route is apart of (for groups);
         var from = app.NodeStore.getVisibleParent(this.data.from.id);
@@ -102,8 +103,8 @@ var app = app || {};
         ctx.setLineDash([]);
 
         // debug bounding boxes
-        // ctx.fillStyle = "rgba(255,0,0,.1)";
-        // ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        //ctx.fillStyle = "rgba(255,0,0,.1)";
+        //ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.strokeStyle = app.SelectionStore.isSelected(this) ? 'blue' : 'black';
         var conn = new Path2D();
         conn.moveTo(c[0], c[1]);
@@ -114,21 +115,29 @@ var app = app || {};
         ctx.strokeStyle = gradient;
         ctx.lineWidth = 2.0;
         ctx.stroke(conn);
-
-        // if we want circles filled for connections
-        // var path = new Path2D();
-        // path.arc(c[0], c[1], 5, 0, Math.PI * 2, true);
-        // path.arc(c[6], c[7], 5, 0, Math.PI * 2, true);
-        // ctx.fill(path);
-
-        // now to render the picking...        
-        var pctx = this.pickCanvas.getContext('2d');
-        pctx.clearRect(0, 0, this.pickCanvas.width, this.pickCanvas.height);
-        pctx.strokeStyle = this.pickColor;
-        pctx.lineWidth = 6.0;
-        pctx.stroke(conn);
-
         this.emit();
+
+    }
+
+    Connection.prototype.renderPicking = function() {
+        this.dirtyPicking = false;
+        var ctx = this.canvas.getContext('2d');
+        var pctx = this.pickCanvas.getContext('2d');
+        var imgData = ctx.getImageData(0, 0, this.pickCanvas.width, this.pickCanvas.height);
+        var pixels = imgData.data;
+        var rgb = this.pickColor.replace('rgb(', '').replace(')', '').split(',').map(function(str) {
+            return parseInt(str)
+        })
+
+        for (var i = 0; i < pixels.length; i += 4) {
+            if (pixels[i + 3] != 0) {
+                pixels[i] = rgb[0];
+                pixels[i + 1] = rgb[1];
+                pixels[i + 2] = rgb[2];
+                pixels[i + 3] = 255;
+            }
+        }
+        pctx.putImageData(imgData, 0, 0);
     }
 
     function ConnectionStore() {}
@@ -184,6 +193,12 @@ var app = app || {};
         ids.forEach(function(id) {
             connections[id].geometry();
             connections[id].render()
+        })
+    }
+
+    function renderConnectionsPicking(ids) {
+        ids.forEach(function(id) {
+            connections[id].renderPicking()
         })
     }
 
@@ -253,6 +268,9 @@ var app = app || {};
                 translateConnections(event.translate, event.dx, event.dy);
                 renderConnections(event.ids);
                 rs.emit();
+                break;
+            case app.Actions.APP_RENDER_CONNECTION_PICKING:
+                connections[event.id].renderPicking();
                 break;
         }
     })

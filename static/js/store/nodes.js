@@ -635,6 +635,7 @@ var app = app || {};
     function finishMove() {
         app.SelectionStore.getSelected().forEach(function(id) {
             if (!nodes.hasOwnProperty(id)) return;
+
             app.Utils.request(
                 'PUT',
                 nodeType(id) + 's/' + id + '/position', {

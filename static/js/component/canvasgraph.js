@@ -193,7 +193,7 @@ var app = app || {};
             } else if (isElement && this.state.shift === true) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    element: [picked]
+                    ids: [picked]
                 })
             } else if (isElement && !app.SelectionStore.isSelected(picked)) {
                 app.Dispatcher.dispatch({
@@ -303,10 +303,23 @@ var app = app || {};
         _selectionRectUpdate: function(x, y) {
             var width = Math.abs(x - this.state.mouseDownX);
             var height = Math.abs(y - this.state.mouseDownY);
-            var originX = Math.min(x, this.state.mouseDownX);
-            var originY = Math.min(y, this.state.mouseDownY);
+            var originX = Math.min(x, this.state.mouseDownX) - this.state.translateX;
+            var originY = Math.min(y, this.state.mouseDownY) - this.state.translateY;
             // TODO: get rid of translate in favor of per-group translations
-            var selectRect = app.NodeStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
+            //           var selectRect = app.NodeStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
+            var selectRect = app.NodeStore.getNodes().filter(function(id) {
+                var block = app.NodeStore.getNode(id);
+                return app.Utils.pointInRect(originX, originY, width, height, block.position.x, block.position.y)
+            }).map(function(id) {
+                return app.NodeStore.getNode(id)
+            })
+
+            selectRect = selectRect.concat(app.ConnectionStore.getConnections().filter(function(id) {
+                var connection = app.ConnectionStore.getConnection(id);
+                return app.Utils.pointInRect(originX, originY, width, height, connection.position.x, connection.position.y)
+            }).map(function(id) {
+                return app.ConnectionStore.getConnection(id)
+            }))
 
             // get all nodes new to the selection rect
             var toggles = selectRect.filter(function(id) {
@@ -322,9 +335,7 @@ var app = app || {};
                 // toggle all new nodes, all nodes that have left the rect
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_SELECT_TOGGLE,
-                    ids: toggles.map(function(id) {
-                        return app.NodeStore.getNode(id);
-                    })
+                    ids: toggles
                 })
             }
 
@@ -423,6 +434,14 @@ var app = app || {};
             }.bind(this));
             app.ConnectionStore.getConnections().forEach(function(id, i) {
                 var connection = app.ConnectionStore.getConnection(id);
+                // we need to update the picking image for each connection 
+                // that has been moved.
+                if (connection.dirtyPicking) {
+                    app.Dispatcher.dispatch({
+                        action: app.Actions.APP_RENDER_CONNECTION_PICKING,
+                        id: id
+                    })
+                }
                 var x = connection.position.x + this.state.translateX;
                 var y = connection.position.y + this.state.translateY;
                 pickCtx.drawImage(connection.pickCanvas, x, y);

@@ -46,7 +46,8 @@ var app = app || {};
         'APP_GROUP_SELECTION',
         'APP_UNGROUP_SELECTION',
         'APP_ROUTE_VISIBLE_PARENT',
-        'APP_RENDER'
+        'APP_RENDER',
+        'APP_RENDER_CONNECTION_PICKING'
     ];
 
 

@@ -488,10 +488,10 @@ var app = app || {};
 
         // if this id is currently selected, ensure that we remove it and fire
         // selection event
-        if (app.SelectionStore.isSelected(id) !== -1) {
+        if (app.SelectionStore.isSelected(nodes[id]) !== -1) {
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_DESELECT,
-                id: id,
+                id: nodes[id],
             });
         }
 
@@ -529,8 +529,7 @@ var app = app || {};
 
     function deleteSelection() {
         // TODO: update this for when we add sources
-        app.SelectionStore.getSelected().forEach(function(id) {
-            if (!nodes.hasOwnProperty(id)) return; // dont like this, filters out edges
+        app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
             var type;
             if (nodes[id] instanceof Node) type = 'blocks'
             if (nodes[id] instanceof Group) type = 'groups';
@@ -545,8 +544,7 @@ var app = app || {};
 
     function selectMove(dx, dy) {
         var connections = {};
-        app.SelectionStore.getSelected().forEach(function(id) {
-            if (!nodes.hasOwnProperty(id)) return; // dont like this, filters out edges
+        app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
             nodes[id].position.x += dx;
             nodes[id].position.y += dy;
             nodes[id].connections.forEach(function(id) {
@@ -566,9 +564,7 @@ var app = app || {};
     }
 
     function finishMove() {
-        app.SelectionStore.getSelected().forEach(function(id) {
-            if (!nodes.hasOwnProperty(id)) return;
-
+        app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
             app.Utils.request(
                 'PUT',
                 nodeType(id) + 's/' + id + '/position', {
@@ -581,11 +577,7 @@ var app = app || {};
     }
 
     function selectGroup() {
-        var selected = app.SelectionStore.getSelected().filter(function(id) {
-            // again, dont like this. gets all selected elements, filters out edges.
-            return nodes.hasOwnProperty(id);
-        });
-
+        var selected = app.SelectionStore.getIdsByKind(Node)
         if (selected.length === 0) return;
 
         var position = {
@@ -615,9 +607,7 @@ var app = app || {};
 
     function selectUnGroup() {
         var children = [];
-        app.SelectionStore.getSelected().filter(function(id) {
-            return nodes.hasOwnProperty(id); // again, dont like this. filters out edges.
-        }).forEach(function(id) {
+        app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
             if (nodes[id] instanceof Group) {
                 children = children.concat(nodes[id].children);
             }
@@ -625,9 +615,7 @@ var app = app || {};
 
         function jobsDone() {
             if (children.length === 0) {
-                app.SelectionStore.getSelected().filter(function(id) {
-                    return nodes.hasOwnProperty(id); // again, dont like this. filters out edges.
-                }).forEach(function(id) {
+                app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
                     app.Utils.request(
                         'DELETE',
                         'groups/' + id, {}, function() {}

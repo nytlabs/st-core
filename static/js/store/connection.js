@@ -196,12 +196,6 @@ var app = app || {};
         })
     }
 
-    function renderConnectionsPicking(ids) {
-        ids.forEach(function(id) {
-            connections[id].renderPicking()
-        })
-    }
-
     function translateConnections(ids, dx, dy) {
         ids.forEach(function(id) {
             connections[id].position.x += dx;

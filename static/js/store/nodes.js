@@ -298,68 +298,6 @@ var app = app || {};
         return root === null ? Object.keys(nodes) : nodes[root].children;
     }
 
-    // TODO: make it so that this only works for visible nodes
-    NodeCollection.prototype.pickNode = function(x, y) {
-        var picked = [];
-        //for (var id in this.getNodes) {
-        this.getNodes().forEach(function(id) {
-            if (app.Utils.pointInRect(
-                nodes[id].position.x,
-                nodes[id].position.y,
-                nodes[id].canvas.width,
-                nodes[id].canvas.height,
-                x,
-                y
-            )) {
-                picked.push(parseInt(id));
-            }
-        })
-        return picked;
-    }
-
-    NodeCollection.prototype.pickRoute = function(id, x, y) {
-        var node = nodes[id];
-        x -= node.position.x;
-        y -= node.position.y;
-
-        var picked = node.inputsGeometry.filter(function(route) {
-            return node.nodeGeometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
-        })
-
-        if (picked.length > 0) {
-            return picked[0];
-        }
-
-        picked = node.outputsGeometry.filter(function(route) {
-            return node.nodeGeometry.routeRadius > app.Utils.distance(route.x, route.y, x, y);
-        })
-
-        if (picked.length > 0) {
-            return picked[0];
-        }
-
-        return null
-    }
-
-    NodeCollection.prototype.pickArea = function(x, y, w, h) {
-        // should be optimized to only try to select nodes that are
-        // 1) in the current visible group
-        // 2) ideally within the visible workspace
-        var picked = [];
-
-        this.getNodes().forEach(function(id) {
-            // center of node 
-            var nodeX = nodes[id].position.x + nodes[id].nodeGeometry.routeRadius +
-                (.5 * nodes[id].nodeGeometry.width);
-            var nodeY = nodes[id].position.y + nodes[id].nodeGeometry.routeRadius +
-                (.5 * nodes[id].nodeGeometry.height);
-            if (app.Utils.pointInRect(x, y, w, h, nodeX, nodeY)) {
-                picked.push(parseInt(id));
-            }
-        })
-        return picked;
-    }
-
     var rs = new NodeCollection();
 
     function createGroup(node) {
@@ -589,11 +527,6 @@ var app = app || {};
         node[node.id] = node;
     }
 
-    function moveNode(id, dx, dy) {
-        nodes[id].position.x += dx;
-        nodes[id].position.y += dy;
-    }
-
     function deleteSelection() {
         // TODO: update this for when we add sources
         app.SelectionStore.getSelected().forEach(function(id) {
@@ -774,10 +707,6 @@ var app = app || {};
             case app.Actions.WS_BLOCK_DELETE:
                 deleteNode(event.id);
                 rs.emit();
-                break;
-            case app.Actions.APP_MOVE: // this is deprecated
-                if (!nodes.hasOwnProperty(event.id)) return;
-                moveNode(event.id, event.dx, event.dy);
                 break;
             case app.Actions.APP_SELECT_MOVE:
                 selectMove(event.dx, event.dy);

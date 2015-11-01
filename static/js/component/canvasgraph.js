@@ -303,21 +303,21 @@ var app = app || {};
         _selectionRectUpdate: function(x, y) {
             var width = Math.abs(x - this.state.mouseDownX);
             var height = Math.abs(y - this.state.mouseDownY);
-            var originX = Math.min(x, this.state.mouseDownX) - this.state.translateX;
-            var originY = Math.min(y, this.state.mouseDownY) - this.state.translateY;
+            var originX = Math.min(x, this.state.mouseDownX);
+            var originY = Math.min(y, this.state.mouseDownY);
             // TODO: get rid of translate in favor of per-group translations
             //           var selectRect = app.NodeStore.pickArea(originX - this.state.translateX, originY - this.state.translateY, width, height);
             var selectRect = app.NodeStore.getNodes().filter(function(id) {
                 var block = app.NodeStore.getNode(id);
-                return app.Utils.pointInRect(originX, originY, width, height, block.position.x, block.position.y)
-            }).map(function(id) {
+                return app.Utils.pointInRect(originX - this.state.translateX, originY - this.state.translateY, width, height, block.position.x, block.position.y)
+            }.bind(this)).map(function(id) {
                 return app.NodeStore.getNode(id)
             })
 
             selectRect = selectRect.concat(app.ConnectionStore.getConnections().filter(function(id) {
                 var connection = app.ConnectionStore.getConnection(id);
-                return app.Utils.pointInRect(originX, originY, width, height, connection.position.x, connection.position.y)
-            }).map(function(id) {
+                return app.Utils.pointInRect(originX - this.state.translateX, originY - this.state.translateY, width, height, connection.position.x, connection.position.y)
+            }.bind(this)).map(function(id) {
                 return app.ConnectionStore.getConnection(id)
             }))
 

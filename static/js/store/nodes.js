@@ -527,21 +527,6 @@ var app = app || {};
         node[node.id] = node;
     }
 
-    function deleteSelection() {
-        // TODO: update this for when we add sources
-        app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
-            var type;
-            if (nodes[id] instanceof Node) type = 'blocks'
-            if (nodes[id] instanceof Group) type = 'groups';
-
-            app.Utils.request(
-                'DELETE',
-                type + '/' + id, {},
-                null
-            )
-        });
-    }
-
     function selectMove(dx, dy) {
         var connections = {};
         app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
@@ -717,9 +702,6 @@ var app = app || {};
             case app.Actions.APP_DELETE_NODE_CONNECTION:
                 deleteConnection(event);
                 break;
-            case app.Actions.APP_DELETE_SELECTION:
-                deleteSelection();
-                break;
             case app.Actions.APP_RENDER:
                 if (!nodes.hasOwnProperty(event.id)) return;
                 nodes[event.id].render();
@@ -727,6 +709,7 @@ var app = app || {};
                 break;
         }
     })
+    app.Group = Group;
     app.Node = Node;
     app.NodeStore = rs;
     app.NodeSelection = selection;

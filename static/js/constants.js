@@ -9,7 +9,13 @@
             'writer': 'rgba(0, 255, 170, 1)',
             'any': 'rgba(255, 255, 255, 1)',
             'error': 'rgba(255, 0, 0, 1)'
+        },
+        Collections: {
+            BLOCK: 'blocks',
+            GROUP: 'groups',
+            SOURCE: 'sources',
+            CONNECTIONS: 'connections',
+            LINKS: 'links'
         }
     }
-
 })();

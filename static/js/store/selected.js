@@ -70,6 +70,21 @@ var app = app || {};
         });
     }
 
+    function deleteSelected() {
+        selected.forEach(function(s) {
+            var type;
+            if (s instanceof app.Node) type = 'blocks';
+            if (s instanceof app.Group) type = 'groups';
+            if (s instanceof app.Connection) type = 'connections';
+
+            app.Utils.request(
+                'DELETE',
+                type + '/' + s.data.id, {},
+                null
+            )
+        });
+    }
+
     app.Dispatcher.register(function(event) {
         switch (event.action) {
             case app.Actions.APP_DESELECT:
@@ -87,6 +102,10 @@ var app = app || {};
                 break;
             case app.Actions.APP_DESELECT_ALL:
                 deselectAll();
+                rs.emit();
+                break;
+            case app.Actions.APP_DELETE_SELECTION:
+                deleteSelected();
                 rs.emit();
                 break;
         }

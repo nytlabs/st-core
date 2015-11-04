@@ -115,7 +115,11 @@ var app = app || {};
                 }, block.data.type),
             ];
 
-            children = children.concat(block.inputs.map(function(id) {
+            // TODO: optimize this!
+            // this retrieves _all_ routes for a block, seems unnecesary
+            children = children.concat(block.routes.filter(function(id) {
+                return app.RouteStore.getRoute(id).direction === 'input';
+            }).map(function(id) {
                 return React.createElement(app.RoutePanelInput, {
                     id: id,
                     key: id,

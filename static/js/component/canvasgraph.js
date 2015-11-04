@@ -177,9 +177,7 @@ var app = app || {};
 
             if (isRoute && this.state.connectingBlock === null) {
                 var block = app.NodeStore.getNode(picked.visibleParent);
-                var route = picked.direction === 'input' ?
-                    block.inputsGeometry[block.inputs.indexOf(picked.id)] :
-                    block.outputsGeometry[block.outputs.indexOf(picked.id)];
+                var route = block.routeGeometry[picked.id];
                 this.setState({
                     connectingBlock: block,
                     connectingRoute: route,

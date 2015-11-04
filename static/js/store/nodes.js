@@ -9,29 +9,6 @@ var app = app || {};
 
     var root = null;
 
-    function createInputGeometry(inputs, geometry) {
-        return inputs.map(function(id, i) {
-            return {
-                id: id,
-                x: geometry.routeRadius,
-                y: (i + .5) * geometry.routeHeight,
-                direction: 'input',
-                hasValue: false
-            }
-        });
-    }
-
-    function createOutputGeometry(outputs, geometry) {
-        return outputs.map(function(id, i) {
-            return {
-                id: id,
-                x: geometry.width + geometry.routeRadius,
-                y: (i + .5) * geometry.routeHeight,
-                direction: 'output',
-            }
-        });
-    }
-
     /*
     TODO: implement crank
     function Crank() {
@@ -56,9 +33,6 @@ var app = app || {};
         return ctx.measureText(text);
     }
 
-
-    function Source(data) {}
-
     function Node(data) {
 
         this.canvas = document.createElement('canvas');
@@ -69,8 +43,8 @@ var app = app || {};
         this.visibleParent = null;
         this.parent = null;
         this.data = {};
-        this.inputs = [];
-        this.outputs = [];
+        this.routes = [];
+        this.routeGeometry = {};
         this.connections = [];
         this.update(data);
         // when the state of the node changes, we need to know what status
@@ -82,21 +56,33 @@ var app = app || {};
     Node.prototype = Object.create(app.Emitter.prototype);
     Node.prototype.constructor = Node;
 
-    Node.prototype.addInput = function(id) {
-        this.inputs.push(id);
+
+    Node.prototype.addRoute = function(id) {
+        this.routes.push(id);
         var route = app.RouteStore.getRoute(id);
-        route.addListener(this.renderAndEmit.bind(this));
+        // if this route is an input we need to listen for updates
+        if (route.direction === 'input') {
+            route.addListener(this.renderAndEmit.bind(this));
+        }
     }
 
-    Node.prototype.addOutput = function(id) {
-        this.outputs.push(id);
+    Node.prototype.removeRoute = function(id) {
+        this.routes.splice(this.routes.indexOf(id), 1);
+        var route = app.RouteStore.getRoute(id);
+        if (route.direction === 'input') {
+            route.removeListener(this.renderAndEmit.bind(this));
+        }
     }
 
-    Node.prototype.removeInput = function(id) {
-        this.inputs.splice(this.inputs.indexOf(id), 1);
+    /*Node.prototype.removeInput = function(id) {
+        this.routes.splice(this.routes.indexOf(id), 1);
         var route = app.RouteStore.getRoute(id);
         route.removeListener(this.renderAndEmit.bind(this));
     }
+
+    Node.prototype.removeOutput = function(id) {
+        this.outputs.splice(this.outputs.indexOf(id), 1);
+    }*/
 
     Node.prototype.renderAndEmit = function() {
         // really don't like this -- somewhat confusing handling of events
@@ -116,44 +102,63 @@ var app = app || {};
         app.NodeStore.emit();
     }
 
-    Node.prototype.removeOutput = function(id) {
-        this.outputs.splice(this.outputs.indexOf(id), 1);
-    }
 
     Node.prototype.geometry = function() {
-        var inputMeasures = this.inputs.map(function(r) {
-            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
-        });
-
-        var outputMeasures = this.outputs.map(function(r) {
-            return canvasMeasureText(app.RouteStore.getRoute(r).data.name, '16px helvetica');
-        });
-
-        var maxInputWidth = inputMeasures.length ? Math.max.apply(null, inputMeasures.map(function(im) {
-            return im.width;
-        })) : 0;
-
-        var maxOutputWidth = outputMeasures.length ? Math.max.apply(null, outputMeasures.map(function(om) {
-            return om.width;
-        })) : 0;
-
         var routeHeight = 15;
-
+        var routeRadius = Math.floor(routeHeight / 2.0);
         var padding = {
             vertical: 6,
             horizontal: 6
         }
 
+        var widths = {
+            input: 0,
+            output: 0
+        }
+
+        var counts = {
+            input: 0,
+            output: 0
+        }
+
+        this.routes.forEach(function(id) {
+            var route = app.RouteStore.getRoute(id);
+            var width = canvasMeasureText(route.data.name, '16px helvetica').width;
+            if (width > widths[route.direction]) {
+                widths[route.direction] = width;
+            }
+            counts[route.direction] += 1;
+        });
+
         // the following is derived data for use with UI
         this.nodeGeometry = {
-            width: Math.floor(maxInputWidth + maxOutputWidth + padding.horizontal + routeHeight),
-            height: Math.floor(Math.max(this.inputs.length, this.outputs.length) * routeHeight + padding.vertical),
-            routeRadius: Math.floor(routeHeight / 2.0),
+            width: Math.floor(widths.input + widths.output + padding.horizontal + routeHeight),
+            height: Math.floor(Math.max(counts.input, counts.output) * routeHeight + padding.vertical),
+            routeRadius: routeRadius,
             routeHeight: routeHeight,
         }
 
-        this.inputsGeometry = createInputGeometry(this.inputs, this.nodeGeometry);
-        this.outputsGeometry = createOutputGeometry(this.outputs, this.nodeGeometry);
+        counts = {
+            input: 0,
+            output: 0
+        }
+
+        this.routes.forEach(function(id) {
+            var route = app.RouteStore.getRoute(id);
+            var xOffset = route.direction === 'input' ? 0 : this.nodeGeometry.width;
+            var x = xOffset + routeRadius;
+            var y = ((counts[route.direction]) + .5) * routeHeight;
+
+            // this is for connections;
+            this.routeGeometry[id] = {
+                id: id,
+                index: counts[route.direction]++,
+                x: x,
+                y: y,
+                direction: route.direction,
+            };
+        }.bind(this))
+
         this.canvas.width = this.nodeGeometry.width + (this.nodeGeometry.routeRadius * 2) + 1; // magic number for buffer...
         this.canvas.height = this.nodeGeometry.height + 1; // 1 is magic buffer number :(
 
@@ -182,9 +187,13 @@ var app = app || {};
         pctx.fillStyle = this.pickColor;
         pctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
-        function renderRoute(routeGeometry, route, geometry) {
+        this.routes.forEach(function(id, i) {
+            var route = app.RouteStore.getRoute(id);
+            var x = this.routeGeometry[id].x;
+            var y = this.routeGeometry[id].y;
+
             ctx.beginPath();
-            ctx.arc(routeGeometry.x, routeGeometry.y, geometry.routeRadius, 0, 2 * Math.PI, false);
+            ctx.arc(x, y, this.nodeGeometry.routeRadius, 0, 2 * Math.PI, false);
             ctx.fillStyle = app.Constants.TypeColors[route.data.type];
             ctx.fill();
             ctx.lineWidth = 1;
@@ -195,32 +204,21 @@ var app = app || {};
             ctx.textAlign = route.direction === 'input' ? 'left' : 'right';
             ctx.fillStyle = 'black';
             ctx.fillText(route.data.name,
-                routeGeometry.x + (route.direction === 'input' ? 1 : -1) * geometry.routeRadius,
-                routeGeometry.y + geometry.routeRadius);
+                x + (route.direction === 'input' ? 1 : -1) * this.nodeGeometry.routeRadius,
+                y + this.nodeGeometry.routeRadius);
 
             if (route.direction === 'input' && route.data.value !== null) {
                 ctx.beginPath();
                 ctx.fillStlye = 'rgba(100,100,100,1)';
-                ctx.arc(routeGeometry.x, routeGeometry.y, 4, 0, 2 * Math.PI, false);
+                ctx.arc(x, y, 4, 0, 2 * Math.PI, false);
                 ctx.fill();
             }
 
             pctx.beginPath();
-            pctx.arc(routeGeometry.x, routeGeometry.y, geometry.routeRadius, 0, 2 * Math.PI, false);
+            pctx.arc(x, y, this.nodeGeometry.routeRadius, 0, 2 * Math.PI, false);
             pctx.fillStyle = route.pickColor;
             pctx.fill();
-        };
-
-        this.inputsGeometry.forEach(function(routeGeometry) {
-            var route = app.RouteStore.getRoute(routeGeometry.id);
-            renderRoute(routeGeometry, route, this.nodeGeometry);
-        }.bind(this))
-
-        this.outputsGeometry.forEach(function(routeGeometry, i) {
-            var route = app.RouteStore.getRoute(routeGeometry.id);
-            renderRoute(routeGeometry, route, this.nodeGeometry);
-        }.bind(this))
-
+        }.bind(this));
     }
 
     Node.prototype.update = function(data) {
@@ -273,6 +271,13 @@ var app = app || {};
     Group.prototype = Object.create(Node.prototype);
     Group.constructor = Group;
 
+    function Source(data) {
+        Node.call(this, data);
+    }
+
+    Source.prototype = Object.create(Node.prototype);
+    Source.constructor = Source;
+
     function Selection() {}
     Selection.prototype = Object.create(app.Emitter.prototype);
     Selection.constructor = Selection;
@@ -299,6 +304,13 @@ var app = app || {};
     }
 
     var rs = new NodeCollection();
+
+    function createSource(node) {
+        console.log("whatttt");
+        nodes[node.id] = new Source(node);
+        nodes[node.id].render();
+    }
+
 
     function createGroup(node) {
         if (nodes.hasOwnProperty(node.id) === true) {
@@ -338,6 +350,13 @@ var app = app || {};
         app.NodeStore.emit();
     }
 
+    function addRouteAscending(id, routeId) {
+        nodes[id].addRoute(routeId);
+        if (nodes[id].parent !== null) {
+            addRouteAscending(nodes[id].parent, routeId);
+        }
+    }
+
     function addInputAscending(id, routeId) {
         nodes[id].addInput(routeId);
         if (nodes[id].parent !== null) {
@@ -366,12 +385,8 @@ var app = app || {};
         nodes[event.child].parent = event.id;
 
         // add routes to all parent nodes
-        nodes[event.child].inputs.forEach(function(routeId) {
-            addInputAscending(event.id, routeId);
-        });
-
-        nodes[event.child].outputs.forEach(function(routeId) {
-            addOutputAscending(event.id, routeId);
+        nodes[event.child].routes.forEach(function(routeId) {
+            addRouteAscending(event.id, routeId);
         });
 
         nodes[event.child].connections.forEach(function(connId) {
@@ -382,16 +397,7 @@ var app = app || {};
         var visibleParent = getVisibleParent(event.child);
         setVisibleParentDescending(event.child, visibleParent);
 
-
-        nodes[visibleParent].inputs.forEach(function(route) {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
-                id: route,
-                visibleParent: visibleParent,
-            })
-        })
-
-        nodes[visibleParent].outputs.forEach(function(route) {
+        nodes[visibleParent].routes.forEach(function(route) {
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
                 id: route,
@@ -409,13 +415,9 @@ var app = app || {};
     }
 
     function removeChildFromGroup(event) {
-        nodes[event.child].inputs.forEach(function(id) {
-            nodes[event.id].removeInput(id);
+        nodes[event.child].routes.forEach(function(id) {
+            nodes[event.id].removeRoute(id);
         })
-
-        nodes[event.child].outputs.forEach(function(id) {
-            nodes[event.id].removeOutput(id);
-        });
 
         nodes[event.id].children.splice(nodes[event.id].children.indexOf(event.child), 1);
 
@@ -430,50 +432,36 @@ var app = app || {};
             console.warn('could not create node:', node.id, ' already exists');
             return
         }
-        // TODO: drop the whole "inputs" and "outputs" part of the schema, put
-        // distinction inside the map as a field. 
-        var inputs = node.inputs.map(function(input, i) {
-            return node.id + '_' + i + '_input';
-        });
-
-        var outputs = node.outputs.map(function(output, i) {
-            return node.id + '_' + i + '_output';
-        });
-
-        // ask the RouteStore to create some routes.
-        // TODO: consider using facebook's waitFor() in the future. in that case, 
-        // we'd just make RouteStore consume the WS_BLOCK_CREATE message,
-        // and have the RouteStore do the job of what is happening here.
-        inputs.map(function(id, i) {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_CREATE,
-                id: id,
-                blockId: node.id,
-                index: i,
-                direction: 'input',
-                data: node.inputs[i]
-            });
-        });
-
-        outputs.map(function(id, i) {
-            app.Dispatcher.dispatch({
-                action: app.Actions.APP_ROUTE_CREATE,
-                id: id,
-                blockId: node.id,
-                index: i,
-                direction: 'output',
-                data: node.outputs[i]
-            });
-        });
 
         nodes[node.id] = new Node(node);
 
-        inputs.forEach(function(id) {
-            nodes[node.id].addInput(id);
+        var inputs = node.inputs.map(function(input, i) {
+            return {
+                direction: 'input',
+                index: i
+            }
         })
 
-        outputs.forEach(function(id) {
-            nodes[node.id].addOutput(id);
+        var outputs = node.outputs.map(function(output, i) {
+            return {
+                direction: 'output',
+                index: i
+            }
+        })
+
+        var routes = inputs.concat(outputs);
+
+        routes.forEach(function(e) {
+            var id = node.id + '_' + e.index + '_' + e.direction;
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_CREATE,
+                id: id,
+                blockId: node.id,
+                index: e.index,
+                direction: e.direction,
+                data: node[e.direction + 's'][e.index]
+            });
+            nodes[node.id].addRoute(id);
         })
 
         nodes[node.id].render();
@@ -501,14 +489,7 @@ var app = app || {};
         // if this is a block then we need to remove its routes
         // if it is a group we do nothing.
         if (nodes[id].constructor === Node) {
-            nodes[id].inputs.forEach(function(route) {
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_DELETE,
-                    id: route
-                })
-            })
-
-            nodes[id].outputs.forEach(function(route) {
+            nodes[id].routes.forEach(function(route) {
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_ROUTE_DELETE,
                     id: route
@@ -660,6 +641,10 @@ var app = app || {};
                 break;
             case app.Actions.WS_GROUP_CREATE:
                 createGroup(event.data);
+                rs.emit();
+                break;
+            case app.Actions.WS_SOURCE_CREATE:
+                createSource(event.data);
                 rs.emit();
                 break;
             case app.Actions.WS_GROUP_ADD_CHILD:

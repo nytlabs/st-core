@@ -13,13 +13,6 @@ var app = app || {};
         this.dirtyPicking = false;
         this.routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
         this.routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
-
-        //app.Dispatcher.dispatch({
-        //    action: app.Actions.APP_ROUTE_UPDATE_CONNECTED,
-        //    connId: data.id,
-        //    ids: [this.routeIdFrom, this.routeIdTo],
-        //});
-
         this.pickColor = app.PickingStore.getColor(this);
         this.canvas = document.createElement('canvas');
         this.pickCanvas = document.createElement('canvas');
@@ -40,19 +33,11 @@ var app = app || {};
         // bounds of a non-buffered box.
         var buffer = 10;
 
-        var routeIndexFrom = from.outputsGeometry.map(function(r) {
-            return r.id
-        }).indexOf(this.routeIdFrom);
+        var yFrom = from.routeGeometry[this.routeIdFrom].y;
+        var xFrom = from.routeGeometry[this.routeIdFrom].x + from.nodeGeometry.routeRadius;
 
-        var routeIndexTo = to.inputsGeometry.map(function(r) {
-            return r.id
-        }).indexOf(this.routeIdTo);
-
-        var yFrom = from.nodeGeometry.routeHeight * (routeIndexFrom + 1) - (from.nodeGeometry.routeRadius);
-        var xFrom = from.nodeGeometry.routeRadius * 2 + from.nodeGeometry.width - 1;
-
-        var yTo = to.nodeGeometry.routeHeight * (routeIndexTo + 1) - (to.nodeGeometry.routeRadius);
-        var xTo = 1;
+        var yTo = to.routeGeometry[this.routeIdTo].y;
+        var xTo = to.routeGeometry[this.routeIdTo].x - to.nodeGeometry.routeRadius + 1;
 
         // origin point for bounding box outside of connection
         this.position = {

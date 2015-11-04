@@ -62,6 +62,11 @@ var app = app || {};
                 })
                 break;
             case 'source':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.source.id,
+                    data: event.data.source
+                })
                 break;
             case 'link':
                 break;

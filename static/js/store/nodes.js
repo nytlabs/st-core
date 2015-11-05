@@ -74,16 +74,6 @@ var app = app || {};
         }
     }
 
-    /*Node.prototype.removeInput = function(id) {
-        this.routes.splice(this.routes.indexOf(id), 1);
-        var route = app.RouteStore.getRoute(id);
-        route.removeListener(this.renderAndEmit.bind(this));
-    }
-
-    Node.prototype.removeOutput = function(id) {
-        this.outputs.splice(this.outputs.indexOf(id), 1);
-    }*/
-
     Node.prototype.renderAndEmit = function() {
         // really don't like this -- somewhat confusing handling of events
         //
@@ -101,7 +91,6 @@ var app = app || {};
         this.render();
         app.NodeStore.emit();
     }
-
 
     Node.prototype.geometry = function() {
         var routeHeight = 15;
@@ -174,7 +163,10 @@ var app = app || {};
         // seriously? http://www.mobtowers.com/html5-canvas-crisp-lines-every-time/
         ctx.translate(.5, .5);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        ctx.fillStyle = this instanceof Group ? 'rgba(210,230,255,1)' : 'rgba(230,230,230,1)';
+        var fillStyle = 'rgba(230,230,230,1)';
+        if (this instanceof Group) fillStyle = 'rgba(210,230,255,1)';
+        if (this instanceof Source) fillStyle = 'rgba(255,230,210,1)';
+        ctx.fillStyle = fillStyle;
         ctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
         ctx.lineWidth = app.SelectionStore.isSelected(this) ? 2 : 1;
         ctx.strokeStyle = app.SelectionStore.isSelected(this) ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
@@ -305,29 +297,6 @@ var app = app || {};
 
     var rs = new NodeCollection();
 
-    function createSource(node) {
-        console.log("whatttt");
-        nodes[node.id] = new Source(node);
-        nodes[node.id].render();
-    }
-
-
-    function createGroup(node) {
-        if (nodes.hasOwnProperty(node.id) === true) {
-            console.warn('could not create node:', node.id, ' already exists');
-            return
-        }
-
-        nodes[node.id] = new Group(node);
-        nodes[node.id].render();
-
-        // set group 0 as our current parent when we recieve it
-        // TODO: in the future, we may want multiple patterns with a 'null'
-        // parent, thus making them 'root' groups the same way that group 0
-        // is. Currently, all groups descend from a single root, and there 
-        // isn't necessarily a reason for that.
-        if (node.id === 0) setRoot(node.id);
-    }
 
     function getVisibleParent(id) {
         var node = nodes[id];
@@ -427,6 +396,52 @@ var app = app || {};
         }
     }
 
+    function createSource(node) {
+        nodes[node.id] = new Source(node);
+
+        var routes = [{
+            direction: 'output',
+            index: 0
+        }]
+
+        routes.forEach(function(e) {
+            var id = 'source_' + node.id + '_' + e.index + '_' + e.direction;
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_CREATE,
+                id: id,
+                blockId: node.id,
+                index: e.index,
+                direction: e.direction,
+                data: {
+                    name: nodes[node.id].data.type,
+                    type: 'any',
+                    value: null
+                },
+                source: nodes[node.id].data.type
+            });
+            nodes[node.id].addRoute(id);
+        })
+
+        nodes[node.id].render();
+    }
+
+    function createGroup(node) {
+        if (nodes.hasOwnProperty(node.id) === true) {
+            console.warn('could not create node:', node.id, ' already exists');
+            return
+        }
+
+        nodes[node.id] = new Group(node);
+        nodes[node.id].render();
+
+        // set group 0 as our current parent when we recieve it
+        // TODO: in the future, we may want multiple patterns with a 'null'
+        // parent, thus making them 'root' groups the same way that group 0
+        // is. Currently, all groups descend from a single root, and there 
+        // isn't necessarily a reason for that.
+        if (node.id === 0) setRoot(node.id);
+    }
+
     function createBlock(node) {
         if (nodes.hasOwnProperty(node.id) === true) {
             console.warn('could not create node:', node.id, ' already exists');
@@ -463,6 +478,25 @@ var app = app || {};
             });
             nodes[node.id].addRoute(id);
         })
+
+        // if this block is associated with a source
+        if (nodes[node.id].data.source !== null) {
+            var id = 'source_' + node.id + '_0_input';
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_CREATE,
+                id: id,
+                blockId: node.id,
+                index: 0,
+                direction: 'input',
+                data: {
+                    name: nodes[node.id].data.source,
+                    type: 'any',
+                    value: null
+                },
+                source: nodes[node.id].data.source
+            })
+            nodes[node.id].addRoute(id);
+        }
 
         nodes[node.id].render();
 
@@ -526,6 +560,7 @@ var app = app || {};
 
     function nodeType(id) {
         if (nodes[id] instanceof Group) return 'group';
+        if (nodes[id] instanceof Source) return 'source';
         return 'block';
     }
 
@@ -670,6 +705,7 @@ var app = app || {};
                 selectMove(event.dx, event.dy);
                 rs.emit();
                 break;
+            case app.Actions.WS_SOURCE_UPDATE:
             case app.Actions.WS_GROUP_UPDATE:
             case app.Actions.WS_BLOCK_UPDATE:
                 if (!nodes.hasOwnProperty(event.id)) return;
@@ -694,6 +730,7 @@ var app = app || {};
                 break;
         }
     })
+    app.Source = Source;
     app.Group = Group;
     app.Node = Node;
     app.NodeStore = rs;

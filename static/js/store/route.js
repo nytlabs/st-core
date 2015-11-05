@@ -3,7 +3,7 @@ var app = app || {};
 (function() {
     var routes = {};
 
-    function Route(data, blockId, direction, index, id) {
+    function Route(data, blockId, direction, index, id, source) {
         this.id = id;
         this.blocked = false;
         this.active = data.hasOwnProperty('value') && data.value != null;
@@ -13,9 +13,7 @@ var app = app || {};
         this.index = index;
         this.direction = direction;
         this.pickColor = app.PickingStore.getColor(this);
-
-        // this is unused i believe
-        // this.connections = [];
+        this.source = !!source ? source : null;
     }
 
     Route.prototype = Object.create(app.Emitter.prototype);
@@ -47,7 +45,7 @@ var app = app || {};
             console.warn('could not create route:', route.id, ' already exists');
             return
         }
-        routes[route.id] = new Route(route.data, route.blockId, route.direction, route.index, route.id);
+        routes[route.id] = new Route(route.data, route.blockId, route.direction, route.index, route.id, route.source);
     }
 
     function deleteRoute(id) {
@@ -58,12 +56,6 @@ var app = app || {};
         app.PickingStore.removeColor(routes[id].pickColor);
         delete routes[id]
     }
-
-    /*    function updateConnected(event) {
-            event.ids.forEach(function(id) {
-                routes[id].connections.push(event.connId);
-            })
-        }*/
 
     function requestRouteUpdate(event) {
         var route = routes[event.id];

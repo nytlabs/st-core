@@ -13,7 +13,7 @@ var app = app || {};
                 bufferNodes: document.createElement('canvas'),
                 bufferSelection: document.createElement('canvas'),
                 bufferStage: document.createElement('canvas'),
-                bufferConnectionTool: document.createElement('canvas'),
+                bufferEdgeTool: document.createElement('canvas'),
                 bufferEdges: document.createElement('canvas'),
                 bufferPicking: document.createElement('canvas'),
                 mouseDownId: null,
@@ -40,7 +40,7 @@ var app = app || {};
         },
         componentDidMount: function() {
             app.NodeStore.addListener(this._onNodesUpdate);
-            app.ConnectionStore.addListener(this._onEdgesUpdate);
+            app.EdgeStore.addListener(this._onEdgesUpdate);
 
             window.addEventListener('keydown', this._onKeyDown);
             window.addEventListener('keyup', this._onKeyUp);
@@ -51,7 +51,7 @@ var app = app || {};
         },
         componentWillUnmount: function() {
             app.NodeStore.removeListener(this._onNodesUpdate);
-            app.ConnectionStore.removeListener(this._onEdgesUpdate);
+            app.EdgeStore.removeListener(this._onEdgesUpdate);
 
             window.removeEventListener('keydown', this._onKeyDown);
             window.removeEventListener('keyup', this._onKeyUp);
@@ -68,8 +68,8 @@ var app = app || {};
             this.state.bufferSelection.height = height;
             this.state.bufferStage.width = width;
             this.state.bufferStage.height = height;
-            this.state.bufferConnectionTool.width = width;
-            this.state.bufferConnectionTool.height = height;
+            this.state.bufferEdgeTool.width = width;
+            this.state.bufferEdgeTool.height = height;
             this.state.bufferEdges.width = width;
             this.state.bufferEdges.height = height;
             this.state.bufferPicking.width = width;
@@ -154,7 +154,7 @@ var app = app || {};
                 var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
                 picked = app.PickingStore.colorToNode(colString);
             }
-            var isElement = picked instanceof app.Node || picked instanceof app.Connection;
+            var isElement = picked instanceof app.Node || picked instanceof app.Edge;
             var isRoute = picked instanceof app.Route;
 
             if (this.state.connectingBlock !== null) {
@@ -184,9 +184,10 @@ var app = app || {};
                 })
                 return
             } else if (isRoute && this.state.connectingBlock !== null) {
+                var route = app.RouteStore.getRoute(this.state.connectingRoute.id);
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_REQUEST_CONNECTION,
-                    routes: [picked, this.state.connectingRoute],
+                    routes: [picked, route],
                 });
             } else if (isElement && this.state.shift === true) {
                 app.Dispatcher.dispatch({
@@ -271,7 +272,7 @@ var app = app || {};
             });
         },
         _connectingClear: function() {
-            var ctx = this.state.bufferConnectionTool.getContext('2d');
+            var ctx = this.state.bufferEdgeTool.getContext('2d');
             ctx.clearRect(0, 0, this.state.width, this.state.height);
 
             //this._renderBuffers();
@@ -283,7 +284,7 @@ var app = app || {};
             var block = this.state.connectingBlock;
             var x = block.position.x + this.state.translateX + this.state.connectingRoute.x;
             var y = block.position.y + this.state.translateY + this.state.connectingRoute.y;
-            var ctx = this.state.bufferConnectionTool.getContext('2d');
+            var ctx = this.state.bufferEdgeTool.getContext('2d');
             var direction = this.state.connectingRoute.direction === 'input' ? -1 : 1;
 
             ctx.clearRect(0, 0, this.state.width, this.state.height);
@@ -314,14 +315,14 @@ var app = app || {};
                 return app.NodeStore.getNode(id)
             })
 
-            var selectConn = app.ConnectionStore.getConnections().filter(function(id) {
-                var connection = app.ConnectionStore.getConnection(id);
+            var selectConn = app.EdgeStore.getEdges().filter(function(id) {
+                var connection = app.EdgeStore.getEdge(id);
                 return app.Utils.pointInRect(originX - this.state.translateX,
                     originY - this.state.translateY,
                     width, height,
                     connection.position.x, connection.position.y);
             }.bind(this)).map(function(id) {
-                return app.ConnectionStore.getConnection(id)
+                return app.EdgeStore.getEdge(id)
             })
 
             var selectRect = selectRect.concat(selectConn);
@@ -418,8 +419,8 @@ var app = app || {};
         _renderEdges: function() {
             var ctx = this.state.bufferEdges.getContext('2d');
             ctx.clearRect(0, 0, this.state.width, this.state.height);
-            app.ConnectionStore.getConnections().forEach(function(id, i) {
-                var connection = app.ConnectionStore.getConnection(id);
+            app.EdgeStore.getEdges().forEach(function(id, i) {
+                var connection = app.EdgeStore.getEdge(id);
                 var x = connection.position.x + this.state.translateX;
                 var y = connection.position.y + this.state.translateY;
                 ctx.drawImage(connection.canvas, x, y);
@@ -437,8 +438,8 @@ var app = app || {};
                 var y = block.position.y + this.state.translateY;
                 pickCtx.drawImage(block.pickCanvas, x, y);
             }.bind(this));
-            app.ConnectionStore.getConnections().forEach(function(id, i) {
-                var connection = app.ConnectionStore.getConnection(id);
+            app.EdgeStore.getEdges().forEach(function(id, i) {
+                var connection = app.EdgeStore.getEdge(id);
                 // we need to update the picking image for each connection 
                 // that has been moved.
                 if (connection.dirtyPicking) {
@@ -487,7 +488,7 @@ var app = app || {};
                 ctx.drawImage(this.state.bufferSelection, 0, 0);
                 ctx.drawImage(this.state.bufferNodes, 0, 0);
                 ctx.drawImage(this.state.bufferEdges, 0, 0);
-                ctx.drawImage(this.state.bufferConnectionTool, 0, 0);
+                ctx.drawImage(this.state.bufferEdgeTool, 0, 0);
             }
         },
         render: function() {

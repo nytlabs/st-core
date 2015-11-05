@@ -13,7 +13,7 @@ var app = app || {};
         'group_delete': app.Actions.WS_GROUP_DELETE,
         'child_create': app.Actions.WS_GROUP_ADD_CHILD,
         'child_delete': app.Actions.WS_GROUP_REMOVE_CHILD,
-        'source_create': app.Actions.WS_SOUCE_CREATE,
+        'source_create': app.Actions.WS_SOURCE_CREATE,
         'source_update': app.Actions.WS_SOURCE_UPDATE,
         'param_update': app.Actions.WS_SOURCE_UPDATE_PARAMS,
         'source_delete': app.Actions.WS_SOURCE_DELETE,
@@ -59,19 +59,24 @@ var app = app || {};
                     action: action,
                     id: event.data.group.id,
                     child: event.data.child.id
-                })
+                });
                 break;
             case 'source':
                 app.Dispatcher.dispatch({
                     action: action,
                     id: event.data.source.id,
                     data: event.data.source
-                })
+                });
                 break;
             case 'link':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.link.id,
+                    data: event.data.link
+                });
                 break;
             default:
-                //console.log(event);
+                console.warn('unexpected: ', event);
         }
     }
 

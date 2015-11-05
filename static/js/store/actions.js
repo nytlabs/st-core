@@ -12,7 +12,7 @@ var app = app || {};
         'WS_GROUP_DELETE',
         'WS_GROUP_ADD_CHILD',
         'WS_GROUP_REMOVE_CHILD',
-        'WS_SOUCRE_CREATE',
+        'WS_SOURCE_CREATE',
         'WS_SOURCE_UPDATE',
         'WS_SOURCE_UPDATE_PARAMS',
         'WS_SOURCE_DELETE',

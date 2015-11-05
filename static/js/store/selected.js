@@ -75,7 +75,9 @@ var app = app || {};
             var type;
             if (s instanceof app.Node) type = 'blocks';
             if (s instanceof app.Group) type = 'groups';
+            if (s instanceof app.Source) type = 'sources';
             if (s instanceof app.Connection) type = 'connections';
+            if (s instanceof app.Link) type = 'links';
 
             app.Utils.request(
                 'DELETE',

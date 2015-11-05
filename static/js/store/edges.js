@@ -1,6 +1,6 @@
 var app = app || {};
 
-// TODO: move emit() out of Connection.render();
+// TODO: move emit() out of Edge.render();
 
 (function() {
     'use strict';
@@ -8,11 +8,9 @@ var app = app || {};
     var connections = {};
     var selected = {};
 
-    function Connection(data) {
+    function Edge(data) {
         this.data = data;
         this.dirtyPicking = false;
-        this.routeIdFrom = this.data.from.id + '_' + this.data.from.route + '_output';
-        this.routeIdTo = this.data.to.id + '_' + this.data.to.route + '_input';
         this.pickColor = app.PickingStore.getColor(this);
         this.canvas = document.createElement('canvas');
         this.pickCanvas = document.createElement('canvas');
@@ -20,15 +18,15 @@ var app = app || {};
         this.render();
     }
 
-    Connection.prototype = Object.create(app.Emitter.prototype);
-    Connection.prototype.constructor = Connection;
+    Edge.prototype = Object.create(app.Emitter.prototype);
+    Edge.prototype.constructor = Edge;
 
-    Connection.prototype.geometry = function() {
+    Edge.prototype.geometry = function() {
         this.dirtyPicking = true;
         // TODO: instead of blocks, this should somehow find the top-most 
         // visible geometry that the route is apart of (for groups);
-        var from = app.NodeStore.getVisibleParent(this.data.from.id);
-        var to = app.NodeStore.getVisibleParent(this.data.to.id);
+        var from = app.NodeStore.getVisibleParent(this.idFrom);
+        var to = app.NodeStore.getVisibleParent(this.idTo);
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;
@@ -72,7 +70,7 @@ var app = app || {};
         this.pickCanvas.height = this.canvas.height;
     }
 
-    Connection.prototype.render = function() {
+    Edge.prototype.render = function() {
         var ctx = this.canvas.getContext('2d');
         var c = this.curve;
 
@@ -104,7 +102,7 @@ var app = app || {};
 
     }
 
-    Connection.prototype.renderPicking = function() {
+    Edge.prototype.renderPicking = function() {
         this.dirtyPicking = false;
         var ctx = this.canvas.getContext('2d');
         var pctx = this.pickCanvas.getContext('2d');
@@ -125,23 +123,56 @@ var app = app || {};
         pctx.putImageData(imgData, 0, 0);
     }
 
-    function ConnectionStore() {}
-    ConnectionStore.prototype = Object.create(app.Emitter.prototype);
-    ConnectionStore.constructor = ConnectionStore;
+    function Connection(data) {
+        this.routeIdFrom = data.from.id + '_' + data.from.route + '_output';
+        this.routeIdTo = data.to.id + '_' + data.to.route + '_input';
+        this.idFrom = data.from.id;
+        this.idTo = data.to.id;
+        Edge.call(this, data);
+    }
 
-    ConnectionStore.prototype.getConnection = function(id) {
+    Connection.prototype = Object.create(Edge.prototype);
+    Connection.prototype.constructor = Connection;
+
+    function Link(data) {
+        this.routeIdFrom = 'source_' + data.source.id + '_0_output';
+        this.routeIdTo = 'source_' + data.block.id + '_0_input';
+        this.idFrom = data.source.id;
+        this.idTo = data.block.id;
+        Edge.call(this, data);
+    }
+
+    Link.prototype = Object.create(Edge.prototype);
+    Link.prototype.constructor = Link;
+
+    function EdgeStore() {}
+    EdgeStore.prototype = Object.create(app.Emitter.prototype);
+    EdgeStore.constructor = EdgeStore;
+
+    EdgeStore.prototype.getEdge = function(id) {
         return connections[id];
     }
 
-    ConnectionStore.prototype.getConnections = function() {
+    EdgeStore.prototype.getEdges = function() {
         return Object.keys(connections);
     }
 
-    ConnectionStore.prototype.getSelected = function() {
+    EdgeStore.prototype.getSelected = function() {
         return selected;
     }
 
-    var rs = new ConnectionStore();
+    var rs = new EdgeStore();
+
+    function createLink(link) {
+        connections[link.id] = new Link(link);
+
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_ADD_NODE_CONNECTION,
+            fromId: link.source.id,
+            toId: link.block.id,
+            id: link.id,
+        })
+    }
 
     function createConnection(connection) {
         if (connections.hasOwnProperty(connection.id) === true) {
@@ -158,7 +189,7 @@ var app = app || {};
         })
     }
 
-    function deleteConnection(id) {
+    function deleteEdge(id) {
         if (connections.hasOwnProperty(id) === false) {
             console.warn('could not delete connections: ', id, ' does not exist');
             return
@@ -166,29 +197,33 @@ var app = app || {};
 
         app.Dispatcher.dispatch({
             action: app.Actions.APP_DELETE_NODE_CONNECTION,
-            fromId: connections[id].data.from.id,
-            toId: connections[id].data.to.id,
+            fromId: connections[id].idFrom,
+            toId: connections[id].idTo,
             id: id,
         });
 
         delete connections[id]
     }
 
-    function renderConnections(ids) {
+    function renderEdges(ids) {
         ids.forEach(function(id) {
             connections[id].geometry();
             connections[id].render()
         })
     }
 
-    function translateConnections(ids, dx, dy) {
+    function translateEdges(ids, dx, dy) {
         ids.forEach(function(id) {
             connections[id].position.x += dx;
             connections[id].position.y += dy;
         })
     }
 
-    function requestConnection(pickedRoutes) {
+    function requestEdge(pickedRoutes) {
+        var isLink = pickedRoutes.reduce(function(prev, cur) {
+            return !!prev.source && !!cur.source;
+        });
+
         var routes = pickedRoutes.map(function(route) {
             return app.RouteStore.getRoute(route.id);
         });
@@ -206,19 +241,33 @@ var app = app || {};
         from = from[0];
         to = to[0];
 
-        app.Utils.request(
-            'POST',
-            'connections', {
-                'from': {
-                    'id': from.blockId,
-                    'route': from.index,
+        if (isLink === true) {
+            app.Utils.request(
+                'POST',
+                'links', {
+                    'source': {
+                        'id': from.blockId,
+                    },
+                    'block': {
+                        'id': to.blockId
+                    }
                 },
-                'to': {
-                    'id': to.blockId,
-                    'route': to.index,
-                }
-            },
-            null)
+                null);
+        } else {
+            app.Utils.request(
+                'POST',
+                'connections', {
+                    'from': {
+                        'id': from.blockId,
+                        'route': from.index,
+                    },
+                    'to': {
+                        'id': to.blockId,
+                        'route': to.index,
+                    }
+                },
+                null)
+        }
     }
 
     app.Dispatcher.register(function(event) {
@@ -229,23 +278,28 @@ var app = app || {};
                 rs.emit();
                 break;
             case app.Actions.APP_REQUEST_CONNECTION:
-                requestConnection(event.routes);
+                requestEdge(event.routes);
                 break;
             case app.Actions.WS_CONNECTION_CREATE:
                 createConnection(event.data);
                 rs.emit();
                 break;
+            case app.Actions.WS_LINK_CREATE:
+                createLink(event.data);
+                rs.emit();
+                break;
+            case app.Actions.WS_LINK_DELETE:
             case app.Actions.WS_CONNECTION_DELETE:
-                deleteConnection(event.id);
+                deleteEdge(event.id);
                 rs.emit();
                 break;
             case app.Actions.APP_RENDER_CONNECTIONS:
-                renderConnections(event.ids);
+                renderEdges(event.ids);
                 rs.emit();
                 break;
             case app.Actions.APP_TRANSLATE_CONNECTIONS:
-                translateConnections(event.translate, event.dx, event.dy);
-                renderConnections(event.ids);
+                translateEdges(event.translate, event.dx, event.dy);
+                renderEdges(event.ids);
                 rs.emit();
                 break;
             case app.Actions.APP_RENDER_CONNECTION_PICKING:
@@ -254,6 +308,8 @@ var app = app || {};
         }
     })
 
-    app.ConnectionStore = rs;
+    app.Edge = Edge;
+    app.EdgeStore = rs;
     app.Connection = Connection;
+    app.Link = Link;
 }())

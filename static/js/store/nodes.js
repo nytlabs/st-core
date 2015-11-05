@@ -9,6 +9,7 @@ var app = app || {};
 
     var root = null;
 
+    var tree = {};
     /*
     TODO: implement crank
     function Crank() {
@@ -34,7 +35,6 @@ var app = app || {};
     }
 
     function Node(data) {
-
         this.canvas = document.createElement('canvas');
         this.pickCanvas = document.createElement('canvas');
         this.pickColor = app.PickingStore.getColor(this);
@@ -295,6 +295,36 @@ var app = app || {};
         return root === null ? Object.keys(nodes) : nodes[root].children;
     }
 
+    NodeCollection.prototype.setRoot = function(id) {
+        setRoot(id);
+    }
+
+    NodeCollection.prototype.getTree = function() {
+        function assemble(node) {
+            nodes[node.id].children.forEach(function(child) {
+                if (nodes[child] instanceof Group) {
+                    var childNode = {
+                        id: child,
+                        children: []
+                    };
+                    node.children.push(childNode);
+                    assemble(childNode);
+                }
+                //if (nodes[child] instanceof Group) {
+                //    assemble(childNode);
+                // }
+            })
+        }
+
+        var root = {
+            id: "0",
+            children: []
+        };
+
+        if (nodes.hasOwnProperty('0')) assemble(root);
+        return root;
+    }
+
     var rs = new NodeCollection();
 
 
@@ -520,16 +550,12 @@ var app = app || {};
         // remove the picking color from the store so that we can re-use it later
         app.PickingStore.removeColor(nodes[id].pickColor);
 
-        // if this is a block then we need to remove its routes
-        // if it is a group we do nothing.
-        if (nodes[id].constructor === Node) {
-            nodes[id].routes.forEach(function(route) {
-                app.Dispatcher.dispatch({
-                    action: app.Actions.APP_ROUTE_DELETE,
-                    id: route
-                })
+        nodes[id].routes.forEach(function(route) {
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_ROUTE_DELETE,
+                id: route
             })
-        }
+        })
 
         delete nodes[id]
     }
@@ -697,6 +723,8 @@ var app = app || {};
                 createBlock(event.data);
                 rs.emit();
                 break;
+            case app.Actions.WS_SOURCE_DELETE:
+            case app.Actions.WS_GROUP_DELETE:
             case app.Actions.WS_BLOCK_DELETE:
                 deleteNode(event.id);
                 rs.emit();

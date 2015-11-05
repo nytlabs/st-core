@@ -22,6 +22,7 @@ var app = app || {};
         'WS_CONNECTION_DELETE',
 
         // for UI
+        'APP_SET_ROOT',
         'APP_ROUTE_CREATE',
         'APP_ROUTE_DELETE',
         'APP_ROUTE_UPDATE',

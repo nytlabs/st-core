@@ -26,25 +26,21 @@ var app = app || {};
             });
         },
         render: function() {
-            return React.createElement('div', {
-                className: 'panel_list'
-            }, this.state.ids.map(function(id) {
+            var children = [
+                React.createElement(app.GroupTreeComponent, {})
+            ];
+
+            children = children.concat(this.state.ids.map(function(id) {
                 return React.createElement(app.RoutesPanelComponent, {
-                        key: id,
-                        id: id
-                    })
-                    /*if (n instanceof app.Source) {
-                        return React.createElement(app.ParametersPanelComponent, {
-                            model: n,
-                            key: id
-                        }, null)
-                    } else {
-                        return React.createElement(app.RoutesPanelComponent, {
-                            model: n,
-                            key: n.data.id
-                        }, null)
-                    }*/
-            }))
+                    key: id,
+                    id: id
+                })
+            }));
+
+            return React.createElement('div', {
+                className: 'panel_list',
+                children
+            })
         },
     })
 })();

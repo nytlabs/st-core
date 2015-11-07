@@ -27,6 +27,7 @@ var app = app || {};
         // visible geometry that the route is apart of (for groups);
         var from = app.NodeStore.getVisibleParent(this.idFrom);
         var to = app.NodeStore.getVisibleParent(this.idTo);
+        console.log('visible from', from, 'visible to', to);
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;

@@ -73,6 +73,7 @@ var app = app || {};
                 'POST',
                 match.type, {
                     'type': match.name,
+                    'parent': app.NodeStore.getRoot(),
                     'position': {
                         'x': this.props.x,
                         'y': this.props.y

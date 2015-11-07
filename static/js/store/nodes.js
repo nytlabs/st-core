@@ -299,6 +299,10 @@ var app = app || {};
         setRoot(id);
     }
 
+    NodeCollection.prototype.getRoot = function() {
+        return root;
+    }
+
     NodeCollection.prototype.getTree = function() {
         function assemble(node) {
             nodes[node.id].children.forEach(function(child) {
@@ -339,13 +343,22 @@ var app = app || {};
     function setRoot(id) {
         root = id;
 
-        Object.keys(nodes).filter(function(node) {
-            return node !== "0"
-        }).forEach(function(node) {
-            // TODO: setvisibleparents for all children of new root. 
-        })
+        nodes[root].children.forEach(function(id) {
+            var woop = getVisibleParent(id);
+            setVisibleParentDescending(id, woop);
+            nodes[id].routes.forEach(function(route) {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
+                    id: route,
+                    visibleParent: id
+                })
+            });
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_RENDER_CONNECTIONS,
+                ids: nodes[id].connections,
+            });
+        });
 
-        // we need to re-render right now!
         app.NodeStore.emit();
     }
 

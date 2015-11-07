@@ -64,14 +64,19 @@ var app = app || {};
         if (route.direction === 'input') {
             route.addListener(this.renderAndEmit.bind(this));
         }
+        this.geometry();
+        this.renderAndEmit();
     }
 
     Node.prototype.removeRoute = function(id) {
+        console.log(id);
         this.routes.splice(this.routes.indexOf(id), 1);
         var route = app.RouteStore.getRoute(id);
         if (route.direction === 'input') {
             route.removeListener(this.renderAndEmit.bind(this));
         }
+        this.geometry();
+        this.renderAndEmit();
     }
 
     Node.prototype.renderAndEmit = function() {
@@ -296,7 +301,7 @@ var app = app || {};
     }
 
     NodeCollection.prototype.setRoot = function(id) {
-        setRoot(id);
+        setRoot(parseInt(id));
     }
 
     NodeCollection.prototype.getRoot = function() {
@@ -369,19 +374,26 @@ var app = app || {};
         }
     }
 
-    function addInputAscending(id, routeId) {
-        nodes[id].addInput(routeId);
+    function removeRouteAscending(id, routeId) {
+        nodes[id].removeRoute(routeId);
         if (nodes[id].parent !== null) {
-            addInputAscending(nodes[id].parent, routeId);
+            removeRouteAscending(nodes[id].parent, routeId);
         }
     }
 
-    function addOutputAscending(id, routeId) {
-        nodes[id].addOutput(routeId);
-        if (nodes[id].parent !== null) {
-            addOutputAscending(nodes[id].parent, routeId);
-        }
-    }
+    /* function addInputAscending(id, routeId) {
+         nodes[id].addInput(routeId);
+         if (nodes[id].parent !== null) {
+             addInputAscending(nodes[id].parent, routeId);
+         }
+     }
+
+     function addOutputAscending(id, routeId) {
+         nodes[id].addOutput(routeId);
+         if (nodes[id].parent !== null) {
+             addOutputAscending(nodes[id].parent, routeId);
+         }
+     }*/
 
     function setVisibleParentDescending(id, parent) {
         nodes[id].visibleParent = parent;
@@ -428,7 +440,7 @@ var app = app || {};
 
     function removeChildFromGroup(event) {
         nodes[event.child].routes.forEach(function(id) {
-            nodes[event.id].removeRoute(id);
+            removeRouteAscending(event.id, id);
         })
 
         nodes[event.id].children.splice(nodes[event.id].children.indexOf(event.child), 1);

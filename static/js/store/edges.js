@@ -31,7 +31,8 @@ var app = app || {};
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;
-
+        console.log(this.routeIdFrom);
+        console.log(from);
         var yFrom = from.routeGeometry[this.routeIdFrom].y;
         var xFrom = from.routeGeometry[this.routeIdFrom].x + from.nodeGeometry.routeRadius;
 

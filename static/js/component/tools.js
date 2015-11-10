@@ -24,6 +24,9 @@ var app = app || {};
 
     app.ToolsComponent = React.createClass({
         displayName: 'ToolsComponent',
+        shouldComponentUpdate: function(props, state) {
+            return false;
+        },
         render: function() {
             var groupButton = React.createElement(app.ToolButton, {
                 onClick: this.props.onGroup,

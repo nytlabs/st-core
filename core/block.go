@@ -137,6 +137,12 @@ func (b *Block) SetInput(id RouteIndex, v *InputValue) error {
 			return true
 		}
 
+		// if our receive() has already set the inputValue for the kernel
+		// then delete the value out of the input map and use the new one
+		if _, ok := b.state.inputValues[id]; ok {
+			delete(b.state.inputValues, id)
+		}
+
 		b.routing.Inputs[id].Value = v
 
 		returnVal <- nil
@@ -263,7 +269,7 @@ func (b *Block) Stop() {
 func (b *Block) receive() Interrupt {
 	for id, input := range b.routing.Inputs {
 		b.Monitor <- MonitorMessage{
-			BI_RECEIVE,
+			BI_INPUT,
 			id,
 		}
 
@@ -343,13 +349,9 @@ func (b *Block) process() Interrupt {
 // broadcast the kernel output to all connections on all outputs.
 func (b *Block) broadcast() Interrupt {
 	for id, out := range b.routing.Outputs {
-		select {
-		case b.Monitor <- MonitorMessage{
-			BI_BROADCAST,
+		b.Monitor <- MonitorMessage{
+			BI_OUTPUT,
 			id,
-			//			time.Now(),
-		}:
-		default:
 		}
 
 		// if the output key is not present in the output map, then we

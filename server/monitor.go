@@ -38,24 +38,24 @@ func (s *Server) MonitorMux(id int, c chan core.MonitorMessage, query chan struc
 			expire.Reset(time.Duration(250 * time.Millisecond))
 			if !running {
 				running = true
-				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsInfo{wsId{id}, core.MonitorMessage{
+				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsBlock{wsInfo{wsId{id}, core.MonitorMessage{
 					core.BI_RUNNING,
 					nil,
-				}}})
+				}}}})
 			}
 		case <-expire.C:
-			s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsInfo{wsId{id}, state}})
+			s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsBlock{wsInfo{wsId{id}, state}}})
 			running = false
 		case <-quit:
 			return
 		case <-query:
 			if running {
-				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsInfo{wsId{id}, core.MonitorMessage{
+				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsBlock{wsInfo{wsId{id}, core.MonitorMessage{
 					core.BI_RUNNING,
 					nil,
-				}}})
+				}}}})
 			} else {
-				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsInfo{wsId{id}, state}})
+				s.websocketBroadcast(Update{Action: INFO, Type: BLOCK, Data: wsBlock{wsInfo{wsId{id}, state}}})
 			}
 		}
 	}

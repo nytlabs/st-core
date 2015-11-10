@@ -8,173 +8,127 @@ var app = app || {};
  */
 
 (function() {
-    'use strict';
-
-    app.PanelEditableComponent = React.createClass({
-        displayName: 'PanelEditableComponent',
+    app.RoutePanelInput = React.createClass({
         getInitialState: function() {
             return {
-                isEditing: false,
-                value: this.props.value
+                name: '',
+                type: '',
+                value: '',
             }
         },
-        handleClick: function() {
-            this.setState({
-                isEditing: true,
-                value: this.props.value
-            }, function() {
-                this.refs.editableInput.getDOMNode().focus();
-                this.refs.editableInput.getDOMNode().select();
-            });
+        componentDidMount: function() {
+            app.RouteStore.getRoute(this.props.id).addListener(this._update);
+            this._update();
         },
-        handleKeyUp: function(e) {
-            if (e.nativeEvent.keyCode === 13) {
-                this.props.onChange(e.target.value);
-                this.setState({
-                    isEditing: false,
-                });
-            }
+        componentWillUnmount: function() {
+            app.RouteStore.getRoute(this.props.id).removeListener(this._update);
         },
-        handleBlur: function() {
-            this.setState({
-                isEditing: false,
-            });
-        },
-        render: function() {
-            var value = this.props.value.length === 0 ? '<empty>' : this.props.value;
-            var inputStyle = {
-                display: this.state.isEditing ? 'block' : 'none'
-            }
-            var style = {
-                display: this.state.isEditing ? 'none' : 'block'
+        _update: function() {
+            var route = app.RouteStore.getRoute(this.props.id);
+            var value = '';
+            if (route.data.value !== null) {
+                value = JSON.stringify(route.data.value.data);
             }
 
-            return React.createElement('div', {
-                className: 'editable'
-            }, [
-                React.createElement('input', {
-                    defaultValue: this.state.value,
-                    onKeyUp: this.handleKeyUp,
-                    onBlur: this.handleBlur,
-                    style: inputStyle,
-                    ref: 'editableInput',
-                    key: 'editableInput'
-                }, null),
+            this.setState({
+                name: route.data.name,
+                type: route.data.type,
+                value: value,
+            })
+        },
+        _handleChange: function(event) {
+            this.setState({
+                value: event.target.value
+            });
+        },
+        _onKeyDown: function(event) {
+            if (event.keyCode !== 13) return;
+
+            var value = null;
+            if (this.state.value !== null) {
+                try {
+                    value = {
+                        data: JSON.parse(this.state.value)
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_REQUEST_ROUTE_UPDATE,
+                id: this.props.id,
+                value: value
+            })
+        },
+        render: function() {
+            return React.createElement('div', {}, [
                 React.createElement('div', {
-                    onClick: this.handleClick,
-                    style: style,
-                    key: 'editableDisplay'
-                }, value)
+                    className: 'label',
+                    key: 'label',
+                }, this.state.name),
+                React.createElement('input', {
+                    type: 'text',
+                    ref: 'value',
+                    key: 'value',
+                    value: this.state.value,
+                    onChange: this._handleChange,
+                    onKeyDown: this._onKeyDown,
+                }, null)
             ]);
         }
-    })
+    });
+
 })();
-
-(function() {
-
-    app.ParametersPanelComponent = React.createClass({
-        displayName: 'ParametersPanelComponent',
-        render: function() {
-            var id = this.props.model.data.id
-            return React.createElement('div', {
-                className: 'panel'
-            }, [
-                React.createElement('div', {
-                    key: 'block_header',
-                    className: 'block_header'
-                }, this.props.model.data.type),
-                React.createElement('div', {
-                    key: 'block_label',
-                    className: 'label'
-                }, 'label'),
-                React.createElement(app.PanelEditableComponent, {
-                    key: 'route_label',
-                    className: 'editable',
-                    value: this.props.model.data.label,
-                    onChange: function(value) {
-                        app.Utils.request(
-                            'PUT',
-                            this.props.model.instance() + 's/' + this.props.model.data.id + '/label',
-                            value,
-                            null
-                        )
-                    }.bind(this)
-                }, null),
-                this.props.model.data.params.map(function(p, i) {
-                    return [
-                        React.createElement('div', {
-                            className: 'label',
-                        }, p.name),
-                        React.createElement(app.PanelEditableComponent, {
-                            key: id + p.name,
-                            value: p.value,
-                            onChange: function(value) {
-                                app.Utils.request('PUT', 'sources/' + id + '/params', [{
-                                    name: p.name,
-                                    value: value
-                                }], null)
-                            }.bind(this)
-                        }, null)
-                    ]
-
-                })
-            ])
-        }
-    })
-
-}());
 
 (function() {
     app.RoutesPanelComponent = React.createClass({
         displayName: 'PanelComponent',
+        componentDidMount: function() {
+            app.NodeStore.getNode(this.props.id).addListener(this._update);
+            this._update();
+        },
+        componentWillUnmount: function() {
+            app.NodeStore.getNode(this.props.id).removeListener(this._update);
+        },
+        _update: function() {
+            this.render();
+            /*var route = app.RouteStore.getRoute(this.props.id);
+            var value = '';
+            if (route.data.value !== null) {
+                value = JSON.stringify(route.data.value.data);
+            }
+
+            this.setState({
+                name: route.data.name,
+                type: route.data.type,
+                value: value,
+            })*/
+        },
         render: function() {
-            return React.createElement('div', {
-                className: 'panel'
-            }, [
+            var block = app.NodeStore.getNode(this.props.id);
+
+            var children = [
                 React.createElement('div', {
                     key: 'block_header',
                     className: 'block_header',
-                }, this.props.model.data.type),
-                React.createElement('div', {
-                    key: 'block_Label',
-                    className: 'label',
-                }, 'label'),
-                React.createElement(app.PanelEditableComponent, {
-                    key: 'route_label',
-                    className: 'editable',
-                    value: this.props.model.data.label,
-                    onChange: function(value) {
-                        app.Utils.request(
-                            'PUT',
-                            this.props.model.instance() + 's/' + this.props.model.data.id + '/label',
-                            value,
-                            null
-                        )
-                    }.bind(this)
-                }, null),
-                this.props.model.routes.filter(function(r) {
-                    return r.direction === 'input'
-                }).map(function(r, i) {
-                    return [
-                        React.createElement('div', {
-                            className: 'label',
-                        }, r.data.name),
-                        React.createElement(app.PanelEditableComponent, {
-                                key: r.id + r.data.name + r.index,
-                                value: JSON.stringify(r.data.value),
-                                onChange: function(value) {
-                                    app.Utils.request(
-                                        'PUT',
-                                        'blocks/' + r.id + '/routes/' + r.index,
-                                        JSON.parse(value),
-                                        null
-                                    )
-                                }.bind(this)
-                            },
-                            null)
-                    ]
-                }.bind(this))
-            ]);
+                }, block.data.type),
+            ];
+
+            // TODO: optimize this!
+            // this retrieves _all_ routes for a block, seems unnecesary
+            children = children.concat(block.routes.filter(function(id) {
+                return app.RouteStore.getRoute(id).direction === 'input';
+            }).map(function(id) {
+                return React.createElement(app.RoutePanelInput, {
+                    id: id,
+                    key: id,
+                }, null)
+            }));
+
+            return React.createElement('div', {
+                className: 'panel'
+            }, children);
         }
     })
 })();

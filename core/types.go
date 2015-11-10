@@ -39,8 +39,8 @@ type BlockInfo uint8
 const (
 	BI_RUNNING BlockInfo = iota
 	BI_ERROR
-	BI_RECEIVE
-	BI_BROADCAST
+	BI_INPUT
+	BI_OUTPUT
 	BI_KERNEL
 )
 
@@ -50,10 +50,10 @@ func (ba BlockInfo) MarshalJSON() ([]byte, error) {
 		return []byte(`"running"`), nil
 	case BI_ERROR:
 		return []byte(`"error"`), nil
-	case BI_RECEIVE:
-		return []byte(`"receive"`), nil
-	case BI_BROADCAST:
-		return []byte(`"broadcast"`), nil
+	case BI_INPUT:
+		return []byte(`"input"`), nil
+	case BI_OUTPUT:
+		return []byte(`"output"`), nil
 	case BI_KERNEL:
 		return []byte(`"kernel"`), nil
 	}

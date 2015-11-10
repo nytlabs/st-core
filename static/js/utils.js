@@ -5,6 +5,10 @@ var app = app || {};
 
     app.Utils = {};
 
+    app.Utils.distance = function(x1, y1, x2, y2) {
+        return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    }
+
     app.Utils.request = function(method, url, data, callback) {
         var req = new XMLHttpRequest();
         req.open(method, url, true);

@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -223,7 +222,6 @@ func (s *Server) DeleteGroup(id int) error {
 		if _, ok := s.blocks[c]; ok {
 			err := s.DeleteBlock(c)
 			if err != nil {
-				fmt.Println(err)
 				return err
 			}
 		} else if _, ok := s.groups[c]; ok {

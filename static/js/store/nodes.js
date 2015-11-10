@@ -64,17 +64,20 @@ var app = app || {};
         if (route.direction === 'input') {
             route.addListener(this.renderAndEmit.bind(this));
         }
+        // TODO: optimize, these can probably be removed
+        // we only need to render if we are visible...
         this.geometry();
         this.renderAndEmit();
     }
 
     Node.prototype.removeRoute = function(id) {
-        console.log(id);
         this.routes.splice(this.routes.indexOf(id), 1);
         var route = app.RouteStore.getRoute(id);
         if (route.direction === 'input') {
             route.removeListener(this.renderAndEmit.bind(this));
         }
+        // TODO: optimize, these can probably be removed
+        // we only need to render if we are visible...
         this.geometry();
         this.renderAndEmit();
     }
@@ -325,13 +328,13 @@ var app = app || {};
             })
         }
 
-        var root = {
+        var origin = {
             id: "0",
             children: []
         };
 
-        if (nodes.hasOwnProperty('0')) assemble(root);
-        return root;
+        if (nodes.hasOwnProperty('0')) assemble(origin);
+        return origin;
     }
 
     var rs = new NodeCollection();
@@ -346,8 +349,14 @@ var app = app || {};
     }
 
     function setRoot(id) {
-        root = id;
+        var oldConns = [];
+        if (root !== null) {
+            nodes[root].children.forEach(function(id) {
+                oldConns = oldConns.concat(nodes[id].connections);
+            })
+        }
 
+        root = id;
         nodes[root].children.forEach(function(id) {
             var woop = getVisibleParent(id);
             setVisibleParentDescending(id, woop);
@@ -362,6 +371,11 @@ var app = app || {};
                 action: app.Actions.APP_RENDER_CONNECTIONS,
                 ids: nodes[id].connections,
             });
+        });
+
+        app.Dispatcher.dispatch({
+            action: app.Actions.APP_RENDER_CONNECTIONS,
+            ids: oldConns,
         });
 
         app.NodeStore.emit();
@@ -380,20 +394,6 @@ var app = app || {};
             removeRouteAscending(nodes[id].parent, routeId);
         }
     }
-
-    /* function addInputAscending(id, routeId) {
-         nodes[id].addInput(routeId);
-         if (nodes[id].parent !== null) {
-             addInputAscending(nodes[id].parent, routeId);
-         }
-     }
-
-     function addOutputAscending(id, routeId) {
-         nodes[id].addOutput(routeId);
-         if (nodes[id].parent !== null) {
-             addOutputAscending(nodes[id].parent, routeId);
-         }
-     }*/
 
     function setVisibleParentDescending(id, parent) {
         nodes[id].visibleParent = parent;
@@ -441,6 +441,10 @@ var app = app || {};
     function removeChildFromGroup(event) {
         nodes[event.child].routes.forEach(function(id) {
             removeRouteAscending(event.id, id);
+        })
+
+        nodes[event.child].connections.forEach(function(connId) {
+            removeConnectionAscending(event.id, connId);
         })
 
         nodes[event.id].children.splice(nodes[event.id].children.indexOf(event.child), 1);

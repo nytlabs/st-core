@@ -11,6 +11,7 @@ var app = app || {};
     function Edge(data) {
         this.data = data;
         this.dirtyPicking = false;
+        this.visible = false;
         this.pickColor = app.PickingStore.getColor(this);
         this.canvas = document.createElement('canvas');
         this.pickCanvas = document.createElement('canvas');
@@ -23,16 +24,17 @@ var app = app || {};
 
     Edge.prototype.geometry = function() {
         this.dirtyPicking = true;
-        // TODO: instead of blocks, this should somehow find the top-most 
-        // visible geometry that the route is apart of (for groups);
         var from = app.NodeStore.getVisibleParent(this.idFrom);
         var to = app.NodeStore.getVisibleParent(this.idTo);
-        console.log('visible from', from, 'visible to', to);
+
+        // TODO: organize -- this is so terribly ugly
+        var fromV = app.NodeStore.getNode(app.NodeStore.getRoot()).children.indexOf(from.visibleParent) + 1;
+        var toV = app.NodeStore.getNode(app.NodeStore.getRoot()).children.indexOf(to.visibleParent) + 1;
+        this.visible = !!fromV && !!toV;
+
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
         var buffer = 10;
-        console.log(this.routeIdFrom);
-        console.log(from);
         var yFrom = from.routeGeometry[this.routeIdFrom].y;
         var xFrom = from.routeGeometry[this.routeIdFrom].x + from.nodeGeometry.routeRadius;
 
@@ -85,6 +87,10 @@ var app = app || {};
         gradient.addColorStop("1.0", toColor);
 
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (!this.visible) {
+            this.emit();
+            return
+        }
         ctx.setLineDash([]);
 
         // debug bounding boxes

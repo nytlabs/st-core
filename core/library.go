@@ -68,6 +68,7 @@ func GetLibrary() map[string]Spec {
 		NormalRandom(),
 		ZipfRandom(),
 		PoissonRandom(),
+		ExponentialRandom(),
 		BernoulliRandom(),
 
 		// membership

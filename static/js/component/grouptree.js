@@ -1,6 +1,8 @@
 var app = app || {};
 
-
+/* TreeComponent
+ * Recursive component for displaying group hierarchy.
+ */
 (function() {
     app.TreeComponent = React.createClass({
         displayName: 'TreeComponent',
@@ -17,27 +19,42 @@ var app = app || {};
                 var list = this.props.tree.children.map(function(child) {
                     return React.createElement('li', {},
                         React.createElement(app.TreeComponent, {
+                            key: child.id,
                             tree: child
                         }, null));
                 })
                 children.push(React.createElement('ul', {}, list));
             }
-            return React.createElement('div', {}, children);
+            return React.createElement('div', {
+                className: 'group_tree'
+            }, children);
         }
     })
 })();
 
+/* GroupTreeComponent
+ * Sidebar widget for displaying group hierarchy, selection/moving between
+ * groups.
+ */
 (function() {
     app.GroupTreeComponent = React.createClass({
         displayName: 'GroupTreeComponent',
+        getInitialState: function() {
+            return {
+                tree: null
+            }
+        },
         componentDidMount: function() {
             app.NodeStore.addListener(this._update);
+            this._update();
         },
         componentWillUnmount: function() {
             app.NodeStore.removeListener(this._update);
         },
         _update: function() {
-            this.render();
+            this.setState({
+                tree: app.NodeStore.getTree()
+            })
         },
         render: function() {
             var children = [
@@ -45,10 +62,16 @@ var app = app || {};
                     key: 'block_header',
                     className: 'block_header',
                 }, "groups"),
-                React.createElement(app.TreeComponent, {
-                    tree: app.NodeStore.getTree(),
-                }, null)
             ];
+
+            if (this.state.tree !== null) {
+                children.push(
+                    React.createElement(app.TreeComponent, {
+                        key: 'tree',
+                        tree: this.state.tree,
+                    }, null)
+                )
+            }
 
             return React.createElement('div', {
                 className: 'panel'

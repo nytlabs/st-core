@@ -116,10 +116,32 @@ func PoissonRandom() Spec {
 	}
 }
 
+// ExponentialRandom emits an Exponentially distribtued random number
+func ExponentialRandom() Spec {
+	return Spec{
+		Name:    "exponential",
+		Inputs:  []Pin{Pin{"rate", NUMBER}},
+		Outputs: []Pin{Pin{"draw", NUMBER}},
+		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
+			λ, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("rate must be a number")
+				return nil
+			}
+			if λ < 0 {
+				out[0] = NewError("rate must be positive")
+				return nil
+			}
+			out[0] = rand.ExpFloat64() / λ
+			return nil
+		},
+	}
+}
+
 // BernoulliRandom emits a draw from a Bernoulli distribution. This block returns a boolean
 func BernoulliRandom() Spec {
 	return Spec{
-		Name:    "Bernoulli",
+		Name:    "bernoulli",
 		Inputs:  []Pin{Pin{"bias", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {

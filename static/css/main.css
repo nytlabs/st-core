@@ -214,6 +214,11 @@ body {
 .error {
     fill: rgba(255, 0, 0, 1);
 }
+.group_tree ul {
+    margin: 0px;
+    padding-left: 15px;
+    list-style: none;
+}
 .waiting {
     stroke-width: 5px;
 }

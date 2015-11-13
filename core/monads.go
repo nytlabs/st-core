@@ -2,7 +2,7 @@ package core
 
 import "math"
 
-// exp, log10, ln, sqrt, sin, cos, tan
+// exp, log10, ln, sqrt, sin, cos, tan, floor, ceil
 
 func Exp() Spec {
 	return Spec{
@@ -16,6 +16,40 @@ func Exp() Spec {
 				return nil
 			}
 			out[0] = math.Exp(p)
+			return nil
+		},
+	}
+}
+
+func Floor() Spec {
+	return Spec{
+		Name:    "floor",
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"out", NUMBER}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			p, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("need float")
+				return nil
+			}
+			out[0] = math.Floor(p)
+			return nil
+		},
+	}
+}
+
+func Ceil() Spec {
+	return Spec{
+		Name:    "ceil",
+		Inputs:  []Pin{Pin{"in", NUMBER}},
+		Outputs: []Pin{Pin{"out", NUMBER}},
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			p, ok := in[0].(float64)
+			if !ok {
+				out[0] = NewError("need float")
+				return nil
+			}
+			out[0] = math.Ceil(p)
 			return nil
 		},
 	}

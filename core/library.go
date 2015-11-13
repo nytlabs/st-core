@@ -44,6 +44,8 @@ func GetLibrary() map[string]Spec {
 
 		// monads
 		Exp(),
+		Floor(),
+		Ceil(),
 		Log10(),
 		Ln(),
 		Sqrt(),

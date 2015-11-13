@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 )
 
@@ -110,7 +111,7 @@ func (s *Server) Serve() {
 		if err != nil {
 			log.Println(err)
 		}
-	}).Methods("GET","POST","PUT","DELETE")
+	}).Methods("GET", "POST", "PUT", "DELETE")
 
 	log.Println("starting HTTP server on", server.Addr)
 	go server.ListenAndServe()
@@ -162,7 +163,7 @@ func FromRequest() Spec {
 					out[0] = NewError("could not read body")
 					return nil
 				}
-				out[0] = r.request
+				out[0] = structs.Map(r.request)
 				out[1] = r
 				out[2] = string(body)
 				server.removeHandler <- name

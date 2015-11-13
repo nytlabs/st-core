@@ -40,6 +40,13 @@ var app = app || {};
                     value: event.data.value
                 });
                 break;
+            case 'param':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.id,
+                    value: event.data
+                })
+                break;
             case 'connection':
                 app.Dispatcher.dispatch({
                     action: action,

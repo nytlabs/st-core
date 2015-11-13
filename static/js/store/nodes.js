@@ -311,6 +311,14 @@ var app = app || {};
     Source.prototype = Object.create(Node.prototype);
     Source.constructor = Source;
 
+    Source.prototype.updateParams = function(params) {
+        this.data.params[params.params] = params.value
+        this.data.params.forEach(function(param) {
+            if (param.name != params.param) return;
+            param.value = params.value
+        })
+    }
+
     function Selection() {}
     Selection.prototype = Object.create(app.Emitter.prototype);
     Selection.constructor = Selection;
@@ -703,6 +711,17 @@ var app = app || {};
         );
     }
 
+    function requestSourceParams(event) {
+        app.Utils.request(
+            'PUT',
+            nodeType(event.id) + 's/' + event.id + '/params', [{
+                name: event.name,
+                value: event.value
+            }],
+            null
+        );
+    }
+
     function selectUnGroup() {
         var children = [];
         app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
@@ -793,6 +812,9 @@ var app = app || {};
             case app.Actions.APP_REQUEST_NODE_LABEL:
                 requestNodeLabel(event);
                 break;
+            case app.Actions.APP_REQUEST_SOURCE_PARAMS:
+                requestSourceParams(event);
+                break;
             case app.Actions.WS_BLOCK_CREATE:
                 createBlock(event.data);
                 rs.emit();
@@ -814,6 +836,10 @@ var app = app || {};
                 nodes[event.id].update(event.data);
                 nodes[event.id].emit();
                 rs.emit();
+                break;
+            case app.Actions.WS_SOURCE_UPDATE_PARAMS:
+                nodes[event.id].updateParams(event.value);
+                nodes[event.id].emit();
                 break;
             case app.Actions.WS_BLOCK_UPDATE_STATUS:
                 if (!nodes.hasOwnProperty(event.id)) return;

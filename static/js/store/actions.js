@@ -38,6 +38,7 @@ var app = app || {};
         'APP_CONNECTION_UPDATE',
         'APP_RENDER_CONNECTIONS',
         'APP_REQUEST_NODE_MOVE',
+        'APP_REQUEST_NODE_LABEL',
         'APP_TRANSLATE_CONNECTIONS',
         'APP_DESELECT',
 

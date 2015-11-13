@@ -78,8 +78,70 @@ var app = app || {};
             ]);
         }
     });
-
 })();
+
+(function() {
+    app.GroupNameComponent = React.createClass({
+        displayName: 'GroupNameComponent',
+        getInitialState: function() {
+            return {
+                value: JSON.stringify(app.NodeStore.getNode(this.props.id).data.label)
+            }
+        },
+        componentDidMount: function() {
+            app.NodeStore.getNode(this.props.id).addListener(this._update);
+        },
+        componentWillUnmount: function() {
+            app.NodeStore.getNode(this.props.id).removeListener(this._update);
+        },
+        _update: function() {
+            this.setState({
+                value: JSON.stringify(app.NodeStore.getNode(this.props.id).data.label)
+            })
+        },
+        _handleChange: function(event) {
+            this.setState({
+                value: event.target.value
+            })
+        },
+        _onKeyDown: function() {
+            if (event.keyCode !== 13) return;
+
+            var value = null;
+            if (this.state.value !== null) {
+                try {
+                    value = JSON.parse(this.state.value)
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+
+            app.Dispatcher.dispatch({
+                action: app.Actions.APP_REQUEST_NODE_LABEL,
+                id: this.props.id,
+                label: value
+            })
+        },
+        render: function() {
+            return React.createElement('div', {}, [
+                React.createElement('div', {
+                    className: 'label',
+                    key: 'label',
+                }, 'label'),
+                React.createElement('input', {
+                    type: 'text',
+                    ref: 'value',
+                    key: 'value',
+                    value: this.state.value,
+                    onChange: this._handleChange,
+                    onKeyDown: this._onKeyDown,
+                }, null)
+            ]);
+
+        }
+    })
+})();
+
 
 (function() {
     app.RoutesPanelComponent = React.createClass({
@@ -113,7 +175,11 @@ var app = app || {};
                     key: 'block_header',
                     className: 'block_header',
                 }, block.data.type),
+                React.createElement(app.GroupNameComponent, {
+                    id: this.props.id
+                }, null)
             ];
+
 
             // TODO: optimize this!
             // this retrieves _all_ routes for a block, seems unnecesary

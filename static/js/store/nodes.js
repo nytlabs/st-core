@@ -103,9 +103,12 @@ var app = app || {};
     Node.prototype.geometry = function() {
         var routeHeight = 15;
         var routeRadius = Math.floor(routeHeight / 2.0);
+
         var padding = {
-            vertical: 6,
-            horizontal: 6
+            top: 0,
+            bottom: 7,
+            middle: 10,
+            side: 3
         }
 
         var widths = {
@@ -118,19 +121,37 @@ var app = app || {};
             output: 0
         }
 
+        // this is terrible.
+        // if the node is a source, don't show the type
+        // if the node is a block, default to the type
+        // if the node is a source, group, or block, allow label to override type.
+        this.label = ''
+        if (!(this instanceof Group) && !(this instanceof Source)) {
+            this.label = this.data.type;
+        }
+        this.label = !!this.data.label ? this.data.label : this.label;
+        if (this.label.length) {
+            padding.top += 20;
+        }
+
+        var labelWidth = canvasMeasureText(this.label, 'Bold 14px helvetica').width;
+
         this.routes.forEach(function(id) {
             var route = app.RouteStore.getRoute(id);
-            var width = canvasMeasureText(route.data.name, '16px helvetica').width;
+            var width = canvasMeasureText(route.data.name, '14px helvetica').width;
             if (width > widths[route.direction]) {
                 widths[route.direction] = width;
             }
             counts[route.direction] += 1;
         });
 
+        var routeWidth = widths.input + widths.output + padding.middle + routeHeight + padding.side * 2;
+        var maxWidth = Math.max(routeWidth, labelWidth + padding.side * 2);
+
         // the following is derived data for use with UI
         this.nodeGeometry = {
-            width: Math.floor(widths.input + widths.output + padding.horizontal + routeHeight),
-            height: Math.floor(Math.max(counts.input, counts.output) * routeHeight + padding.vertical),
+            width: Math.floor(maxWidth),
+            height: Math.floor(Math.max(counts.input, counts.output) * routeHeight + padding.top + padding.bottom),
             routeRadius: routeRadius,
             routeHeight: routeHeight,
         }
@@ -142,9 +163,9 @@ var app = app || {};
 
         this.routes.forEach(function(id) {
             var route = app.RouteStore.getRoute(id);
-            var xOffset = route.direction === 'input' ? 0 : this.nodeGeometry.width;
+            var xOffset = route.direction === 'input' ? padding.side : this.nodeGeometry.width - padding.side;
             var x = xOffset + routeRadius;
-            var y = ((counts[route.direction]) + .5) * routeHeight;
+            var y = ((counts[route.direction]) + .5) * routeHeight + padding.top;
 
             // this is for connections;
             this.routeGeometry[id] = {
@@ -168,6 +189,7 @@ var app = app || {};
         this.geometry();
 
         var ctx = this.canvas.getContext('2d');
+
         // seriously? http://www.mobtowers.com/html5-canvas-crisp-lines-every-time/
         ctx.translate(.5, .5);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -179,6 +201,10 @@ var app = app || {};
         ctx.lineWidth = app.SelectionStore.isSelected(this) ? 2 : 1;
         ctx.strokeStyle = app.SelectionStore.isSelected(this) ? 'rgba(0,0,255,1)' : 'rgba(150,150,150,1)';
         ctx.strokeRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
+        ctx.font = 'Bold 14px helvetica';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'black';
+        ctx.fillText(this.label, this.nodeGeometry.routeRadius + this.nodeGeometry.width * .5, 16);
 
         // now to do the picking buffer.
         var pctx = this.pickCanvas.getContext('2d');
@@ -187,6 +213,7 @@ var app = app || {};
         pctx.fillStyle = this.pickColor;
         pctx.fillRect(this.nodeGeometry.routeRadius, 0, this.nodeGeometry.width, this.nodeGeometry.height);
 
+        ctx.font = '14px helvetica';
         this.routes.forEach(function(id, i) {
             var route = app.RouteStore.getRoute(id);
             var x = this.routeGeometry[id].x;
@@ -200,11 +227,10 @@ var app = app || {};
             ctx.strokeStyle = 'black';
             ctx.stroke();
 
-            ctx.font = '16px helvetica';
             ctx.textAlign = route.direction === 'input' ? 'left' : 'right';
             ctx.fillStyle = 'black';
             ctx.fillText(route.data.name,
-                x + (route.direction === 'input' ? 1 : -1) * this.nodeGeometry.routeRadius,
+                x + (route.direction === 'input' ? 10 : -10),
                 y + this.nodeGeometry.routeRadius);
 
             if (route.direction === 'input' && route.data.value !== null) {
@@ -225,7 +251,13 @@ var app = app || {};
         for (var key in data) {
             this.data[key] = data[key];
         }
-        this.position = data.position;
+
+        this.geometry();
+        this.renderAndEmit();
+
+        if (!!data.position) {
+            this.position = data.position;
+        }
 
         // re-render this node's connections.
         // TODO: this can probably be ignored in the future in cases where the
@@ -234,6 +266,7 @@ var app = app || {};
             action: app.Actions.APP_RENDER_CONNECTIONS,
             ids: this.connections,
         });
+
     }
 
     Node.prototype.updateStatus = function(event) {
@@ -661,6 +694,15 @@ var app = app || {};
             }, null)
     }
 
+    function requestNodeLabel(event) {
+        app.Utils.request(
+            'PUT',
+            nodeType(event.id) + 's/' + event.id + '/label',
+            event.label,
+            null
+        );
+    }
+
     function selectUnGroup() {
         var children = [];
         app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
@@ -747,6 +789,9 @@ var app = app || {};
                 break;
             case app.Actions.APP_REQUEST_NODE_MOVE:
                 finishMove();
+                break;
+            case app.Actions.APP_REQUEST_NODE_LABEL:
+                requestNodeLabel(event);
                 break;
             case app.Actions.WS_BLOCK_CREATE:
                 createBlock(event.data);

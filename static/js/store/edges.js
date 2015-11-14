@@ -28,8 +28,8 @@ var app = app || {};
         var to = app.NodeStore.getVisibleParent(this.idTo);
 
         // TODO: organize -- this is so terribly ugly
-        var fromV = app.NodeStore.getNode(app.NodeStore.getRoot()).children.indexOf(from.visibleParent) + 1;
-        var toV = app.NodeStore.getNode(app.NodeStore.getRoot()).children.indexOf(to.visibleParent) + 1;
+        var fromV = app.NodeStore.getNode(app.NodeStore.getRoot()).data.children.indexOf(from.visibleParent) + 1;
+        var toV = app.NodeStore.getNode(app.NodeStore.getRoot()).data.children.indexOf(to.visibleParent) + 1;
         this.visible = !!fromV && !!toV;
 
         // buffer accounts for bends in the bezier that may extend outside the

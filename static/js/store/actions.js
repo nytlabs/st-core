@@ -33,6 +33,7 @@ var app = app || {};
         'APP_SELECT_MOVE',
         'APP_SELECT',
         'APP_SELECT_TOGGLE',
+        'APP_SELECT_ALL',
         'APP_DESELECT_ALL',
         'APP_REQUEST_CONNECTION',
         'APP_CONNECTION_UPDATE',
@@ -40,6 +41,7 @@ var app = app || {};
         'APP_REQUEST_NODE_MOVE',
         'APP_REQUEST_NODE_LABEL',
         'APP_REQUEST_SOURCE_PARAMS',
+        'APP_REQUEST_GROUP_IMPORT',
         'APP_TRANSLATE_CONNECTIONS',
         'APP_DESELECT',
 

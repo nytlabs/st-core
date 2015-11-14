@@ -204,13 +204,6 @@ body {
 .ticker_7 {
     transform: rotate(315deg);
 }
-.clipboard {
-    z-index: 0;
-    position: absolute;
-    left: -200px;
-    top: 0px;
-    width: 100px;
-}
 .error {
     fill: rgba(255, 0, 0, 1);
 }

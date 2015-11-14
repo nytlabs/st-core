@@ -45,6 +45,8 @@ var app = app || {};
             window.addEventListener('keydown', this._onKeyDown);
             window.addEventListener('keyup', this._onKeyUp);
             window.addEventListener('resize', this._onResize);
+            window.addEventListener('copy', this._onCopy);
+            window.addEventListener('paste', this._onPaste);
 
             this._onResize();
             this._renderBuffers();
@@ -56,6 +58,22 @@ var app = app || {};
             window.removeEventListener('keydown', this._onKeyDown);
             window.removeEventListener('keyup', this._onKeyUp);
             window.removeEventListener('resize', this._onResize);
+            window.removeEventListener('copy', this._onCopy);
+            window.removeEventListener('paste', this._onPaste);
+        },
+        _onCopy: function(e) {
+            if (e.target.nodeName !== 'input') {
+                e.preventDefault();
+                e.clipboardData.setData('text/plain', JSON.stringify(app.SelectionStore.getPattern()));
+            }
+        },
+        _onPaste: function(e) {
+            if (e.target.nodeName !== 'input') {
+                app.Dispatcher.dispatch({
+                    action: app.Actions.APP_REQUEST_GROUP_IMPORT,
+                    pattern: e.clipboardData.getData('text'),
+                });
+            }
         },
         _onResize: function(e) {
             var width = document.body.clientWidth;

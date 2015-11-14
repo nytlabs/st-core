@@ -9,7 +9,10 @@ var app = app || {};
 
     var root = null;
 
-    var tree = {};
+    var tree = {
+        id: 0,
+        children: []
+    };
     /*
     TODO: implement crank
     function Crank() {
@@ -294,11 +297,16 @@ var app = app || {};
 
     function Group(data) {
         Node.call(this, data);
-        this.children = [];
+        this.data.children = [];
         this.translation = {
             x: 0,
             y: 0,
         }
+
+        this.tree = {
+            id: this.data.id,
+            children: []
+        };
     }
 
     Group.prototype = Object.create(Node.prototype);
@@ -341,7 +349,7 @@ var app = app || {};
     // getNodes returns all nodes that should be on-screen
     NodeCollection.prototype.getNodes = function() {
         // if for some reason we don't have a root set, return all nodes
-        return root === null ? Object.keys(nodes) : nodes[root].children;
+        return root === null ? Object.keys(nodes) : nodes[root].data.children;
     }
 
     NodeCollection.prototype.setRoot = function(id) {
@@ -353,29 +361,7 @@ var app = app || {};
     }
 
     NodeCollection.prototype.getTree = function() {
-        function assemble(node) {
-            nodes[node.id].children.forEach(function(child) {
-                if (nodes[child] instanceof Group) {
-                    var childNode = {
-                        id: child,
-                        children: []
-                    };
-                    node.children.push(childNode);
-                    assemble(childNode);
-                }
-                //if (nodes[child] instanceof Group) {
-                //    assemble(childNode);
-                // }
-            })
-        }
-
-        var origin = {
-            id: "0",
-            children: []
-        };
-
-        if (nodes.hasOwnProperty('0')) assemble(origin);
-        return origin;
+        return tree;
     }
 
     var rs = new NodeCollection();
@@ -383,7 +369,7 @@ var app = app || {};
 
     function getVisibleParent(id) {
         var node = nodes[id];
-        while (nodes[root].children.indexOf(node.data.id) === -1) {
+        while (node.parent !== null && nodes[root].data.children.indexOf(node.data.id) === -1) {
             node = nodes[node.parent];
         }
         return node.data.id;
@@ -392,13 +378,13 @@ var app = app || {};
     function setRoot(id) {
         var oldConns = [];
         if (root !== null) {
-            nodes[root].children.forEach(function(id) {
+            nodes[root].data.children.forEach(function(id) {
                 oldConns = oldConns.concat(nodes[id].connections);
             })
         }
 
         root = id;
-        nodes[root].children.forEach(function(id) {
+        nodes[root].data.children.forEach(function(id) {
             var woop = getVisibleParent(id);
             setVisibleParentDescending(id, woop);
             nodes[id].routes.forEach(function(route) {
@@ -439,14 +425,14 @@ var app = app || {};
     function setVisibleParentDescending(id, parent) {
         nodes[id].visibleParent = parent;
         if (nodes[id] instanceof Group) {
-            nodes[id].children.forEach(function(childId) {
+            nodes[id].data.children.forEach(function(childId) {
                 setVisibleParentDescending(childId, parent);
             })
         }
     }
 
     function addChildToGroup(event) {
-        nodes[event.id].children.push(event.child);
+        nodes[event.id].data.children.push(event.child);
         nodes[event.child].parent = event.id;
 
         // add routes to all parent nodes
@@ -477,6 +463,10 @@ var app = app || {};
             action: app.Actions.APP_RENDER_CONNECTIONS,
             ids: nodes[visibleParent].connections,
         });
+
+        if (nodes[event.child] instanceof Group) {
+            nodes[event.id].tree.children.push(nodes[event.child].tree);
+        }
     }
 
     function removeChildFromGroup(event) {
@@ -488,11 +478,17 @@ var app = app || {};
             removeConnectionAscending(event.id, connId);
         })
 
-        nodes[event.id].children.splice(nodes[event.id].children.indexOf(event.child), 1);
+        nodes[event.id].data.children.splice(nodes[event.id].data.children.indexOf(event.child), 1);
 
         //if our group is a child of the current root, then we need to render
-        if (nodes[root].children.indexOf(event.id) !== -1) {
+        if (nodes[root].data.children.indexOf(event.id) !== -1) {
             nodes[event.id].render();
+        }
+
+        if (nodes[event.child] instanceof Group) {
+            nodes[event.id].tree.children = nodes[event.id].tree.children.filter(function(leaf) {
+                return leaf.id != event.child;
+            })
         }
     }
 
@@ -539,7 +535,10 @@ var app = app || {};
         // parent, thus making them 'root' groups the same way that group 0
         // is. Currently, all groups descend from a single root, and there 
         // isn't necessarily a reason for that.
-        if (node.id === 0) setRoot(node.id);
+        if (node.id === 0) {
+            setRoot(node.id);
+            tree = nodes[node.id].tree;
+        }
     }
 
     function createBlock(node) {
@@ -722,11 +721,44 @@ var app = app || {};
         );
     }
 
+    function requestGroupImport(event) {
+        var pattern = null;
+        try {
+            pattern = JSON.parse(event.pattern);
+        } catch (e) {
+            console.warn("could not import pattern", e);
+            return;
+        }
+
+        app.Utils.request(
+            'POST',
+            'groups/' + root + '/import',
+            pattern,
+            function(e) {
+                var response = null;
+                try {
+                    response = JSON.parse(e.response);
+                } catch (e) {
+                    console.warn("error importing: ", response);
+                }
+
+                if (response != null) {
+                    app.Dispatcher.dispatch({
+                        action: app.Actions.APP_SELECT_ALL,
+                        ids: response.map(function(id) {
+                            return nodes.hasOwnProperty(id) ? nodes[id] : app.EdgeStore.getEdge(id);
+                        }),
+                    });
+                }
+            }
+        );
+    }
+
     function selectUnGroup() {
         var children = [];
         app.SelectionStore.getIdsByKind(Node).forEach(function(id) {
             if (nodes[id] instanceof Group) {
-                children = children.concat(nodes[id].children);
+                children = children.concat(nodes[id].data.children);
             }
         })
 
@@ -814,6 +846,9 @@ var app = app || {};
                 break;
             case app.Actions.APP_REQUEST_SOURCE_PARAMS:
                 requestSourceParams(event);
+                break;
+            case app.Actions.APP_REQUEST_GROUP_IMPORT:
+                requestGroupImport(event);
                 break;
             case app.Actions.WS_BLOCK_CREATE:
                 createBlock(event.data);

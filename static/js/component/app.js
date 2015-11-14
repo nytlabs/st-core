@@ -49,7 +49,7 @@ var app = app || {};
                 key: 'panel_list',
             });
 
-            var children = [canvasGraph, /*groupList,*/ panelList, tools];
+            var children = [canvasGraph, panelList, tools];
 
             if (this.state.autoCompleteVisible === true) {
                 children.push(React.createElement(app.AutoCompleteComponent, {

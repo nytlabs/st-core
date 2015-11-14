@@ -26,6 +26,69 @@ var app = app || {};
         });
     }
 
+    // returns a pattern from selected nodes to be imported/exported
+    SelectionStore.prototype.getPattern = function() {
+        //TODO: new pattern type should just consist of nodes and edges
+        //this should be reflected in API as well. 
+
+        var pattern = {
+            blocks: [],
+            sources: [],
+            links: [],
+            connections: [],
+            groups: []
+        };
+
+        pattern.blocks = selected.filter(function(n) {
+            return n instanceof app.Node && !(n instanceof app.Group) && !(n instanceof app.Source)
+        }).map(function(o) {
+            return o.data;
+        });
+
+        pattern.sources = selected.filter(function(s) {
+            return s instanceof app.Source
+        }).map(function(o) {
+            return o.data;
+        });
+
+        pattern.links = selected.filter(function(l) {
+            return l instanceof app.Link
+        }).map(function(o) {
+            return o.data;
+        });
+
+        pattern.connections = selected.filter(function(c) {
+            return c instanceof app.Connection
+        }).map(function(o) {
+            return o.data;
+        });
+
+        function recurseData(id) {
+            app.NodeStore.getNode(id).data.children.forEach(function(childId) {
+                var node = app.NodeStore.getNode(childId);
+                if (node instanceof app.Group) {
+                    recurseData(childId);
+                } else {
+                    if (node instanceof app.Source) {
+                        pattern.sources.push(node.data);
+                    }
+                    if (node instanceof app.Node) {
+                        pattern.blocks.push(node.data);
+                    }
+                }
+            });
+        }
+
+        pattern.groups = selected.filter(function(c) {
+            return c instanceof app.Group
+        }).map(function(o) {
+            recurseData(o.data.id);
+            return o.data;
+        });
+
+        return pattern;
+    }
+
     var rs = new SelectionStore();
 
     function deselect(ids) {
@@ -96,6 +159,11 @@ var app = app || {};
             case app.Actions.APP_SELECT:
                 deselectAll();
                 selectToggle([event.id]);
+                rs.emit();
+                break;
+            case app.Actions.APP_SELECT_ALL:
+                deselectAll();
+                selectToggle(event.ids);
                 rs.emit();
                 break;
             case app.Actions.APP_SELECT_TOGGLE:

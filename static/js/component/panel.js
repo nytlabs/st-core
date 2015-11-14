@@ -57,8 +57,11 @@ var app = app || {};
                     }
                 } catch (e) {
                     console.log(e);
+                    return;
                 }
             }
+
+            this.refs.value.getDOMNode().blur();
 
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_REQUEST_ROUTE_UPDATE,
@@ -118,8 +121,11 @@ var app = app || {};
                     value = JSON.parse(this.state.value)
                 } catch (e) {
                     console.log(e);
+                    return;
                 }
             }
+
+            this.refs.value.getDOMNode().blur();
 
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_REQUEST_NODE_LABEL,
@@ -189,8 +195,11 @@ var app = app || {};
                     value = JSON.parse(this.state.value)
                 } catch (e) {
                     console.log(e);
+                    return;
                 }
             }
+
+            this.refs.value.getDOMNode().blur();
 
             app.Dispatcher.dispatch({
                 action: app.Actions.APP_REQUEST_SOURCE_PARAMS,

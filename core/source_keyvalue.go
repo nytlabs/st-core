@@ -143,7 +143,7 @@ func kvDump() Spec {
 		Source: KEY_VALUE,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			kv := s.(*KeyValue)
-			outMap := make(map[string]Message)
+			outMap := make(map[string]interface{})
 			for k, v := range kv.kv {
 				outMap[k] = v
 			}

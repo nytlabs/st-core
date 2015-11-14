@@ -113,7 +113,7 @@ func TestKeyValue(t *testing.T) {
 
 	dump := <-output
 
-	for k, vd := range dump.(map[string]Message) {
+	for k, vd := range dump.(map[string]interface{}) {
 		if v, ok := testValues[k]; ok {
 			if v != vd.(string) {
 				t.Error("values not equal in kv store?!")
@@ -124,7 +124,7 @@ func TestKeyValue(t *testing.T) {
 	}
 
 	for k, vd := range testValues {
-		if v, ok := dump.(map[string]Message)[k]; ok {
+		if v, ok := dump.(map[string]interface{})[k]; ok {
 			if v.(string) != vd {
 				t.Error("values not equal in kv store?!")
 			}

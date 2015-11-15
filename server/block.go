@@ -265,6 +265,13 @@ func (s *Server) DeleteBlock(id int) error {
 		s.DeleteConnection(k)
 	}
 
+	// delete links attached to this block
+	for _, l := range s.links {
+		if l.Block.Id == id {
+			s.DeleteLink(l.Id)
+		}
+	}
+
 	// remove from group
 	s.DetachChild(b)
 

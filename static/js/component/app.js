@@ -34,7 +34,7 @@ var app = app || {};
                 key: 'canvas_graph',
                 width: function() {},
                 height: function() {},
-                onDoubleClick: this._showAutoComplete,
+                showAutoComplete: this._showAutoComplete,
                 onClick: this._hideAutoComplete,
             }, null);
 

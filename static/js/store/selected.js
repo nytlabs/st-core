@@ -71,8 +71,7 @@ var app = app || {};
                 } else {
                     if (node instanceof app.Source) {
                         pattern.sources.push(node.data);
-                    }
-                    if (node instanceof app.Node) {
+                    } else if (node instanceof app.Node) {
                         pattern.blocks.push(node.data);
                     }
                 }

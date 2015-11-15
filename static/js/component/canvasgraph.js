@@ -138,6 +138,18 @@ var app = app || {};
                 })
             }
         },
+        /* given coordinates, return a node */
+        _pickBuffer: function(x, y) {
+            var ctx = this.state.bufferPicking.getContext('2d');
+            var col = ctx.getImageData(x, y, 1, 1).data;
+            var picked = null;
+            // important! this throws away anti-aliased parts of a line!
+            if (col[3] === 255) {
+                var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
+                picked = app.PickingStore.colorToNode(colString);
+            }
+            return picked;
+        },
         _onMouseDown: function(e) {
             this.setState({
                 button: e.button,
@@ -146,14 +158,8 @@ var app = app || {};
             })
 
             this._renderPickingBuffer();
-            var ctx = this.state.bufferPicking.getContext('2d');
-            var col = ctx.getImageData(e.pageX, e.pageY, 1, 1).data;
-            var picked = null;
-            // important! this throws away anti-aliased parts of a line!
-            if (col[3] === 255) {
-                var colString = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
-                picked = app.PickingStore.colorToNode(colString);
-            }
+
+            var picked = this._pickBuffer(e.pageX, e.pageY);
             var isElement = picked instanceof app.Node || picked instanceof app.Edge;
             var isRoute = picked instanceof app.Route;
 
@@ -224,6 +230,15 @@ var app = app || {};
                 app.Dispatcher.dispatch({
                     action: app.Actions.APP_REQUEST_NODE_MOVE,
                 });
+            }
+        },
+        _onDoubleClick: function(e) {
+            var p = this._pickBuffer(e.pageX, e.pageY);
+            if (p === null) {
+                this.props.showAutoComplete(e)
+            }
+            if (p instanceof app.Group) {
+                app.NodeStore.setRoot(p.data.id);
             }
         },
         _onContextMenu: function(e) {
@@ -499,7 +514,7 @@ var app = app || {};
                 onMouseDown: this._onMouseDown,
                 onMouseUp: this._onMouseUp,
                 onClick: this.props.onClick,
-                onDoubleClick: this.props.onDoubleClick,
+                onDoubleClick: this._onDoubleClick,
                 onMouseMove: this._onMouseMove,
                 onContextMenu: this._onContextMenu,
             }, null);

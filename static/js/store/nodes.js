@@ -64,10 +64,6 @@ var app = app || {};
         if (route.direction === 'input') {
             route.addListener(this.renderAndEmit.bind(this));
         }
-        // TODO: optimize, these can probably be removed
-        // we only need to render if we are visible...
-        this.geometry();
-        this.renderAndEmit();
     }
 
     Node.prototype.removeRoute = function(id) {
@@ -76,10 +72,6 @@ var app = app || {};
         if (route.direction === 'input') {
             route.removeListener(this.renderAndEmit.bind(this));
         }
-        // TODO: optimize, these can probably be removed
-        // we only need to render if we are visible...
-        this.geometry();
-        this.renderAndEmit();
     }
 
     Node.prototype.renderAndEmit = function() {
@@ -253,7 +245,7 @@ var app = app || {};
         }
 
         this.geometry();
-        this.renderAndEmit();
+        this.render();
 
         if (!!data.position) {
             this.position = data.position;
@@ -428,6 +420,14 @@ var app = app || {};
         }
     }
 
+    function rebuildAscending(id) {
+        nodes[id].geometry();
+        nodes[id].render();
+        if (nodes[id].parent !== null) {
+            rebuildAscending(nodes[id].parent);
+        }
+    }
+
     function addChildToGroup(event) {
         nodes[event.id].data.children.push(event.child);
         nodes[event.child].parent = event.id;
@@ -439,7 +439,9 @@ var app = app || {};
 
         nodes[event.child].connections.forEach(function(connId) {
             addConnectionAscending(event.child, connId);
-        })
+        });
+
+        rebuildAscending(event.id);
 
         // find the top-most visible node and store that id in all child nodes.
         var visibleParent = getVisibleParent(event.child);
@@ -450,8 +452,8 @@ var app = app || {};
                 action: app.Actions.APP_ROUTE_VISIBLE_PARENT,
                 id: route,
                 visibleParent: visibleParent,
-            })
-        })
+            });
+        });
 
         // only need to render the top-most visible node.
         nodes[visibleParent].render();
@@ -469,11 +471,13 @@ var app = app || {};
     function removeChildFromGroup(event) {
         nodes[event.child].routes.forEach(function(id) {
             removeRouteAscending(event.id, id);
-        })
+        });
 
         nodes[event.child].connections.forEach(function(connId) {
             removeConnectionAscending(event.id, connId);
-        })
+        });
+
+        rebuildAscending(event.id);
 
         nodes[event.id].data.children.splice(nodes[event.id].data.children.indexOf(event.child), 1);
 

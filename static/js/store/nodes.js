@@ -9,10 +9,7 @@ var app = app || {};
 
     var root = null;
 
-    var tree = {
-        id: 0,
-        children: []
-    };
+    var tree = null;
     /*
     TODO: implement crank
     function Crank() {

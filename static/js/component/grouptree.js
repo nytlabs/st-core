@@ -10,10 +10,22 @@ var app = app || {};
             app.NodeStore.setRoot(this.props.tree.id);
         },
         render: function() {
+            var style = '';
+            if (app.NodeStore.getRoot() === this.props.tree.id) {
+                style += 'current-group'
+            }
+
+            var label = this.props.tree.id;
+            var node = app.NodeStore.getNode(this.props.tree.id);
+            if (node.data.label.length > 0) {
+                label = node.data.label;
+            }
+
             var children = [
                 React.createElement('span', {
                     onMouseDown: this._onMouseDown,
-                }, this.props.tree.id),
+                    className: style,
+                }, label)
             ]
             if (this.props.tree.children.length !== 0) {
                 var list = this.props.tree.children.map(function(child) {
@@ -74,7 +86,7 @@ var app = app || {};
             }
 
             return React.createElement('div', {
-                className: 'panel'
+                className: 'panel unselectable'
             }, children);
         }
     })

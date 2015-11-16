@@ -208,3 +208,24 @@ func pqLen() Spec {
 		},
 	}
 }
+
+func pqClear() Spec {
+	return Spec{
+		Name: "pqClear",
+		Inputs: []Pin{
+			Pin{"clear", ANY},
+		},
+		Outputs: []Pin{
+			Pin{"cleared", BOOLEAN},
+		},
+		Source: PRIORITY,
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+			pq := s.(*PriorityQueue)
+			for pq.queue.Len() != 0 {
+				_ = pq.queue.Pop()
+			}
+			out[0] = true
+			return nil
+		},
+	}
+}

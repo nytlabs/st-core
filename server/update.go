@@ -12,6 +12,10 @@ type wsId struct {
 	Id int `json:"id"`
 }
 
+type wsRouteId struct {
+	Id string `json:"id"`
+}
+
 type wsLabel struct {
 	wsId
 	Label string `json:"label"`
@@ -57,6 +61,13 @@ type wsGroupChild struct {
 type wsRouteModify struct {
 	ConnectionNode
 	Value *core.InputValue `json:"value"`
+}
+
+// type GROUPROUTE
+type wsGroupRouteModify struct {
+	Route     wsRouteId `json:"route"`
+	Group     wsId      `json:"group"`
+	IsVisible bool      `json:"isVisible"`
 }
 
 // type PARAM

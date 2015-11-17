@@ -30,12 +30,30 @@ type Node interface {
 	SetParent(*Group)
 }
 
+type GroupRoute struct {
+	RouteId   string `json:"routeId"`
+	IsVisible bool   `json:"isVisible"`
+}
+
+type HiddenRoutesLedger map[string]struct{}
+
+func (h HiddenRoutesLedger) MarshalJSON() ([]byte, error) {
+	keys := make([]string, len(h))
+	i := 0
+	for k := range h {
+		keys[i] = k
+		i++
+	}
+	return json.Marshal(keys)
+}
+
 type Group struct {
-	Id       int      `json:"id"`
-	Label    string   `json:"label"`
-	Children []int    `json:"children"`
-	Parent   *Group   `json:"-"`
-	Position Position `json:"position"`
+	Id           int                `json:"id"`
+	Label        string             `json:"label"`
+	Children     []int              `json:"children"`
+	Parent       *Group             `json:"-"`
+	Position     Position           `json:"position"`
+	HiddenRoutes HiddenRoutesLedger `json:"hiddenRoutes"`
 }
 
 type ProtoGroup struct {
@@ -166,10 +184,11 @@ func (s *Server) GroupCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) CreateGroup(g ProtoGroup) (*Group, error) {
 	newGroup := &Group{
-		Children: []int{},
-		Label:    g.Label,
-		Position: g.Position,
-		Id:       s.GetNextID(),
+		Children:     []int{},
+		Label:        g.Label,
+		Position:     g.Position,
+		Id:           s.GetNextID(),
+		HiddenRoutes: make(map[string]struct{}),
 	}
 
 	//if newGroup.Children == nil {
@@ -868,4 +887,57 @@ func (s *Server) GroupPositionHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: GROUP, Data: wsGroup{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) GroupSetRouteVisibilityHandler(w http.ResponseWriter, r *http.Request) {
+
+	id, err := getIDFromMux(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+	var route GroupRoute
+	err = json.Unmarshal(body, &route)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not read JSON"})
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	g, ok := s.groups[id]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not find group"})
+		return
+	}
+
+	if !route.IsVisible {
+		g.HiddenRoutes[route.RouteId] = struct{}{}
+	} else {
+		delete(g.HiddenRoutes, route.RouteId)
+	}
+
+	s.websocketBroadcast(
+		Update{
+			Action: UPDATE,
+			Type:   GROUP,
+			Data: wsGroupRouteModify{
+				Route:     wsRouteId{route.RouteId},
+				Group:     wsId{id},
+				IsVisible: route.IsVisible,
+			}},
+	)
+	return
+
 }

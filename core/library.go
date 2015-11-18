@@ -113,7 +113,6 @@ func GetLibrary() map[string]Spec {
 		pqPop(),
 		pqPeek(),
 		pqLen(),
-		pqShift(),
 		pqClear(),
 
 		// stateful

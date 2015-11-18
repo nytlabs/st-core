@@ -1,14 +1,15 @@
 package core
 
 import (
-	"container/heap"
 	"sync"
+
+	"github.com/oleiade/lane"
 )
 
 type queue []*PQMessage
 
 type PriorityQueue struct {
-	queue *queue
+	queue *lane.PQueue
 	sync.Mutex
 }
 
@@ -27,8 +28,7 @@ func PriorityQueueStore() SourceSpec {
 }
 
 func NewPriorityQueue() Source {
-	pq := &queue{}
-	heap.Init(pq)
+	var pq *lane.PQueue = lane.NewPQueue(lane.MINPQ)
 	return &PriorityQueue{
 		queue: pq,
 	}
@@ -36,44 +36,6 @@ func NewPriorityQueue() Source {
 
 func (pq PriorityQueue) GetType() SourceType {
 	return PRIORITY
-}
-
-func (pq queue) Len() int {
-	return len(pq)
-}
-
-func (pq queue) Less(i, j int) bool {
-	// TODO this less than should be an option in the block holy shit
-	return pq[i].t < pq[j].t
-}
-
-func (pq queue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *queue) Push(x interface{}) {
-	n := len(*pq)
-	msg := x.(*PQMessage)
-	msg.index = n
-	*pq = append(*pq, msg)
-}
-
-func (pq *queue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
-}
-
-func (pq *queue) Peek() interface{} {
-	if pq.Len() == 0 {
-		return nil
-	}
-	return (*pq)[0]
 }
 
 func pqPush() Spec {
@@ -94,38 +56,8 @@ func pqPush() Spec {
 				out[0] = NewError("pqPush needs a Number for a priority")
 				return nil
 			}
-			msg := &PQMessage{
-				val: in[0],
-				t:   int(priority),
-			}
-			heap.Push(pq.queue, msg)
+			pq.queue.Push(in[0], int(priority))
 			out[0] = true
-			return nil
-		},
-	}
-}
-
-func pqShift() Spec {
-	return Spec{
-		Name: "pqShift",
-		Inputs: []Pin{
-			Pin{"trigger", ANY},
-		},
-		Outputs: []Pin{
-			Pin{"out", ANY},
-			Pin{"priority", NUMBER},
-		},
-		Source: PRIORITY,
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
-			pq := s.(*PriorityQueue)
-			if pq.queue.Len() == 0 {
-				out[0] = NewError("empty PriorityQueue")
-				return nil
-			}
-			item := (*pq.queue)[0]
-			heap.Remove(pq.queue, 0)
-			out[0] = item.val
-			out[1] = float64(item.t)
 			return nil
 		},
 	}
@@ -144,18 +76,13 @@ func pqPop() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
-			if pq.queue.Len() == 0 {
+			if pq.queue.Size() == 0 {
 				out[0] = NewError("empty PriorityQueue")
 				return nil
 			}
-			msgI := pq.queue.Pop()
-			msg, ok := msgI.(*PQMessage)
-			if !ok {
-				out[0] = NewError("pulled something weird off the PriorityQueue")
-				return nil
-			}
-			out[0] = msg.val
-			out[1] = float64(msg.t)
+			msg, priority := pq.queue.Pop()
+			out[0] = msg
+			out[1] = float64(priority)
 			return nil
 		},
 	}
@@ -174,18 +101,13 @@ func pqPeek() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
-			if pq.queue.Len() == 0 {
+			if pq.queue.Size() == 0 {
 				out[0] = NewError("empty PriorityQueue")
 				return nil
 			}
-			msgI := pq.queue.Peek()
-			msg, ok := msgI.(*PQMessage)
-			if !ok {
-				out[0] = NewError("pulled something weird off the PriorityQueue")
-				return nil
-			}
-			out[0] = msg.val
-			out[1] = float64(msg.t)
+			msg, priority := pq.queue.Head()
+			out[0] = msg
+			out[1] = float64(priority)
 			return nil
 		},
 	}
@@ -203,7 +125,7 @@ func pqLen() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
-			out[0] = float64(len(*pq.queue))
+			out[0] = float64(pq.queue.Size())
 			return nil
 		},
 	}
@@ -221,8 +143,8 @@ func pqClear() Spec {
 		Source: PRIORITY,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			pq := s.(*PriorityQueue)
-			for pq.queue.Len() != 0 {
-				_ = pq.queue.Pop()
+			for pq.queue.Size() != 0 {
+				_, _ = pq.queue.Pop()
 			}
 			out[0] = true
 			return nil

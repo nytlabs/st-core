@@ -253,7 +253,7 @@ var app = app || {};
         _onDoubleClick: function(e) {
             var p = this._pickBuffer(e.pageX, e.pageY);
             if (p === null) {
-                this.props.showAutoComplete(e)
+                this.props.showAutoComplete(e, -1 * this.state.translateX, -1 * this.state.translateY)
             }
             if (p instanceof app.Group) {
                 app.NodeStore.setRoot(p.data.id);

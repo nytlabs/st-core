@@ -62,10 +62,11 @@ type Server struct {
 func NewServer(settings Settings) *Server {
 	groups := make(map[int]*Group)
 	groups[0] = &Group{
-		Label:    "root",
-		Id:       0,
-		Children: []int{},
-		Parent:   nil,
+		Label:        "root",
+		Id:           0,
+		Children:     []int{},
+		Parent:       nil,
+		HiddenRoutes: make(map[string]struct{}),
 	}
 
 	blocks := make(map[int]*BlockLedger)

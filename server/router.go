@@ -106,6 +106,12 @@ func (s *Server) NewRouter() *mux.Router {
 			s.GroupDeleteHandler,
 		},
 		Route{
+			"GroupSetRouteVisibility",
+			"/groups/{id}/visibility",
+			"PUT",
+			s.GroupSetRouteVisibilityHandler,
+		},
+		Route{
 			"BlockIndex",
 			"/blocks",
 			"GET",
@@ -267,5 +273,4 @@ func (s *Server) NewRouter() *mux.Router {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	return router
-
 }

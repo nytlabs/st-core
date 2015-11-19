@@ -75,8 +75,8 @@ var app = app || {};
                     'type': match.name,
                     'parent': app.NodeStore.getRoot(),
                     'position': {
-                        'x': this.props.x,
-                        'y': this.props.y
+                        'x': this.props.x + this.props.translateX,
+                        'y': this.props.y + this.props.translateY
                     }
                 },
                 null)

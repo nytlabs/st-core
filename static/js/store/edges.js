@@ -10,6 +10,10 @@ var app = app || {};
 
     function Edge(data) {
         this.data = data;
+        this.position = {
+            x: 0,
+            y: 0
+        };
         this.dirtyPicking = false;
         this.visible = false;
         this.pickColor = app.PickingStore.getColor(this);
@@ -23,14 +27,34 @@ var app = app || {};
     Edge.prototype.constructor = Edge;
 
     Edge.prototype.geometry = function() {
+
         this.dirtyPicking = true;
         var from = app.NodeStore.getVisibleParent(this.idFrom);
         var to = app.NodeStore.getVisibleParent(this.idTo);
 
+        // if either of the routes don't exist any more, simply return
+        if (!(this.routeIdFrom in from.routeGeometry)) {
+            this.visible = false
+            return
+        }
+        if (!(this.routeIdTo in to.routeGeometry)) {
+            this.visible = false
+            return
+        }
+
         // TODO: organize -- this is so terribly ugly
         var fromV = app.NodeStore.getNode(app.NodeStore.getRoot()).data.children.indexOf(from.visibleParent) + 1;
         var toV = app.NodeStore.getNode(app.NodeStore.getRoot()).data.children.indexOf(to.visibleParent) + 1;
-        this.visible = !!fromV && !!toV;
+        var fromH = false
+        if (from instanceof app.Group) {
+            fromH = from.data.hiddenRoutes.indexOf(this.routeIdFrom) != -1
+        }
+        var toH = false
+        if (to instanceof app.Group) {
+            toH = to.data.hiddenRoutes.indexOf(this.routeIdTo) != -1
+        }
+
+        this.visible = (!!fromV && !!toV) && (from.data.id != to.data.id) && (!fromH && !toH)
 
         // buffer accounts for bends in the bezier that may extend outside the
         // bounds of a non-buffered box.
@@ -76,6 +100,12 @@ var app = app || {};
 
     Edge.prototype.render = function() {
         var ctx = this.canvas.getContext('2d');
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (!this.visible) {
+            this.emit();
+            return
+        }
+
         var c = this.curve;
 
         // TODO: gradient coloring of connections is a test and should be evaluated for performance!
@@ -86,11 +116,6 @@ var app = app || {};
         gradient.addColorStop("0", fromColor);
         gradient.addColorStop("1.0", toColor);
 
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        if (!this.visible) {
-            this.emit();
-            return
-        }
         ctx.setLineDash([]);
 
         // debug bounding boxes

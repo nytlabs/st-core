@@ -32,7 +32,9 @@ var app = app || {};
                 connectingRoute: null,
                 dirty: false,
                 width: 0,
-                height: 0
+                height: 0,
+                offX: 0,
+                offY: 0
             }
         },
         shouldComponentUpdate: function() {
@@ -98,14 +100,17 @@ var app = app || {};
             React.findDOMNode(this.refs.test).height = height;
 
             // render everything again
-            this._renderStage();
-            this._renderEdges();
-            this._renderNodes();
             this.setState({
                 dirty: true,
                 width: width,
-                height: height
-            });
+                height: height,
+                offX: Math.floor(width * .5),
+                offY: Math.floor(height * .5)
+            }, function() {
+                this._renderStage();
+                this._renderEdges();
+                this._renderNodes();
+            }.bind(this));
         },
         _onKeyDown: function(e) {
             // only fire delete if we have the stage in focus
@@ -253,7 +258,11 @@ var app = app || {};
         _onDoubleClick: function(e) {
             var p = this._pickBuffer(e.pageX, e.pageY);
             if (p === null) {
-                this.props.showAutoComplete(e, -1 * this.state.translateX, -1 * this.state.translateY)
+                this.props.showAutoComplete(
+                    e.pageX, e.pageY,
+                    e.pageX - this.state.offX + -1 * this.state.translateX,
+                    e.pageY - this.state.offY + -1 * this.state.translateY
+                );
             }
             if (p instanceof app.Group) {
                 app.NodeStore.setRoot(p.data.id);
@@ -322,10 +331,15 @@ var app = app || {};
 
             ctx.clearRect(0, 0, this.state.width, this.state.height);
             ctx.beginPath()
-            ctx.moveTo(x, y);
+            ctx.moveTo(this.state.offX + x, this.state.offY + y);
             ctx.setLineDash([5, 5]);
             ctx.lineWidth = 2.0
-            ctx.bezierCurveTo(x + (50 * direction), y, mx + (-50 * direction), my, mx, my);
+            ctx.bezierCurveTo(this.state.offX + x + (50 * direction),
+                this.state.offY + y,
+                mx + (-50 * direction),
+                my,
+                mx,
+                my);
             ctx.stroke();
 
             this.setState({
@@ -340,8 +354,9 @@ var app = app || {};
             // TODO: get rid of translate in favor of per-group translations
             var selectRect = app.NodeStore.getNodes().filter(function(id) {
                 var block = app.NodeStore.getNode(id);
-                return app.Utils.pointInRect(originX - this.state.translateX,
-                    originY - this.state.translateY,
+                return app.Utils.pointInRect(
+                    originX - this.state.translateX - this.state.offX,
+                    originY - this.state.translateY - this.state.offY,
                     width, height,
                     block.position.x, block.position.y);
             }.bind(this)).map(function(id) {
@@ -350,8 +365,9 @@ var app = app || {};
 
             var selectConn = app.EdgeStore.getEdges().filter(function(id) {
                 var connection = app.EdgeStore.getEdge(id);
-                return app.Utils.pointInRect(originX - this.state.translateX,
-                    originY - this.state.translateY,
+                return app.Utils.pointInRect(
+                    originX - this.state.translateX - this.state.offX,
+                    originY - this.state.translateY - this.state.offY,
                     width, height,
                     connection.position.x, connection.position.y);
             }.bind(this)).map(function(id) {
@@ -419,8 +435,8 @@ var app = app || {};
             //TODO: get rid in favor of per group translations
             var translateX = this.state.translateX;
             var translateY = this.state.translateY;
-            var x = translateX % GRID_PX;
-            var y = translateY % GRID_PX;
+            var x = (this.state.offX + translateX) % GRID_PX;
+            var y = (this.state.offY + translateY) % GRID_PX;
             var lines = [];
             var hMax = Math.floor(width / GRID_PX);
             var vMax = Math.floor(height / GRID_PX);
@@ -438,14 +454,24 @@ var app = app || {};
                 grid.lineTo(width, y + (i * GRID_PX));
             }
             ctx.stroke(grid);
+
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255,0,0,1)';
+            ctx.arc(this.state.offX + translateX,
+                this.state.offY + translateY,
+                3,
+                0,
+                2 * Math.PI
+            );
+            ctx.fill();
         },
         _renderNodes: function() {
             var nodesCtx = this.state.bufferNodes.getContext('2d');
             nodesCtx.clearRect(0, 0, this.state.width, this.state.height);
             app.NodeStore.getNodes().forEach(function(id, i) {
                 var block = app.NodeStore.getNode(id);
-                var x = block.position.x + this.state.translateX; // TODO: replace with group-specific translation
-                var y = block.position.y + this.state.translateY;
+                var x = block.position.x + this.state.translateX + this.state.offX;
+                var y = block.position.y + this.state.translateY + this.state.offY;
                 nodesCtx.drawImage(block.canvas, x, y);
             }.bind(this))
         },
@@ -454,8 +480,8 @@ var app = app || {};
             ctx.clearRect(0, 0, this.state.width, this.state.height);
             app.EdgeStore.getEdges().forEach(function(id, i) {
                 var connection = app.EdgeStore.getEdge(id);
-                var x = connection.position.x + this.state.translateX;
-                var y = connection.position.y + this.state.translateY;
+                var x = connection.position.x + this.state.translateX + this.state.offX;
+                var y = connection.position.y + this.state.translateY + this.state.offY;
                 ctx.drawImage(connection.canvas, x, y);
             }.bind(this));
         },
@@ -467,8 +493,8 @@ var app = app || {};
             pickCtx.clearRect(0, 0, this.state.width, this.state.height);
             app.NodeStore.getNodes().forEach(function(id, i) {
                 var block = app.NodeStore.getNode(id);
-                var x = block.position.x + this.state.translateX;
-                var y = block.position.y + this.state.translateY;
+                var x = block.position.x + this.state.translateX + this.state.offX;
+                var y = block.position.y + this.state.translateY + this.state.offY;
                 pickCtx.drawImage(block.pickCanvas, x, y);
             }.bind(this));
             app.EdgeStore.getEdges().forEach(function(id, i) {
@@ -481,8 +507,8 @@ var app = app || {};
                         id: id
                     })
                 }
-                var x = connection.position.x + this.state.translateX;
-                var y = connection.position.y + this.state.translateY;
+                var x = connection.position.x + this.state.translateX + this.state.offX;
+                var y = connection.position.y + this.state.translateY + this.state.offY;
                 pickCtx.drawImage(connection.pickCanvas, x, y);
             }.bind(this));
         },

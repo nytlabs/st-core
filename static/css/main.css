@@ -1,3 +1,6 @@
+#st {
+    overflow: hidden;
+}
 .block {
     fill: rgba(238, 241, 245, 1.0);
     border-radius: 4px;

@@ -17,13 +17,13 @@ var app = app || {};
                 autoCompleteY: null,
             }
         },
-        _showAutoComplete: function(e, x, y) {
+        _showAutoComplete: function(x, y, relativeX, relativeY) {
             this.setState({
                 autoCompleteVisible: true,
-                autoCompleteX: e.pageX,
-                autoCompleteY: e.pageY,
-                translateX: x,
-                translateY: y,
+                autoCompleteX: x,
+                autoCompleteY: y,
+                relativeX: relativeX,
+                relativeY: relativeY,
             });
         },
         _hideAutoComplete: function() {
@@ -58,8 +58,8 @@ var app = app || {};
                     key: 'autocomplete',
                     x: this.state.autoCompleteX,
                     y: this.state.autoCompleteY,
-                    translateX: this.state.translateX,
-                    translateY: this.state.translateY,
+                    relativeX: this.state.relativeX,
+                    relativeY: this.state.relativeY,
                     onEnter: this._hideAutoComplete,
                 }));
             }

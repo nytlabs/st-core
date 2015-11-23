@@ -22,9 +22,10 @@ const (
 	LINK       = "link"
 	CONNECTION = "connection"
 	// attributes
-	CHILD = "child"
-	ROUTE = "route"
-	PARAM = "param"
+	CHILD      = "child"
+	ROUTE      = "route"
+	GROUPROUTE = "groupRoute"
+	PARAM      = "param"
 )
 
 // user-session specific settings

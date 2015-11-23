@@ -129,13 +129,18 @@ var app = app || {};
         var labelWidth = canvasMeasureText(this.label, 'Bold 14px helvetica').width;
 
         this.routes.forEach(function(id) {
+            if (this instanceof Group) {
+                if (this.data.hiddenRoutes.indexOf(id) != -1) {
+                    return
+                }
+            }
             var route = app.RouteStore.getRoute(id);
             var width = canvasMeasureText(route.data.name, '14px helvetica').width;
             if (width > widths[route.direction]) {
                 widths[route.direction] = width;
             }
             counts[route.direction] += 1;
-        });
+        }.bind(this));
 
         var routeWidth = widths.input + widths.output + padding.middle + routeHeight + padding.side * 2;
         var maxWidth = Math.max(routeWidth, labelWidth + padding.side * 2);
@@ -154,6 +159,11 @@ var app = app || {};
         }
 
         this.routes.forEach(function(id) {
+            if (this instanceof Group) {
+                if (this.data.hiddenRoutes.indexOf(id) != -1) {
+                    return
+                }
+            }
             var route = app.RouteStore.getRoute(id);
             var xOffset = route.direction === 'input' ? padding.side : this.nodeGeometry.width - padding.side;
             var x = xOffset + routeRadius;
@@ -207,6 +217,11 @@ var app = app || {};
 
         ctx.font = '14px helvetica';
         this.routes.forEach(function(id, i) {
+            if (this instanceof Group) {
+                if (this.data.hiddenRoutes.indexOf(id) != -1) {
+                    return
+                }
+            }
             var route = app.RouteStore.getRoute(id);
             var x = this.routeGeometry[id].x;
             var y = this.routeGeometry[id].y;
@@ -300,6 +315,21 @@ var app = app || {};
 
     Group.prototype = Object.create(Node.prototype);
     Group.constructor = Group;
+
+    // hideRoute and showRoute are intended to idempotent
+    Group.prototype.hideRoute = function(routeId) {
+        // only hide routes that aren't already hidden
+        if (this.data.hiddenRoutes.indexOf(routeId) == -1) {
+            this.data.hiddenRoutes.push(routeId)
+        }
+    }
+
+    Group.prototype.showRoute = function(routeId) {
+        // only show a route that has been hidden
+        if (this.data.hiddenRoutes.indexOf(routeId) != -1) {
+            this.data.hiddenRoutes.splice(this.data.hiddenRoutes.indexOf(routeId), 1); //TODO use sets
+        }
+    }
 
     function Source(data) {
         Node.call(this, data);
@@ -411,6 +441,20 @@ var app = app || {};
         }
     }
 
+    function hideRouteAscending(id, routeId) {
+        nodes[id].hideRoute(routeId)
+        if (nodes[id].parent !== null) {
+            hideRouteAscending(nodes[id].parent, routeId);
+        }
+    }
+
+    function showRouteAscending(id, routeId) {
+        nodes[id].showRoute(routeId)
+        if (nodes[id].parent !== null) {
+            showRouteAscending(nodes[id].parent, routeId);
+        }
+    }
+
     function setVisibleParentDescending(id, parent) {
         nodes[id].visibleParent = parent;
         if (nodes[id] instanceof Group) {
@@ -436,6 +480,13 @@ var app = app || {};
         nodes[event.child].routes.forEach(function(routeId) {
             addRouteAscending(event.id, routeId);
         });
+
+        // inherit any hidden routes
+        if (nodes[event.child] instanceof Group) {
+            nodes[event.child].data.hiddenRoutes.forEach(function(routeId) {
+                hideRouteAscending(event.id, routeId);
+            });
+        }
 
         nodes[event.child].connections.forEach(function(connId) {
             addConnectionAscending(event.child, connId);
@@ -491,6 +542,19 @@ var app = app || {};
                 return leaf.id != event.child;
             })
         }
+    }
+
+    function updateGroupRouteVisibility(event) {
+        if (event.data.isVisible) {
+            nodes[event.id].showRoute(event.data.route.id)
+            showRouteAscending(event.id, event.data.route.id)
+        } else {
+            nodes[event.id].hideRoute(event.data.route.id)
+            hideRouteAscending(event.id, event.data.route.id)
+        }
+        rebuildAscending(event.id);
+        nodes[event.id].geometry();
+        nodes[event.id].render();
     }
 
     function createSource(node) {
@@ -883,6 +947,11 @@ var app = app || {};
                 break;
             case app.Actions.WS_GROUP_REMOVE_CHILD:
                 removeChildFromGroup(event);
+                rs.emit();
+                break;
+            case app.Actions.WS_GROUPROUTE_UPDATE:
+                updateGroupRouteVisibility(event);
+                nodes[event.id].emit();
                 rs.emit();
                 break;
             case app.Actions.APP_REQUEST_NODE_MOVE:

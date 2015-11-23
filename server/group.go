@@ -943,7 +943,7 @@ func (s *Server) GroupSetRouteVisibilityHandler(w http.ResponseWriter, r *http.R
 	s.websocketBroadcast(
 		Update{
 			Action: UPDATE,
-			Type:   GROUP,
+			Type:   GROUPROUTE,
 			Data: wsGroupRouteModify{
 				Route:     wsRouteId{route.RouteId},
 				Group:     wsId{id},

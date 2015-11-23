@@ -11,6 +11,7 @@ var app = app || {};
         'group_create': app.Actions.WS_GROUP_CREATE,
         'group_update': app.Actions.WS_GROUP_UPDATE,
         'group_delete': app.Actions.WS_GROUP_DELETE,
+        'groupRoute_update': app.Actions.WS_GROUPROUTE_UPDATE,
         'child_create': app.Actions.WS_GROUP_ADD_CHILD,
         'child_delete': app.Actions.WS_GROUP_REMOVE_CHILD,
         'source_create': app.Actions.WS_SOURCE_CREATE,
@@ -59,6 +60,13 @@ var app = app || {};
                     action: action,
                     id: event.data.group.id,
                     data: event.data.group
+                });
+                break;
+            case 'groupRoute':
+                app.Dispatcher.dispatch({
+                    action: action,
+                    id: event.data.group.id,
+                    data: event.data
                 });
                 break;
             case 'child':

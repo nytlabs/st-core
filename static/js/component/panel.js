@@ -4,7 +4,6 @@ var app = app || {};
  * Produces a list of fields that are the current representation of input
  * values for blocks/groups that are sent to the component.
  *
- * TODO: fix the {'data': ...} nonsense
  */
 
 
@@ -271,10 +270,11 @@ var app = app || {};
                 return app.RouteStore.getRoute(id).direction === 'input';
             }).map(function(id) {
                 return React.createElement(app.RoutePanelInput, {
+                    blockId: this.props.id,
                     id: id,
                     key: id,
                 }, null)
-            }));
+            }.bind(this)));
 
             if (block instanceof app.Source) {
                 children = children.concat(block.data.params.map(function(param) {

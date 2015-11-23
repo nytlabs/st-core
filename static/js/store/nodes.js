@@ -673,6 +673,38 @@ var app = app || {};
         })
     }
 
+    // after a collection of nodes has been grouped, request that their new 
+    // position is relative to 0,0
+    // TODO: this should and could be handled by the API. 
+    function centerChildren(c) {
+        var minX = +Infinity;
+        var maxX = -Infinity;
+        var minY = +Infinity;
+        var maxY = -Infinity;
+
+        c.forEach(function(id) {
+            minX = Math.min(nodes[id].data.position.x, minX);
+            minY = Math.min(nodes[id].data.position.y, minY);
+            maxX = Math.max(nodes[id].data.position.x, maxX);
+            maxY = Math.max(nodes[id].data.position.y, maxY);
+        })
+
+        var offX = Math.floor((minX + maxX) * .5);
+        var offY = Math.floor((minY + maxY) * .5);
+
+        c.forEach(function(id) {
+            app.Utils.request(
+                'PUT',
+                nodeType(id) + 's/' + id + '/position', {
+                    x: nodes[id].position.x - offX,
+                    y: nodes[id].position.y - offY
+                },
+                null
+            )
+        });
+
+    }
+
     function selectGroup() {
         var selected = app.SelectionStore.getIdsByKind(Node)
         if (selected.length === 0) return;
@@ -699,7 +731,11 @@ var app = app || {};
                 parent: root,
                 children: selected,
                 position: position
-            }, null)
+            },
+            function(e) {
+                centerChildren(JSON.parse(e.response).children);
+            }
+        )
     }
 
     function requestNodeLabel(event) {
@@ -775,6 +811,16 @@ var app = app || {};
         }
 
         for (var i = 0; i < children.length; i++) {
+            // make the ungrouped nodes center on where the parent group was
+            app.Utils.request(
+                'PUT',
+                nodeType(children[i]) + 's/' + children[i] + '/position', {
+                    x: nodes[children[i]].position.x + nodes[nodes[children[i]].parent].data.position.x,
+                    y: nodes[children[i]].position.y + nodes[nodes[children[i]].parent].data.position.y
+                },
+                null
+            )
+
             app.Utils.request(
                 'PUT',
                 'groups/' + root + '/children/' + children[i], null,

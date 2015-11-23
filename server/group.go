@@ -47,6 +47,18 @@ func (h HiddenRoutesLedger) MarshalJSON() ([]byte, error) {
 	return json.Marshal(keys)
 }
 
+func (h HiddenRoutesLedger) UnmarshalJSON(data []byte) error {
+	var keys []string
+	err := json.Unmarshal(data, &keys)
+	if err != nil {
+		return err
+	}
+	for _, k := range keys {
+		h[k] = struct{}{}
+	}
+	return nil
+}
+
 type Group struct {
 	Id           int                `json:"id"`
 	Label        string             `json:"label"`

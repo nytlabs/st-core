@@ -506,34 +506,6 @@ var app = app || {};
             });
         });
 
-        // automatically hide routes as necessary
-        if (nodes[visibleParent] instanceof Group) {
-            nodes[visibleParent].routes.forEach(function(route) {
-                r = app.RouteStore.getRoute(route);
-                if (r.data.value != null) {
-                    app.Utils.request('PUT', '/groups/' + visibleParent + '/visibility', {
-                        "isVisible": false,
-                        "routeId": route
-                    }, null)
-                }
-            })
-        }
-        nodes[visibleParent].connections.forEach(function(connection) {
-            c = app.EdgeStore.getEdge(connection)
-            fromGroup = nodes[visibleParent].routes.indexOf(c.routeIdFrom) != -1
-            toGroup = nodes[visibleParent].routes.indexOf(c.routeIdTo) != -1
-            if (fromGroup && toGroup) {
-                app.Utils.request('PUT', '/groups/' + visibleParent + '/visibility', {
-                    "isVisible": false,
-                    "routeId": c.routeIdFrom
-                }, null)
-                app.Utils.request('PUT', '/groups/' + visibleParent + '/visibility', {
-                    "isVisible": false,
-                    "routeId": c.routeIdTo
-                }, null)
-            }
-        })
-
         // only need to render the top-most visible node.
         nodes[visibleParent].render();
 

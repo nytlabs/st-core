@@ -729,7 +729,7 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	// TODO: sort this out with ResetGraph, and BlockCreate such that we have a
 	// more unified approach to block resetting.
 	for k, _ := range newBlocks {
-		log.Println("tidy: stopping id", k)
+		log.Println("tidy: stopping id", k, s.blocks[k].Type)
 		s.blocks[k].Block.Stop()
 	}
 

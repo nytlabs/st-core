@@ -170,7 +170,7 @@ func (s *Server) ResetGraph(conn *ConnectionLedger) {
 	traverse(conn.Source.Id)
 
 	for k, _ := range found {
-		log.Println("tidy: stopping id", k)
+		log.Println("tidy: stopping id", k, s.blocks[k].Type)
 		s.blocks[k].Block.Stop()
 	}
 

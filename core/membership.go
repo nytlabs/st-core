@@ -58,12 +58,12 @@ func InString() Spec {
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
-				out[0] = NewError("HasField requires strings")
+				out[0] = NewError("inString requires string for substring")
 				return nil
 			}
 			superstring, ok := in[1].(string)
 			if !ok {
-				out[0] = NewError("HasField requires strings")
+				out[0] = NewError("inString requires string for string")
 				return nil
 			}
 			out[0] = strings.Contains(superstring, substring)

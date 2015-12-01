@@ -60,7 +60,7 @@ func Last() Spec {
 				out[0] = NewError("zero length array passed to last")
 				return nil
 			}
-			out[0] = arr[len(arr)]
+			out[0] = arr[len(arr)-1]
 			return nil
 		},
 	}

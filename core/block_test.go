@@ -223,21 +223,23 @@ func BenchmarkRandomMath(b *testing.B) {
 	}
 }
 
-func TestGET(t *testing.T) {
-	log.Println("testing GET")
+func TestHTTPRequest(t *testing.T) {
+	log.Println("testing HTTPRequest")
 	lib := GetLibrary()
-	block := NewBlock(lib["GET"])
+	block := NewBlock(lib["HTTPRequest"])
 	go DummyMonitor(block.Monitor)
 	go block.Serve()
-	headers := make(map[string]string)
+	headers := make(map[string]interface{})
 	block.SetInput(1, &InputValue{headers})
+	block.SetInput(2, &InputValue{"GET"})
+	block.SetInput(3, &InputValue{""})
 	urlRoute, _ := block.GetInput(0)
 	out := make(chan Message)
 	block.Connect(0, out)
 	urlRoute.C <- "http://private-e92ba-stcoretest.apiary-mock.com/get"
 	m := <-out
 	if reflect.DeepEqual(m, `{"msg": "hello there!"}`) {
-		t.Error("didn't get expected output from GET")
+		t.Error("didn't get expected output from HTTPRequest GET")
 	}
 }
 

@@ -22,27 +22,33 @@ func NewError(s string) *stcoreError {
 // over all funcs every time we need the library
 func GetLibrary() map[string]Spec {
 	b := []Spec{
-		// mechanisms
+		// mechanism
+		First(),
 		Delay(),
-		Set(),
-		Get(),
-		Keys(),
 		Log(),
 		Sink(),
 		Latch(),
 		Gate(),
 		Identity(),
+		Timestamp(),
+
+		// object
+		Set(),
+		Get(),
+		Keys(),
+		Merge(),
+		HasField(),
+
+		// array
 		Append(),
 		Tail(),
 		Head(),
 		Init(),
 		Last(),
-		Pusher(),
-		Merge(),
 		Len(),
-		Timestamp(),
+		InArray(),
 
-		// monads
+		// maths
 		Exp(),
 		Floor(),
 		Ceil(),
@@ -52,8 +58,6 @@ func GetLibrary() map[string]Spec {
 		Sin(),
 		Cos(),
 		Tan(),
-
-		// dyads
 		Addition(),
 		Subtraction(),
 		Multiplication(),
@@ -65,7 +69,7 @@ func GetLibrary() map[string]Spec {
 		EqualTo(),
 		NotEqualTo(),
 
-		// random sources
+		// random
 		UniformRandom(),
 		NormalRandom(),
 		ZipfRandom(),
@@ -73,12 +77,12 @@ func GetLibrary() map[string]Spec {
 		ExponentialRandom(),
 		BernoulliRandom(),
 
-		// membership
-		InArray(),
-		HasField(),
+		// string
 		InString(),
 		HasPrefix(),
 		HasSuffix(),
+		StringConcat(),
+		StringSplit(),
 
 		// key value
 		kvGet(),
@@ -97,9 +101,6 @@ func GetLibrary() map[string]Spec {
 		ValueGet(),
 		ValueSet(),
 
-		// server
-		FromRequest(),
-
 		// list
 		listGet(),
 		listSet(),
@@ -115,16 +116,8 @@ func GetLibrary() map[string]Spec {
 		pqLen(),
 		pqClear(),
 
-		// stateful
-		First(),
-
 		// network IO
 		HTTPRequest(),
-
-		// IO
-		Write(),
-		Close(),
-		Flush(),
 
 		//assertions
 		IsBoolean(),

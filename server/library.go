@@ -7,10 +7,10 @@ import (
 	"github.com/nytlabs/st-core/core"
 )
 
-// naming confusion between "name" and "type" ~_~
 type LibraryEntry struct {
-	Type   string          `json:"type"`
-	Source core.SourceType `json:"source"`
+	Name     string          `json:"name"`
+	Source   core.SourceType `json:"source"`
+	Category []string        `json:"category"`
 	// type if we need that later
 }
 
@@ -24,6 +24,7 @@ func (s *Server) BlockLibraryHandler(w http.ResponseWriter, r *http.Request) {
 		l = append(l, LibraryEntry{
 			v.Name,
 			v.Source,
+			v.Category,
 		})
 	}
 
@@ -44,6 +45,7 @@ func (s *Server) SourceLibraryHandler(w http.ResponseWriter, r *http.Request) {
 		l = append(l, LibraryEntry{
 			v.Name,
 			v.Type,
+			v.Category,
 		})
 	}
 

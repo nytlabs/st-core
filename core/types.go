@@ -135,11 +135,12 @@ type Pin struct {
 
 // A Spec defines a block's input and output Pins, and the block's Kernel.
 type Spec struct {
-	Name    string
-	Inputs  []Pin
-	Outputs []Pin
-	Source  SourceType
-	Kernel  Kernel
+	Name     string
+	Category []string
+	Inputs   []Pin
+	Outputs  []Pin
+	Source   SourceType
+	Kernel   Kernel
 }
 
 // Input is an inbound route to a block. A Input holds the channel that allows Messages
@@ -170,9 +171,10 @@ type Output struct {
 
 // A SourceSpec defines a source's name and type
 type SourceSpec struct {
-	Name string
-	Type SourceType
-	New  SourceFunc
+	Name     string
+	Type     SourceType
+	New      SourceFunc
+	Category []string
 }
 
 // A function that creates a source

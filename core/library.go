@@ -119,7 +119,7 @@ func GetLibrary() map[string]Spec {
 		First(),
 
 		// network IO
-		GET(),
+		HTTPRequest(),
 
 		// IO
 		Write(),

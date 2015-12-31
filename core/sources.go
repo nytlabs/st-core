@@ -8,6 +8,7 @@ func GetSources() map[string]SourceSpec {
 		PriorityQueueStore(),
 		ListStore(),
 		ServerSource(),
+		WebsocketClient(),
 	}
 
 	library := make(map[string]SourceSpec)

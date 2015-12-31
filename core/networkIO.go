@@ -52,7 +52,6 @@ func HTTPRequest() Spec {
 			if !ok {
 				out[0] = NewError("HTTPRequest requires a string body")
 			}
-			log.Println("request body:", requestBody)
 
 			// let's only make one client. We'll store it in the internal state
 			var client http.Client

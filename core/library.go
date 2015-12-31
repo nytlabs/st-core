@@ -146,6 +146,11 @@ func GetLibrary() map[string]Spec {
 		//string functions
 		StringConcat(),
 		StringSplit(),
+
+		// websocket
+		wsClientConnect(),
+		wsClientReceive(),
+		wsClientSend(),
 	}
 
 	library := make(map[string]Spec)

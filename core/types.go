@@ -208,9 +208,9 @@ type Source interface {
 type Interface interface {
 	Source
 	Describe() []map[string]string
+	SetSourceParameter(key, value string)
 	Serve()
 	Stop()
-	SetSourceParameter(key, value string)
 }
 
 type Store interface {

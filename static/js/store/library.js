@@ -9,7 +9,7 @@
                 // TODO: fix the stupid schema in the server so we don't have to do this.
                 types = types.concat(JSON.parse(e.response).map(function(t) {
                     return {
-                        name: t.type,
+                        name: t.name,
                         type: nodeType,
                         source: t.source,
                     }

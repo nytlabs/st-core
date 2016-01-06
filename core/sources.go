@@ -7,7 +7,6 @@ func GetSources() map[string]SourceSpec {
 		ValueStore(),
 		PriorityQueueStore(),
 		ListStore(),
-		ServerSource(),
 		WebsocketClient(),
 	}
 

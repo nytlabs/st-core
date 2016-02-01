@@ -24,6 +24,7 @@ _testmain.go
 
 # vim
 *.swp
+*.un~
 
 #binaries 
 st-core

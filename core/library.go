@@ -145,6 +145,9 @@ func GetLibrary() map[string]Spec {
 		wsClientConnect(),
 		wsClientReceive(),
 		wsClientSend(),
+
+		// stdin
+		StdinReceive(),
 	}
 
 	library := make(map[string]Spec)

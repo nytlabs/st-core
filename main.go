@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,7 +12,13 @@ import (
 	"github.com/nytlabs/st-core/server"
 )
 
+var (
+	port = flag.String("port", "7071", "streamtools port")
+)
+
 func main() {
+
+	flag.Parse()
 
 	// Unpack settings file, or create a new one if necessary
 	var settings server.Settings
@@ -46,8 +53,8 @@ func main() {
 
 	http.Handle("/", r)
 
-	log.Println("serving on 7071")
-	err = http.ListenAndServe(":7071", nil)
+	log.Println("serving on", *port)
+	err = http.ListenAndServe(":"+*port, nil)
 	if err != nil {
 		log.Panicf(err.Error())
 	}

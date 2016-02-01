@@ -2,7 +2,7 @@ package core
 
 import (
 	"errors"
-	"log"
+	"sync"
 	"time"
 )
 
@@ -319,15 +319,9 @@ func (b *Block) process() Interrupt {
 	// - we have an external shared state and it has been attached
 
 	// if we have a store, lock it
-	// we will use the s interface after the kernel as a flag to indicate
-	// that this block is attached to a store
-	var s interface{}
-	if isStore(b.sourceType) {
-		s = b.routing.Source
-		store, ok := s.(Store)
-		if !ok {
-			log.Fatal(s)
-		}
+	var store sync.Locker
+	var ok bool
+	if store, ok = b.routing.Source.(sync.Locker); ok {
 		store.Lock()
 	}
 
@@ -339,11 +333,7 @@ func (b *Block) process() Interrupt {
 		b.routing.InterruptChan)
 
 	// unlock the store if necessary
-	if s != nil {
-		store, ok := s.(Store)
-		if !ok {
-			log.Fatal(s)
-		}
+	if store != nil {
 		store.Unlock()
 	}
 

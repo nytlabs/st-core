@@ -2,7 +2,7 @@ package core
 
 func GetSources() map[string]SourceSpec {
 	sources := []SourceSpec{
-		NSQInterface(),
+		NSQConsumerInterface(),
 		KeyValueStore(),
 		ValueStore(),
 		PriorityQueueStore(),
@@ -30,7 +30,7 @@ func isStore(sourceType SourceType) bool {
 
 func isInterface(sourceType SourceType) bool {
 	_, ok := map[SourceType]bool{
-		NSQCLIENT: true,
+		NSQCONSUMER: true,
 		WSCLIENT:  true,
 	}[sourceType]
 	return ok

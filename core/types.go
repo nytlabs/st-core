@@ -12,7 +12,7 @@ const (
 	LIST
 	VALUE_PRIMITIVE
 	PRIORITY
-	NSQCLIENT
+	NSQCONSUMER
 	WSCLIENT
 )
 
@@ -79,7 +79,7 @@ func (s *SourceType) UnmarshalJSON(data []byte) error {
 	case `"key_value"`:
 		*s = SourceType(KEY_VALUE)
 	case `"NSQ"`:
-		*s = SourceType(NSQCLIENT)
+		*s = SourceType(NSQCONSUMER)
 	case `"wsClient"`:
 		*s = SourceType(WSCLIENT)
 	case `"list"`:
@@ -100,7 +100,7 @@ func (s SourceType) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	case KEY_VALUE:
 		return []byte(`"key_value"`), nil
-	case NSQCLIENT:
+	case NSQCONSUMER:
 		return []byte(`"NSQ"`), nil
 	case WSCLIENT:
 		return []byte(`"wsClient"`), nil

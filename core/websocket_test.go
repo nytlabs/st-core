@@ -16,7 +16,7 @@ func TestWsClient(t *testing.T) {
 		t.Fatal("could not assert websocket to Interface")
 	}
 	go ws.Serve()
-	if ws.GetType() != STREAM {
+	if ws.GetType() != WSCLIENT {
 		t.Fatal("websocket client returns wrong type")
 	}
 

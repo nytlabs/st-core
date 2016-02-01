@@ -27,6 +27,15 @@ func (v Value) GetType() SourceType {
 	return VALUE_PRIMITIVE
 }
 
+func (v *Value) Get() interface{} {
+	return v.value
+}
+
+func (v *Value) Set(nv interface{}) error {
+	v.value = nv
+	return nil
+}
+
 // ValueGet emits the value stored
 func ValueGet() Spec {
 	return Spec{
@@ -64,13 +73,4 @@ func ValueSet() Spec {
 			return nil
 		},
 	}
-}
-
-func (v *Value) Get() interface{} {
-	return v.value
-}
-
-func (v *Value) Set(nv interface{}) error {
-	v.value = nv
-	return nil
 }

@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/gorilla/mux"
-	"github.com/nytlabs/st-core/core"
 	"golang.org/x/oauth2"
 )
 
@@ -651,17 +650,6 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 			return nil, err
 		}
 		newIds[l.Id] = nl.Id
-	}
-
-	for _, source := range p.Sources {
-		// eesh we need to sort out source types...
-		// checks to see if the source can accept parameters, and if so, sets them.
-		if _, ok := s.sources[newIds[source.Id]].Source.(core.Interface); ok {
-			err := s.ModifySource(newIds[source.Id], source.Parameters)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	for _, b := range p.Blocks {

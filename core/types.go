@@ -1,5 +1,3 @@
-// Package core provides Blocks, Sources and the means to connect them together. Blocks communicate with
-// one another by passing Messages.
 package core
 
 import (
@@ -11,11 +9,11 @@ import (
 const (
 	NONE = iota
 	KEY_VALUE
-	STREAM
 	LIST
 	VALUE_PRIMITIVE
 	PRIORITY
-	SERVER
+	NSQCLIENT
+	WSCLIENT
 )
 
 // JSONType defines the possible types that variables in core can take
@@ -80,16 +78,16 @@ func (s *SourceType) UnmarshalJSON(data []byte) error {
 		*s = SourceType(NONE)
 	case `"key_value"`:
 		*s = SourceType(KEY_VALUE)
-	case `"stream"`:
-		*s = SourceType(STREAM)
+	case `"NSQ"`:
+		*s = SourceType(NSQCLIENT)
+	case `"wsClient"`:
+		*s = SourceType(WSCLIENT)
 	case `"list"`:
 		*s = SourceType(LIST)
 	case `"value"`:
 		*s = SourceType(VALUE_PRIMITIVE)
 	case `"priority-queue"`:
 		*s = SourceType(PRIORITY)
-	case `"server"`:
-		*s = SourceType(SERVER)
 	default:
 		return errors.New("Error unmarshalling source type")
 	}
@@ -102,10 +100,10 @@ func (s SourceType) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	case KEY_VALUE:
 		return []byte(`"key_value"`), nil
-	case SERVER:
-		return []byte(`"server"`), nil
-	case STREAM:
-		return []byte(`"stream"`), nil
+	case NSQCLIENT:
+		return []byte(`"NSQ"`), nil
+	case WSCLIENT:
+		return []byte(`"wsClient"`), nil
 	case LIST:
 		return []byte(`"list"`), nil
 	case VALUE_PRIMITIVE:
@@ -198,19 +196,12 @@ type BlockState struct {
 	Processed      bool
 }
 
-// a Source is esssentially a lockable piece of memory that can be accessed safely by mulitple blocks.
-// The Lock and Unlock methods are usually implemented using a sync.Mutex
-// TODO Source -> Source
 type Source interface {
-	Lock()
-	Unlock()
 	GetType() SourceType
 }
 
 type Interface interface {
 	Source
-	Describe() []map[string]string
-	SetSourceParameter(key, value string)
 	Serve()
 	Stop()
 }
@@ -219,6 +210,8 @@ type Store interface {
 	Source
 	Get() interface{}
 	Set(interface{}) error
+	Lock()
+	Unlock()
 }
 
 // A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel

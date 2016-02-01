@@ -98,8 +98,6 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 	}
 
 	if i, ok := source.(core.Interface); ok {
-		// Describe() is not thread-safe it must be put ahead of supervior...
-		sl.Parameters = i.Describe()
 		go i.Serve()
 	}
 
@@ -171,75 +169,6 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, b)
 }
 
-func (s *Server) ModifySource(id int, m []map[string]string) error {
-	source, ok := s.sources[id]
-	if !ok {
-		return errors.New("no source found")
-	}
-
-	i, ok := source.Source.(core.Interface)
-	if !ok {
-		return errors.New("cannot modify store")
-	}
-
-	// because sources can have all sorts of parameters, and we are storing
-	// them in an array of maps for ease of rendering, we need to make a quick
-	// index key in order to update them piecemeal.
-	key := make(map[string]int)
-	for i, p := range source.Parameters {
-		key[p["name"]] = i
-	}
-
-	i.Stop()
-	for _, p := range m {
-		name := p["name"]
-		value := p["value"]
-		i.SetSourceParameter(name, value)
-
-		s.websocketBroadcast(Update{Action: UPDATE, Type: PARAM, Data: wsSourceModify{wsId{id}, name, value}})
-
-		// update the source ledger
-		source.Parameters[key[name]]["value"] = value
-	}
-	go i.Serve()
-	return nil
-}
-
-func (s *Server) SourceModifyHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not read request body"})
-		return
-	}
-
-	var m []map[string]string
-	err = json.Unmarshal(body, &m)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, Error{"could not unmarhsal source modification JSON"})
-		return
-	}
-
-	id, err := getIDFromMux(mux.Vars(r))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, err)
-		return
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
-	err = s.ModifySource(id, m)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
 func (s *Server) SourceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromMux(mux.Vars(r))
 	if err != nil {

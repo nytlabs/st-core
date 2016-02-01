@@ -95,7 +95,7 @@ var app = app || {};
         }
     }
 
-    var ws = new WebSocket('ws://localhost:7071/updates');
+    var ws = new WebSocket('ws://localhost:'+window.location.port+'/updates');
     ws.onmessage = function(m) {
         app.Router(JSON.parse(m.data));
     }.bind(this)

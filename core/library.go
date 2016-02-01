@@ -95,7 +95,8 @@ func GetLibrary() map[string]Spec {
 		ParseJSON(),
 
 		// NSQ interface
-		NSQReceive(),
+		NSQConsumerConnect(),
+		NSQConsumerReceive(),
 
 		// primitive value
 		ValueGet(),

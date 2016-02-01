@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -48,7 +49,6 @@ func NewBlock(s Spec) *Block {
 	}
 }
 
-// suture: the main routine the block runs
 func (b *Block) Serve() {
 	defer func() {
 		b.done <- struct{}{}
@@ -295,6 +295,7 @@ func (b *Block) receive() Interrupt {
 
 // run kernel on inputs, produce outputs
 func (b *Block) process() Interrupt {
+
 	b.Monitor <- MonitorMessage{
 		BI_KERNEL,
 		nil,
@@ -304,8 +305,7 @@ func (b *Block) process() Interrupt {
 		return nil
 	}
 
-	// if this kernel relies on an external shared state then we need to
-	// block until an interrupt connects us to a shared external state.
+	// block until connected to source if necessary
 
 	if b.sourceType != NONE && b.routing.Source == nil {
 		select {
@@ -318,9 +318,11 @@ func (b *Block) process() Interrupt {
 	// - we don't need an shared state
 	// - we have an external shared state and it has been attached
 
-	// TODO there is a potential generalisation here for sources that don't need to be locked
-	if b.sourceType != NONE && b.sourceType != SERVER {
-		b.routing.Source.Lock()
+	// if we have a store, lock it
+	var store sync.Locker
+	var ok bool
+	if store, ok = b.routing.Source.(sync.Locker); ok {
+		store.Lock()
 	}
 
 	// run the kernel
@@ -330,19 +332,17 @@ func (b *Block) process() Interrupt {
 		b.routing.Source,
 		b.routing.InterruptChan)
 
+	// unlock the store if necessary
+	if store != nil {
+		store.Unlock()
+	}
+
+	// if an interrupt was receieved, return it
 	if interrupt != nil {
-		if b.sourceType != NONE && b.sourceType != SERVER {
-			b.routing.Source.Unlock()
-		}
 		return interrupt
 	}
 
-	if b.sourceType != NONE && b.sourceType != SERVER {
-		b.routing.Source.Unlock()
-	}
-
 	b.state.Processed = true
-
 	return nil
 }
 

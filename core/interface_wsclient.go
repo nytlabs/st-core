@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"strings"
-	"sync"
 
 	"golang.org/x/net/websocket"
 )
@@ -13,7 +12,7 @@ import (
 func WebsocketClient() SourceSpec {
 	return SourceSpec{
 		Name: "wsClient",
-		Type: STREAM,
+		Type: WSCLIENT,
 		New:  NewWsClient,
 	}
 }
@@ -31,7 +30,7 @@ func (ws *wsClient) Describe() []map[string]string {
 }
 
 func (ws wsClient) GetType() SourceType {
-	return STREAM
+	return WSCLIENT
 }
 
 type connParams struct {
@@ -46,7 +45,6 @@ type wsMsg struct {
 }
 
 type wsClient struct {
-	sync.Mutex
 	IsRunning     bool
 	conn          *websocket.Conn
 	connectChan   chan connParams
@@ -81,7 +79,6 @@ func (ws *wsClient) Serve() {
 		select {
 		case p := <-ws.connectChan:
 			if ws.conn != nil {
-				log.Println("stopping reader before deleting old conn")
 				ws.stopReader <- true
 			}
 			err = ws.Connect(p)
@@ -138,7 +135,6 @@ func (ws wsClient) ReadLoop() {
 	go func() {
 		for {
 			if ws.conn == nil {
-				log.Println("ws.conn is nil; stopping readloop")
 				return
 			}
 			var msg string
@@ -219,7 +215,7 @@ func wsClientConnect() Spec {
 		Name:    "wsClientConnect",
 		Outputs: []Pin{Pin{"connected", BOOLEAN}},
 		Inputs:  []Pin{Pin{"url", STRING}, Pin{"origin", STRING}},
-		Source:  STREAM,
+		Source:  WSCLIENT,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 
 			url, ok := in[0].(string)
@@ -260,22 +256,18 @@ func wsClientReceive() Spec {
 	return Spec{
 		Name:    "wsClientReceive",
 		Outputs: []Pin{Pin{"msg", STRING}},
-		Source:  STREAM,
+		Source:  WSCLIENT,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			ws := s.(*wsClient)
-			ws.Unlock()
 			msg, f, err := ws.ReceiveMessage(i)
 			if err != nil {
 				out[0] = err
-				ws.Lock()
 				return nil
 			}
 			if f != nil {
-				ws.Lock()
 				return f
 			}
 			out[0] = string(msg)
-			ws.Lock()
 			return nil
 		},
 	}
@@ -286,7 +278,7 @@ func wsClientSend() Spec {
 		Name:    "wsClientSend",
 		Inputs:  []Pin{Pin{"msg", STRING}},
 		Outputs: []Pin{Pin{"sent", BOOLEAN}},
-		Source:  STREAM,
+		Source:  WSCLIENT,
 		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
 			ws := s.(*wsClient)
 

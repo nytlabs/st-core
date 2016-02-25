@@ -116,6 +116,7 @@ func (ws *wsClient) Serve() {
 		case c := <-ws.unsubscribe:
 			delete(ws.subscribers, c)
 		case r := <-ws.quit:
+			var err error
 			if ws.conn != nil {
 				ws.stopReader <- true
 			}
@@ -123,7 +124,9 @@ func (ws *wsClient) Serve() {
 				delete(ws.subscribers, c)
 				close(c)
 			}
-			err := ws.conn.Close()
+			if ws.conn != nil {
+				err = ws.conn.Close()
+			}
 			r <- err
 			return
 		}
